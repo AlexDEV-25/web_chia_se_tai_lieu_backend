@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.example.app.share.DocumentType;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -48,27 +50,35 @@ public class Document {
 	@Column(name = "views_count")
 	private Long viewsCount = 0L;
 
-	@Column(name = "downloads_ount")
+	@Column(name = "downloads_count")
 	private Long downloadsCount = 0L;
 
 	@Column(name = "created_at")
 	private LocalDateTime createdAt = LocalDateTime.now();
 
+	@Column(name = "hide")
+	private boolean hide;
+
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
+	@JsonBackReference
 	@JoinColumn(name = "category_id")
 	private Category category;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
+	@JsonBackReference
 	@JoinColumn(name = "user_id")
 	private User user;
 
 	@OneToMany(mappedBy = "document", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Comment> comments;
 
 	@OneToMany(mappedBy = "document", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Rating> ratings;
 
 	@OneToMany(mappedBy = "document", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Favorite> favorites;
 
 	public Long getId() {
@@ -141,6 +151,14 @@ public class Document {
 
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
+	}
+
+	public boolean isHide() {
+		return hide;
+	}
+
+	public void setHide(boolean hide) {
+		this.hide = hide;
 	}
 
 	public Category getCategory() {

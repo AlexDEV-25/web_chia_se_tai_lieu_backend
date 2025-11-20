@@ -2,6 +2,8 @@ package com.example.app.model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,7 +28,11 @@ public class Category {
 	@Column(name = "description")
 	private String description;
 
+	@Column(name = "hide")
+	private boolean hide;
+
 	@OneToMany(mappedBy = "category", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Document> documents;
 
 	public Long getId() {
@@ -51,6 +57,14 @@ public class Category {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public boolean isHide() {
+		return hide;
+	}
+
+	public void setHide(boolean hide) {
+		this.hide = hide;
 	}
 
 	public List<Document> getDocuments() {

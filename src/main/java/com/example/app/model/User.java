@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.example.app.share.Role;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -50,16 +51,23 @@ public class User {
 	@Column(name = "role")
 	private Role role;
 
+	@Column(name = "hide")
+	private boolean hide;
+
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Document> documents;
 
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Comment> comments;
 
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Rating> ratings;
 
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Favorite> favorites;
 
 	public Long getId() {
@@ -132,6 +140,14 @@ public class User {
 
 	public void setRole(Role role) {
 		this.role = role;
+	}
+
+	public boolean isHide() {
+		return hide;
+	}
+
+	public void setHide(boolean hide) {
+		this.hide = hide;
 	}
 
 	public List<Document> getDocuments() {
