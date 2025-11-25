@@ -35,6 +35,16 @@ public class Category {
 	@JsonManagedReference
 	private List<Document> documents;
 
+	public Category(Long id, String name, String description, boolean hide) {
+		this.id = id;
+		this.name = name;
+		this.description = description;
+		this.hide = hide;
+	}
+
+	public Category() {
+	}
+
 	public Long getId() {
 		return id;
 	}

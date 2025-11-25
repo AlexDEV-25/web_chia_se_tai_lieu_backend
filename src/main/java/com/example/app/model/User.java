@@ -15,6 +15,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
@@ -41,6 +42,10 @@ public class User {
 	@Column(name = "avatar_url")
 	private String avatarUrl;
 
+	@Column(name = "avatar_data", columnDefinition = "LONGTEXT")
+	@Lob
+	private String avatarData;
+
 	@Column(name = "created_at")
 	private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -49,7 +54,7 @@ public class User {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "role")
-	private Role role;
+	private Role role = Role.USER;
 
 	@Column(name = "hide")
 	private boolean hide;
@@ -69,6 +74,24 @@ public class User {
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
 	@JsonManagedReference
 	private List<Favorite> favorites;
+
+	public User(Long id, String fullName, String email, String password, boolean isVerified, String avatarUrl,
+			String avatarData, LocalDateTime createdAt, LocalDateTime updatedAt, Role role, boolean hide) {
+		this.id = id;
+		this.fullName = fullName;
+		this.email = email;
+		this.password = password;
+		this.isVerified = isVerified;
+		this.avatarUrl = avatarUrl;
+		this.avatarData = avatarData;
+		this.createdAt = createdAt;
+		this.updatedAt = updatedAt;
+		this.role = role;
+		this.hide = hide;
+	}
+
+	public User() {
+	}
 
 	public Long getId() {
 		return id;

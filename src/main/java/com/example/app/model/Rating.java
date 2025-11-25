@@ -41,6 +41,16 @@ public class Rating {
 	@JsonBackReference
 	private User user;
 
+	public Rating(Long id, Integer rating, LocalDateTime createdAt, boolean hide) {
+		this.id = id;
+		this.rating = rating;
+		this.createdAt = createdAt;
+		this.hide = hide;
+	}
+
+	public Rating() {
+	}
+
 	public Long getId() {
 		return id;
 	}

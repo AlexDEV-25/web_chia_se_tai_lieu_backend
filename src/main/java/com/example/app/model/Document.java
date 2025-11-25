@@ -36,6 +36,10 @@ public class Document {
 	@Column(name = "file_url", nullable = false)
 	private String fileUrl;
 
+	@Column(name = "file_data", nullable = false, columnDefinition = "LONGTEXT")
+	@Lob
+	private String fileData;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "type", nullable = false)
 	private DocumentType type = DocumentType.PDF;
@@ -80,6 +84,24 @@ public class Document {
 	@OneToMany(mappedBy = "document", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
 	@JsonManagedReference
 	private List<Favorite> favorites;
+
+	public Document(Long id, String title, String fileUrl, String fileData, DocumentType type, String description,
+			String thumbnailUrl, Long viewsCount, Long downloadsCount, LocalDateTime createdAt, boolean hide) {
+		this.id = id;
+		this.title = title;
+		this.fileUrl = fileUrl;
+		this.fileData = fileData;
+		this.type = type;
+		this.description = description;
+		this.thumbnailUrl = thumbnailUrl;
+		this.viewsCount = viewsCount;
+		this.downloadsCount = downloadsCount;
+		this.createdAt = createdAt;
+		this.hide = hide;
+	}
+
+	public Document() {
+	}
 
 	public Long getId() {
 		return id;

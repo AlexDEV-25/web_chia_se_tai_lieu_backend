@@ -19,11 +19,22 @@ public class CategoryService {
 		return categoryRepository.findAll();
 	}
 
+	public Category findById(Long id) {
+		return categoryRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy category"));
+	}
+
 	public Category save(Category category) {
 		return categoryRepository.save(category);
 	}
 
 	public void delete(Long id) {
 		categoryRepository.deleteById(id);
+	}
+
+	public Category update(Long id, Category category) {
+		Category data = this.findById(id);
+		data.setName(category.getName());
+		data.setDescription(category.getDescription());
+		return categoryRepository.save(data);
 	}
 }

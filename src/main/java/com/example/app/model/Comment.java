@@ -30,6 +30,9 @@ public class Comment {
 	@Column(name = "created_at")
 	private LocalDateTime createdAt = LocalDateTime.now();
 
+	@Column(name = "id_parent")
+	private Long idParent;
+
 	@Column(name = "hide")
 	private boolean hide;
 
@@ -42,6 +45,17 @@ public class Comment {
 	@JoinColumn(name = "user_id")
 	@JsonBackReference
 	private User user;
+
+	public Comment(Long id, String content, LocalDateTime createdAt, Long idParent, boolean hide) {
+		this.id = id;
+		this.content = content;
+		this.createdAt = createdAt;
+		this.idParent = idParent;
+		this.hide = hide;
+	}
+
+	public Comment() {
+	}
 
 	public Long getId() {
 		return id;
@@ -75,6 +89,14 @@ public class Comment {
 		this.hide = hide;
 	}
 
+	public Long getIdParent() {
+		return idParent;
+	}
+
+	public void setIdParent(Long idParent) {
+		this.idParent = idParent;
+	}
+
 	public Document getDocument() {
 		return document;
 	}
@@ -90,4 +112,5 @@ public class Comment {
 	public void setUser(User user) {
 		this.user = user;
 	}
+
 }

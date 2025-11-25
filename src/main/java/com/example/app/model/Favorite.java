@@ -39,6 +39,15 @@ public class Favorite {
 	@JsonBackReference
 	private Document document;
 
+	public Favorite(Long id, LocalDateTime createdAt, boolean hide) {
+		this.id = id;
+		this.createdAt = createdAt;
+		this.hide = hide;
+	}
+
+	public Favorite() {
+	}
+
 	public Long getId() {
 		return id;
 	}

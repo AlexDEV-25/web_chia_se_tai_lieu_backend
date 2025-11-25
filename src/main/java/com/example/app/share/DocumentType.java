@@ -1,5 +1,5 @@
 package com.example.app.share;
 
 public enum DocumentType {
-	PDF, PPT, WORD, VIDEO
+	PDF, PPT, WORD
 }
