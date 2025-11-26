@@ -141,6 +141,14 @@ public class User {
 		this.avatarUrl = avatarUrl;
 	}
 
+	public String getAvatarData() {
+		return avatarData;
+	}
+
+	public void setAvatarData(String avatarData) {
+		this.avatarData = avatarData;
+	}
+
 	public LocalDateTime getCreatedAt() {
 		return createdAt;
 	}
@@ -204,4 +212,12 @@ public class User {
 	public void setFavorites(List<Favorite> favorites) {
 		this.favorites = favorites;
 	}
+
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", fullName=" + fullName + ", email=" + email + ", password=" + password
+				+ ", isVerified=" + isVerified + ", avatarUrl=" + avatarUrl + ", avatarData=" + avatarData
+				+ ", createdAt=" + createdAt + ", updatedAt=" + updatedAt + ", role=" + role + ", hide=" + hide;
+	}
+
 }

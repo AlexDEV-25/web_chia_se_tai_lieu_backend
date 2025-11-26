@@ -36,4 +36,9 @@ public class UserController {
 	public void delete(@PathVariable Long id) {
 		userService.deleteUser(id);
 	}
+
+	@GetMapping("/email/{email:.+}")
+	public boolean checkEmailExist(@PathVariable String email) {
+		return userService.checkEmailExist(email);
+	}
 }
