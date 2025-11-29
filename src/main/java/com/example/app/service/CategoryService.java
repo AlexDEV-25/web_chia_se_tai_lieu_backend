@@ -1,40 +1,69 @@
 package com.example.app.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.example.app.dto.request.CategoryRequest;
+import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.response.CategoryResponse;
+import com.example.app.mapper.CategoryMapper;
 import com.example.app.model.Category;
 import com.example.app.repository.CategoryRepository;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 @Service
+@Data
+@AllArgsConstructor
 public class CategoryService {
 	private final CategoryRepository categoryRepository;
+	private CategoryMapper categoryMapper;
 
-	public CategoryService(CategoryRepository categoryRepository) {
-		this.categoryRepository = categoryRepository;
+	public List<CategoryResponse> getAllCategories() {
+		List<Category> categories = categoryRepository.findAll();
+		List<CategoryResponse> responses = new ArrayList<CategoryResponse>();
+		for (Category c : categories) {
+			responses.add(categoryMapper.categoryToResponse(c));
+		}
+		return responses;
 	}
 
-	public List<Category> findAll() {
-		return categoryRepository.findAll();
+	public CategoryResponse findById(Long id) {
+		Category find = categoryRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy category"));
+		return categoryMapper.categoryToResponse(find);
 	}
 
-	public Category findById(Long id) {
-		return categoryRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy category"));
+	public CategoryResponse save(CategoryRequest dto) {
+		Category category = categoryMapper.requestToCategory(dto);
+		Category saved = categoryRepository.save(category);
+		CategoryResponse response = categoryMapper.categoryToResponse(saved);
+		return response;
 	}
 
-	public Category save(Category category) {
-		return categoryRepository.save(category);
+	public CategoryResponse update(Long id, CategoryRequest dto) {
+		Category entity = categoryRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy category"));
+		categoryMapper.updateCategory(entity, dto);
+		Category saved = categoryRepository.save(entity);
+		return categoryMapper.categoryToResponse(saved);
+	}
+
+	public CategoryResponse hide(Long id, HideRequest dto) {
+		Category entity = categoryRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy category"));
+		categoryMapper.hideCategory(entity, dto);
+		Category saved = categoryRepository.save(entity);
+		return categoryMapper.categoryToResponse(saved);
 	}
 
 	public void delete(Long id) {
+		if (!categoryRepository.existsById(id)) {
+			throw new RuntimeException("Category not found with id: " + id);
+		}
 		categoryRepository.deleteById(id);
-	}
-
-	public Category update(Long id, Category category) {
-		Category data = this.findById(id);
-		data.setName(category.getName());
-		data.setDescription(category.getDescription());
-		return categoryRepository.save(data);
 	}
 }

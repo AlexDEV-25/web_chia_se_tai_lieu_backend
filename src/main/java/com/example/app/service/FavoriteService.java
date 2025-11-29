@@ -1,9 +1,13 @@
 package com.example.app.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.example.app.dto.request.FavoriteRequest;
+import com.example.app.dto.response.FavoriteResponse;
+import com.example.app.mapper.FavoriteMapper;
 import com.example.app.model.Document;
 import com.example.app.model.Favorite;
 import com.example.app.model.User;
@@ -11,46 +15,49 @@ import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.FavoriteRepository;
 import com.example.app.repository.UserRepository;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 @Service
+@Data
+@AllArgsConstructor
 public class FavoriteService {
 
 	private final FavoriteRepository favoriteRepository;
 	private final UserRepository userRepository;
 	private final DocumentRepository documentRepository;
+	private FavoriteMapper favoriteMapper;
 
-	public FavoriteService(FavoriteRepository favoriteRepository, UserRepository userRepository,
-			DocumentRepository documentRepository) {
-		this.favoriteRepository = favoriteRepository;
-		this.userRepository = userRepository;
-		this.documentRepository = documentRepository;
-	}
+	public FavoriteResponse addFavorite(FavoriteRequest dto) {
+		Favorite favorite = favoriteMapper.requestToFavorite(dto);
+		Document doc = documentRepository.findById(dto.getDocumentId())
+				.orElseThrow(() -> new RuntimeException("Document not found"));
 
-	public Favorite addFavorite(Long userId, Long documentId) {
-		User user = userRepository.findById(userId).orElseThrow();
-		Document document = documentRepository.findById(documentId).orElseThrow();
+		User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
 
-		// Avoid duplicate favorite
-		if (favoriteRepository.existsByUserAndDocument(user, document)) {
+		if (favoriteRepository.existsByUserAndDocument(user, doc)) {
 			throw new RuntimeException("Already favorited this document.");
 		}
-
-		Favorite favorite = new Favorite();
+		favorite.setDocument(doc);
 		favorite.setUser(user);
-		favorite.setDocument(document);
-		return favoriteRepository.save(favorite);
+		Favorite saved = favoriteRepository.save(favorite);
+		FavoriteResponse response = favoriteMapper.favoriteToResponse(saved);
+		return response;
 	}
 
-	public void removeFavorite(Long favoriteId) {
-		favoriteRepository.deleteById(favoriteId);
+	public void removeFavorite(Long id) {
+		if (!favoriteRepository.existsById(id)) {
+			throw new RuntimeException("Comment not found with id: " + id);
+		}
+		favoriteRepository.deleteById(id);
 	}
 
-	public List<Favorite> getFavoritesByUser(Long userId) {
-		User user = userRepository.findById(userId).orElseThrow();
-		return favoriteRepository.findByUser(user);
-	}
-
-	public List<Favorite> getFavoritesByDocument(Long documentId) {
-		Document document = documentRepository.findById(documentId).orElseThrow();
-		return favoriteRepository.findByDocument(document);
+	public List<FavoriteResponse> getFavoritesByUser(Long userId) {
+		List<Favorite> favorites = favoriteRepository.findByUserId(userId);
+		List<FavoriteResponse> response = new ArrayList<FavoriteResponse>();
+		for (Favorite f : favorites) {
+			response.add(favoriteMapper.favoriteToResponse(f));
+		}
+		return response;
 	}
 }

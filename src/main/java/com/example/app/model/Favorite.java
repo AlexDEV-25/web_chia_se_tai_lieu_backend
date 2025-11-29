@@ -13,9 +13,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "favorites")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Favorite {
 
 	@Id
@@ -26,9 +32,6 @@ public class Favorite {
 	@Column(name = "created_at")
 	private LocalDateTime createdAt = LocalDateTime.now();
 
-	@Column(name = "hide")
-	private boolean hide;
-
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JoinColumn(name = "user_id", nullable = false)
 	@JsonBackReference
@@ -38,53 +41,4 @@ public class Favorite {
 	@JoinColumn(name = "document_id", nullable = false)
 	@JsonBackReference
 	private Document document;
-
-	public Favorite(Long id, LocalDateTime createdAt, boolean hide) {
-		this.id = id;
-		this.createdAt = createdAt;
-		this.hide = hide;
-	}
-
-	public Favorite() {
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public boolean isHide() {
-		return hide;
-	}
-
-	public void setHide(boolean hide) {
-		this.hide = hide;
-	}
-
-	public User getUser() {
-		return user;
-	}
-
-	public void setUser(User user) {
-		this.user = user;
-	}
-
-	public Document getDocument() {
-		return document;
-	}
-
-	public void setDocument(Document document) {
-		this.document = document;
-	}
 }

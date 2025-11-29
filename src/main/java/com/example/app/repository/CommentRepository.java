@@ -8,4 +8,6 @@ import com.example.app.model.Comment;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 	List<Comment> findByDocumentId(Long documentId);
+
+	boolean existsById(Long id);
 }

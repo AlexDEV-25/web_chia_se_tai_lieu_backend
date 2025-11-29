@@ -1,30 +1,58 @@
 package com.example.app.service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.example.app.dto.request.RatingRequest;
+import com.example.app.dto.response.RatingResponse;
+import com.example.app.mapper.RatingMapper;
+import com.example.app.model.Document;
 import com.example.app.model.Rating;
+import com.example.app.model.User;
+import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.RatingRepository;
+import com.example.app.repository.UserRepository;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 @Service
+@Data
+@AllArgsConstructor
 public class RatingService {
 	private final RatingRepository ratingRepository;
+	private final DocumentRepository documentRepository;
+	private final UserRepository userRepository;
+	private RatingMapper ratingMapper;
 
-	public RatingService(RatingRepository ratingRepository) {
-		this.ratingRepository = ratingRepository;
+	public List<RatingResponse> getByDocument(Long docId) {
+		List<Rating> ratings = ratingRepository.findByDocumentId(docId);
+		List<RatingResponse> response = new ArrayList<RatingResponse>();
+		for (Rating r : ratings) {
+			response.add(ratingMapper.ratingToResponse(r));
+		}
+		return response;
 	}
 
-	public List<Rating> getByDocument(Long docId) {
-		return ratingRepository.findByDocumentId(docId);
+	public RatingResponse getByDocumentAndUser(RatingRequest dto) {
+		Rating rating = ratingRepository.findByDocumentIdAndUserId(dto.getDocumentId(), dto.getUserId())
+				.orElseThrow(() -> new RuntimeException("not found"));
+		RatingResponse response = ratingMapper.ratingToResponse(rating);
+		return response;
 	}
 
-	public Optional<Rating> getByDocumentAndUser(Long docId, Long userId) {
-		return ratingRepository.findByDocumentIdAndUserId(docId, userId);
-	}
+	public RatingResponse save(RatingRequest dto) {
+		Rating rating = ratingMapper.requestToRating(dto);
+		Document doc = documentRepository.findById(dto.getDocumentId())
+				.orElseThrow(() -> new RuntimeException("Document not found"));
 
-	public Rating save(Rating rating) {
-		return ratingRepository.save(rating);
+		User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+		rating.setDocument(doc);
+		rating.setUser(user);
+		Rating saved = ratingRepository.save(rating);
+		RatingResponse response = ratingMapper.ratingToResponse(saved);
+		return response;
 	}
 }

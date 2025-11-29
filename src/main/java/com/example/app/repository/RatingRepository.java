@@ -11,4 +11,6 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
 	Optional<Rating> findByDocumentIdAndUserId(Long documentId, Long userId);
 
 	List<Rating> findByDocumentId(Long documentId);
+
+	boolean existsById(Long id);
 }

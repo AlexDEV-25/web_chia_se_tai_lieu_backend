@@ -18,17 +18,23 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "users")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id")
 	private Long id;
 
-	@Column(name = "full_name", nullable = false)
-	private String fullName;
+	@Column(name = "username", nullable = false)
+	private String username;
 
 	@Column(name = "email", nullable = false)
 	private String email;
@@ -74,150 +80,5 @@ public class User {
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
 	@JsonManagedReference
 	private List<Favorite> favorites;
-
-	public User(Long id, String fullName, String email, String password, boolean isVerified, String avatarUrl,
-			String avatarData, LocalDateTime createdAt, LocalDateTime updatedAt, Role role, boolean hide) {
-		this.id = id;
-		this.fullName = fullName;
-		this.email = email;
-		this.password = password;
-		this.isVerified = isVerified;
-		this.avatarUrl = avatarUrl;
-		this.avatarData = avatarData;
-		this.createdAt = createdAt;
-		this.updatedAt = updatedAt;
-		this.role = role;
-		this.hide = hide;
-	}
-
-	public User() {
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public String getFullName() {
-		return fullName;
-	}
-
-	public void setFullName(String fullName) {
-		this.fullName = fullName;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
-	public boolean isVerified() {
-		return isVerified;
-	}
-
-	public void setVerified(boolean isVerified) {
-		this.isVerified = isVerified;
-	}
-
-	public String getAvatarUrl() {
-		return avatarUrl;
-	}
-
-	public void setAvatarUrl(String avatarUrl) {
-		this.avatarUrl = avatarUrl;
-	}
-
-	public String getAvatarData() {
-		return avatarData;
-	}
-
-	public void setAvatarData(String avatarData) {
-		this.avatarData = avatarData;
-	}
-
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public LocalDateTime getUpdatedAt() {
-		return updatedAt;
-	}
-
-	public void setUpdatedAt(LocalDateTime updatedAt) {
-		this.updatedAt = updatedAt;
-	}
-
-	public Role getRole() {
-		return role;
-	}
-
-	public void setRole(Role role) {
-		this.role = role;
-	}
-
-	public boolean isHide() {
-		return hide;
-	}
-
-	public void setHide(boolean hide) {
-		this.hide = hide;
-	}
-
-	public List<Document> getDocuments() {
-		return documents;
-	}
-
-	public void setDocuments(List<Document> documents) {
-		this.documents = documents;
-	}
-
-	public List<Comment> getComments() {
-		return comments;
-	}
-
-	public void setComments(List<Comment> comments) {
-		this.comments = comments;
-	}
-
-	public List<Rating> getRatings() {
-		return ratings;
-	}
-
-	public void setRatings(List<Rating> ratings) {
-		this.ratings = ratings;
-	}
-
-	public List<Favorite> getFavorites() {
-		return favorites;
-	}
-
-	public void setFavorites(List<Favorite> favorites) {
-		this.favorites = favorites;
-	}
-
-	@Override
-	public String toString() {
-		return "User [id=" + id + ", fullName=" + fullName + ", email=" + email + ", password=" + password
-				+ ", isVerified=" + isVerified + ", avatarUrl=" + avatarUrl + ", avatarData=" + avatarData
-				+ ", createdAt=" + createdAt + ", updatedAt=" + updatedAt + ", role=" + role + ", hide=" + hide;
-	}
 
 }

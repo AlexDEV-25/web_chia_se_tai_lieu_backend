@@ -1,7 +1,6 @@
 package com.example.app.controller;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,55 +11,72 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.app.dto.CategoryDTO;
-import com.example.app.model.Category;
+import com.example.app.dto.request.CategoryRequest;
+import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.response.APIResponse;
+import com.example.app.dto.response.CategoryResponse;
 import com.example.app.service.CategoryService;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 @RestController
 @RequestMapping("/api/categories")
+@Data
+@AllArgsConstructor
 public class CategoryController {
 	private final CategoryService categoryService;
 
-	public CategoryController(CategoryService categoryService) {
-		this.categoryService = categoryService;
-	}
-
 	@GetMapping("/{id}")
-	public CategoryDTO getById(@PathVariable Long id) {
-		Category category = categoryService.findById(id);
-		return new CategoryDTO(category.getId(), category.getName(), category.getDescription(), category.isHide());
+	public APIResponse<CategoryResponse> getById(@PathVariable Long id) {
+		CategoryResponse response = categoryService.findById(id);
+		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get by id success");
+		return apiResponse;
 	}
 
 	@GetMapping
-	public List<CategoryDTO> getAll() {
-		return categoryService.findAll().stream()
-				.map(cat -> new CategoryDTO(cat.getId(), cat.getName(), cat.getDescription(), cat.isHide()))
-				.collect(Collectors.toList());
+	public APIResponse<CategoryResponse> getAll() {
+		List<CategoryResponse> response = categoryService.getAllCategories();
+		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
 	}
 
 	@PostMapping
-	public CategoryDTO create(@RequestBody CategoryDTO dto) {
-		Category category = new Category();
-		category.setName(dto.getName());
-		category.setDescription(dto.getDescription());
-		category.setHide(dto.isHide());
-
-		Category saved = categoryService.save(category);
-
-		return new CategoryDTO(saved.getId(), saved.getName(), saved.getDescription(), saved.isHide());
+	public APIResponse<CategoryResponse> create(@RequestBody CategoryRequest dto) {
+		CategoryResponse response = categoryService.save(dto);
+		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("save success");
+		return apiResponse;
 	}
 
 	@PutMapping("/{id}")
-	public CategoryDTO update(@PathVariable Long id, @RequestBody CategoryDTO dto) {
-		Category category = new Category();
-		category.setName(dto.getName());
-		category.setDescription(dto.getDescription());
-		Category saved = categoryService.update(id, category);
-		return new CategoryDTO(saved.getId(), saved.getName(), saved.getDescription(), saved.isHide());
+	public APIResponse<CategoryResponse> update(@PathVariable Long id, @RequestBody CategoryRequest dto) {
+		CategoryResponse response = categoryService.update(id, dto);
+		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("update success");
+		return apiResponse;
+	}
+
+	@PutMapping("hide/{id}")
+	public APIResponse<CategoryResponse> hide(@PathVariable Long id, @RequestBody HideRequest dto) {
+		CategoryResponse response = categoryService.hide(id, dto);
+		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("hide success");
+		return apiResponse;
 	}
 
 	@DeleteMapping("/{id}")
-	public void delete(@PathVariable Long id) {
+	public APIResponse<CategoryResponse> delete(@PathVariable Long id) {
 		categoryService.delete(id);
+		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
+		apiResponse.setMessage("delete success");
+		return apiResponse;
 	}
 }
