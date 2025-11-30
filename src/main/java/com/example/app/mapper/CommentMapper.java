@@ -40,7 +40,6 @@ public interface CommentMapper {
 	@Mapping(target = "document", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "content", ignore = true)
-	@Mapping(target = "updatedAt", ignore = true)
 	void hideComment(@MappingTarget Comment entity, HideRequest Request);
 
 }

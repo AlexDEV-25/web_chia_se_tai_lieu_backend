@@ -9,5 +9,9 @@ import com.example.app.model.Document;
 public interface DocumentRepository extends JpaRepository<Document, Long> {
 	List<Document> findByCategoryId(Long categoryId);
 
+	Document findByFileUrl(String FileUrl);
+
 	List<Document> findByUserId(Long userId);
+
+	boolean existsById(Long id);
 }
