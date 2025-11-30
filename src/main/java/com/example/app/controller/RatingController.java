@@ -15,11 +15,9 @@ import com.example.app.dto.response.RatingResponse;
 import com.example.app.service.RatingService;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @RestController
 @RequestMapping("/api/ratings")
-@Data
 @AllArgsConstructor
 public class RatingController {
 	private final RatingService ratingService;

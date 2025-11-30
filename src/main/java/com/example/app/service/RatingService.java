@@ -16,16 +16,14 @@ import com.example.app.repository.RatingRepository;
 import com.example.app.repository.UserRepository;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @Service
-@Data
 @AllArgsConstructor
 public class RatingService {
 	private final RatingRepository ratingRepository;
 	private final DocumentRepository documentRepository;
 	private final UserRepository userRepository;
-	private RatingMapper ratingMapper;
+	private final RatingMapper ratingMapper;
 
 	public List<RatingResponse> getByDocument(Long docId) {
 		List<Rating> ratings = ratingRepository.findByDocumentId(docId);

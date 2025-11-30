@@ -16,11 +16,9 @@ import com.example.app.dto.response.FavoriteResponse;
 import com.example.app.service.FavoriteService;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @RestController
 @RequestMapping("/api/favorites")
-@Data
 @AllArgsConstructor
 public class FavoriteController {
 

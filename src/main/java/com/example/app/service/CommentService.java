@@ -3,6 +3,7 @@ package com.example.app.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.CommentRequest;
@@ -17,16 +18,14 @@ import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.UserRepository;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @Service
-@Data
 @AllArgsConstructor
 public class CommentService {
 	private final CommentRepository commentRepository;
 	private final DocumentRepository documentRepository;
 	private final UserRepository userRepository;
-	private CommentMapper commentMapper;
+	private final CommentMapper commentMapper;
 
 	public List<CommentResponse> getAllComments() {
 		List<Comment> comments = commentRepository.findAll();
@@ -79,9 +78,10 @@ public class CommentService {
 	}
 
 	public void delete(Long id) {
-		if (!commentRepository.existsById(id)) {
-			throw new RuntimeException("Comment not found with id: " + id);
+		try {
+			commentRepository.deleteById(id);
+		} catch (EmptyResultDataAccessException e) {
+			throw new RuntimeException("Comment not found");
 		}
-		commentRepository.deleteById(id);
 	}
 }

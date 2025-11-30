@@ -3,6 +3,7 @@ package com.example.app.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.FavoriteRequest;
@@ -16,17 +17,15 @@ import com.example.app.repository.FavoriteRepository;
 import com.example.app.repository.UserRepository;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @Service
-@Data
 @AllArgsConstructor
 public class FavoriteService {
 
 	private final FavoriteRepository favoriteRepository;
 	private final UserRepository userRepository;
 	private final DocumentRepository documentRepository;
-	private FavoriteMapper favoriteMapper;
+	private final FavoriteMapper favoriteMapper;
 
 	public FavoriteResponse addFavorite(FavoriteRequest dto) {
 		Favorite favorite = favoriteMapper.requestToFavorite(dto);
@@ -46,10 +45,11 @@ public class FavoriteService {
 	}
 
 	public void removeFavorite(Long id) {
-		if (!favoriteRepository.existsById(id)) {
-			throw new RuntimeException("Comment not found with id: " + id);
+		try {
+			favoriteRepository.deleteById(id);
+		} catch (EmptyResultDataAccessException e) {
+			throw new RuntimeException("Favorite not found");
 		}
-		favoriteRepository.deleteById(id);
 	}
 
 	public List<FavoriteResponse> getFavoritesByUser(Long userId) {

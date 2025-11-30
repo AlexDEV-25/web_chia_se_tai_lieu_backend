@@ -1,6 +1,5 @@
 package com.example.app.controller;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,13 +25,12 @@ import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.service.DocumentService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @RestController
 @RequestMapping("/api/documents")
-@Data
 @AllArgsConstructor
 public class DocumentController {
 	private final DocumentService documentService;
@@ -90,30 +89,44 @@ public class DocumentController {
 	}
 
 	@PutMapping("status/{id}")
-	public APIResponse<DocumentResponse> status(@PathVariable Long id, @RequestBody DocumentRequest dto) {
-		DocumentResponse response = documentService.status(id, dto);
+	public APIResponse<DocumentResponse> changeStatus(@PathVariable Long id, @RequestBody DocumentRequest dto) {
+		DocumentResponse response = documentService.changeStatus(id, dto);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("hide success");
 		return apiResponse;
 	}
 
-	@PostMapping("/upload-file")
-	public APIResponse<DocumentResponse> create(@RequestParam("file") MultipartFile file,
-			@RequestBody DocumentRequest dto) {
+	@PostMapping("/view/{id}")
+	public APIResponse<DocumentResponse> increaseView(@PathVariable Long id) {
+		documentService.increaseView(id);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		try {
-			DocumentResponse response = documentService.uploadFile(file, dto);
-			apiResponse.setMessage("upload success");
-			apiResponse.setResult(response);
-
-		} catch (IOException e) {
-			apiResponse.setMessage("upload failed");
-		}
+		apiResponse.setMessage("increase success");
 		return apiResponse;
 	}
 
-	@GetMapping("/download")
+	@PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public APIResponse<DocumentResponse> create(@RequestPart("file") MultipartFile file,
+			@RequestPart("data") String dataJson // nhận JSON dạng chuỗi
+	) {
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			DocumentRequest dto = mapper.readValue(dataJson, DocumentRequest.class);
+
+			DocumentResponse response = documentService.uploadFile(file, dto);
+			APIResponse<DocumentResponse> apiResponse = new APIResponse<>();
+			apiResponse.setMessage("Upload thành công");
+			apiResponse.setResult(response);
+			return apiResponse;
+
+		} catch (Exception e) {
+			APIResponse<DocumentResponse> apiResponse = new APIResponse<>();
+			apiResponse.setMessage("Upload thất bại: " + e.getMessage());
+			return apiResponse;
+		}
+	}
+
+	@GetMapping(value = "/download-file")
 	public ResponseEntity<Resource> downloadFile(@RequestParam("fileName") String filename) {
 		try {
 			var fileToDownload = documentService.getDownloadFile(filename);

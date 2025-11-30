@@ -18,11 +18,9 @@ import com.example.app.dto.response.CategoryResponse;
 import com.example.app.service.CategoryService;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @RestController
 @RequestMapping("/api/categories")
-@Data
 @AllArgsConstructor
 public class CategoryController {
 	private final CategoryService categoryService;

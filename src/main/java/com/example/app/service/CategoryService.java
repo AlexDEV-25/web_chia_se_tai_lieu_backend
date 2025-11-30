@@ -3,6 +3,7 @@ package com.example.app.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.CategoryRequest;
@@ -13,14 +14,12 @@ import com.example.app.model.Category;
 import com.example.app.repository.CategoryRepository;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @Service
-@Data
 @AllArgsConstructor
 public class CategoryService {
 	private final CategoryRepository categoryRepository;
-	private CategoryMapper categoryMapper;
+	private final CategoryMapper categoryMapper;
 
 	public List<CategoryResponse> getAllCategories() {
 		List<Category> categories = categoryRepository.findAll();
@@ -61,9 +60,10 @@ public class CategoryService {
 	}
 
 	public void delete(Long id) {
-		if (!categoryRepository.existsById(id)) {
-			throw new RuntimeException("Category not found with id: " + id);
+		try {
+			categoryRepository.deleteById(id);
+		} catch (EmptyResultDataAccessException e) {
+			throw new RuntimeException("Category not found");
 		}
-		categoryRepository.deleteById(id);
 	}
 }

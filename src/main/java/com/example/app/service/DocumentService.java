@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,22 +19,22 @@ import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.mapper.DocumentMapper;
+import com.example.app.model.Category;
 import com.example.app.model.Document;
+import com.example.app.model.User;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.UserRepository;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @Service
-@Data
 @AllArgsConstructor
 public class DocumentService {
 	private final DocumentRepository documentRepository;
 	private final UserRepository userRepository;
 	private final CategoryRepository categoryRepository;
-	private DocumentMapper documentMapper;
+	private final DocumentMapper documentMapper;
 	public static final String STORAGE_DIRECTORY = "G:\\web_DATN\\storage";
 
 	public List<DocumentResponse> getAlldocuments() {
@@ -48,16 +49,15 @@ public class DocumentService {
 	public DocumentResponse findById(Long id) {
 		Document find = documentRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-		find.setViewsCount(find.getViewsCount() + 1);
-		documentRepository.save(find);
 		return documentMapper.documentToResponse(find);
 	}
 
 	public void delete(Long id) {
-		if (!documentRepository.existsById(id)) {
-			throw new RuntimeException("Document not found with id: " + id);
+		try {
+			documentRepository.deleteById(id);
+		} catch (EmptyResultDataAccessException e) {
+			throw new RuntimeException("Document not found");
 		}
-		documentRepository.deleteById(id);
 	}
 
 	public DocumentResponse hide(Long id, HideRequest dto) {
@@ -68,20 +68,30 @@ public class DocumentService {
 		return documentMapper.documentToResponse(saved);
 	}
 
-	public void increaseDownload(Long id, DocumentRequest dto) {
-		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-		documentMapper.updateDownloadCount(entity, dto);
-		Document saved = documentRepository.save(entity);
-		documentMapper.documentToResponse(saved);
-	}
-
-	public DocumentResponse status(Long id, DocumentRequest dto) {
+	public DocumentResponse changeStatus(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
 		documentMapper.updateStatus(entity, dto);
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
+	}
+
+	// Hàm riêng để tăng viewsCount
+	public void increaseView(Long id) {
+		if (id == null)
+			return;
+		documentRepository.findById(id).ifPresent(entity -> {
+			entity.setViewsCount(entity.getViewsCount() + 1);
+			documentRepository.save(entity);
+		});
+	}
+
+	public void increaseDownload(Long id) {
+
+		documentRepository.findById(id).ifPresent(entity -> {
+			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
+			documentRepository.save(entity);
+		});
 	}
 
 	public List<DocumentResponse> getByUser(Long userId) {
@@ -106,6 +116,11 @@ public class DocumentService {
 		String fileUrl = this.saveFile(fileToSave);
 		Document document = documentMapper.requestToDocument(dto);
 		document.setFileUrl(fileUrl);
+		User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+		Category category = categoryRepository.findById(dto.getCategoryId())
+				.orElseThrow(() -> new RuntimeException("Categorys not found"));
+		document.setCategory(category);
+		document.setUser(user);
 		Document saved = documentRepository.save(document);
 		DocumentResponse response = documentMapper.documentToResponse(saved);
 		return response;
@@ -115,15 +130,25 @@ public class DocumentService {
 		if (fileToSave == null) {
 			throw new NullPointerException("fileToSave is null");
 		}
-		String originalFilename = fileToSave.getOriginalFilename();
-		String safeFilename = UUID.randomUUID() + "_"
-				+ (originalFilename != null ? Paths.get(originalFilename).getFileName().toString() : "file");
 
-		var targetFile = new File(STORAGE_DIRECTORY + File.separator + fileToSave.getOriginalFilename());
-		if (!Objects.equals(targetFile.getParent(), STORAGE_DIRECTORY)) {
-			throw new SecurityException("Unsupported filename!");
+		// Lấy tên file thật sự, tránh ../../ hack
+		String originalFilename = fileToSave.getOriginalFilename();
+		String cleanedFilename = originalFilename != null ? Paths.get(originalFilename).getFileName().toString()
+				: "file";
+
+		// Tạo tên an toàn
+		String safeFilename = UUID.randomUUID() + "_" + cleanedFilename;
+
+		File targetFile = new File(STORAGE_DIRECTORY, safeFilename);
+
+		// Kiểm tra path traversal (bắt buộc)
+		if (!targetFile.getCanonicalPath().startsWith(new File(STORAGE_DIRECTORY).getCanonicalPath())) {
+			throw new SecurityException("Invalid file path!");
 		}
+
+		// Copy file
 		Files.copy(fileToSave.getInputStream(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
 		return safeFilename;
 	}
 

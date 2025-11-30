@@ -18,11 +18,9 @@ import com.example.app.dto.response.CommentResponse;
 import com.example.app.service.CommentService;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 
 @RestController
 @RequestMapping("/api/comments")
-@Data
 @AllArgsConstructor
 public class CommentController {
 	private final CommentService commentService;
