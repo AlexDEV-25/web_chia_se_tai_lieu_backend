@@ -15,7 +15,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -48,10 +47,6 @@ public class User {
 	@Column(name = "avatar_url")
 	private String avatarUrl;
 
-	@Column(name = "avatar_data", columnDefinition = "LONGTEXT")
-	@Lob
-	private String avatarData;
-
 	@Column(name = "created_at")
 	private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -80,5 +75,4 @@ public class User {
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
 	@JsonManagedReference
 	private List<Favorite> favorites;
-
 }

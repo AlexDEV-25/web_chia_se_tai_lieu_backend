@@ -61,6 +61,15 @@ public class DocumentController {
 		return apiResponse;
 	}
 
+	@PutMapping("/{id}")
+	public APIResponse<DocumentResponse> update(@PathVariable Long id, @RequestBody DocumentRequest dto) {
+		DocumentResponse response = documentService.update(id, dto);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("update success");
+		return apiResponse;
+	}
+
 	@GetMapping("/user/{userId}")
 	public APIResponse<DocumentResponse> getByUser(@PathVariable Long userId) {
 		List<DocumentResponse> response = documentService.getByUser(userId);
@@ -107,13 +116,13 @@ public class DocumentController {
 
 	@PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public APIResponse<DocumentResponse> create(@RequestPart("file") MultipartFile file,
-			@RequestPart("data") String dataJson // nhận JSON dạng chuỗi
+			@RequestPart("img") MultipartFile img, @RequestPart("data") String dataJson // nhận JSON dạng chuỗi
 	) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			DocumentRequest dto = mapper.readValue(dataJson, DocumentRequest.class);
 
-			DocumentResponse response = documentService.uploadFile(file, dto);
+			DocumentResponse response = documentService.uploadFile(file, img, dto);
 			APIResponse<DocumentResponse> apiResponse = new APIResponse<>();
 			apiResponse.setMessage("Upload thành công");
 			apiResponse.setResult(response);

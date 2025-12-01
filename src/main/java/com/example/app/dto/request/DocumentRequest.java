@@ -14,10 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DocumentRequest {
 	private String title;
-	private String fileUrl;
 	private DocumentType type;
 	private String description;
-	private String thumbnailUrl;
 	private Long viewsCount = 0L;
 	private Long downloadsCount = 0L;
 	private LocalDateTime createdAt;

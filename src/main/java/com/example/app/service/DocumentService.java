@@ -3,14 +3,11 @@ package com.example.app.service;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,17 +22,23 @@ import com.example.app.model.User;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.UserRepository;
+import com.example.app.share.FileStorage;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class DocumentService {
 	private final DocumentRepository documentRepository;
 	private final UserRepository userRepository;
 	private final CategoryRepository categoryRepository;
 	private final DocumentMapper documentMapper;
-	public static final String STORAGE_DIRECTORY = "G:\\web_DATN\\storage";
+
+	@Value("${app.storage-directory-document}")
+	private String documentStorage;
+
+	@Value("${app.storage-directory-image}")
+	private String thumbnailStorage;
 
 	public List<DocumentResponse> getAlldocuments() {
 		List<Document> documents = documentRepository.findAll();
@@ -58,6 +61,14 @@ public class DocumentService {
 		} catch (EmptyResultDataAccessException e) {
 			throw new RuntimeException("Document not found");
 		}
+	}
+
+	public DocumentResponse update(Long id, DocumentRequest dto) {
+		Document entity = documentRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+		documentMapper.updateDocument(entity, dto);
+		Document saved = documentRepository.save(entity);
+		return documentMapper.documentToResponse(saved);
 	}
 
 	public DocumentResponse hide(Long id, HideRequest dto) {
@@ -112,10 +123,15 @@ public class DocumentService {
 		return response;
 	}
 
-	public DocumentResponse uploadFile(MultipartFile fileToSave, DocumentRequest dto) throws IOException {
-		String fileUrl = this.saveFile(fileToSave);
+	public DocumentResponse uploadFile(MultipartFile fileToSave, MultipartFile img, DocumentRequest dto)
+			throws IOException {
+		FileStorage fileStorage = new FileStorage();
+
+		String fileUrl = fileStorage.saveFile(fileToSave, documentStorage);
+		String thumbnailUrl = fileStorage.saveFile(img, thumbnailStorage);
 		Document document = documentMapper.requestToDocument(dto);
 		document.setFileUrl(fileUrl);
+		document.setThumbnailUrl(thumbnailUrl);
 		User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
 		Category category = categoryRepository.findById(dto.getCategoryId())
 				.orElseThrow(() -> new RuntimeException("Categorys not found"));
@@ -126,38 +142,12 @@ public class DocumentService {
 		return response;
 	}
 
-	public String saveFile(MultipartFile fileToSave) throws IOException {
-		if (fileToSave == null) {
-			throw new NullPointerException("fileToSave is null");
-		}
-
-		// Lấy tên file thật sự, tránh ../../ hack
-		String originalFilename = fileToSave.getOriginalFilename();
-		String cleanedFilename = originalFilename != null ? Paths.get(originalFilename).getFileName().toString()
-				: "file";
-
-		// Tạo tên an toàn
-		String safeFilename = UUID.randomUUID() + "_" + cleanedFilename;
-
-		File targetFile = new File(STORAGE_DIRECTORY, safeFilename);
-
-		// Kiểm tra path traversal (bắt buộc)
-		if (!targetFile.getCanonicalPath().startsWith(new File(STORAGE_DIRECTORY).getCanonicalPath())) {
-			throw new SecurityException("Invalid file path!");
-		}
-
-		// Copy file
-		Files.copy(fileToSave.getInputStream(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-		return safeFilename;
-	}
-
 	public File getDownloadFile(String fileName) throws Exception {
 		if (fileName == null) {
 			throw new NullPointerException("fileName is null");
 		}
-		var fileToDownload = new File(STORAGE_DIRECTORY + File.separator + fileName);
-		if (!Objects.equals(fileToDownload.getParent(), STORAGE_DIRECTORY)) {
+		var fileToDownload = new File(documentStorage + File.separator + fileName);
+		if (!Objects.equals(fileToDownload.getParent(), documentStorage)) {
 			throw new SecurityException("Unsupported filename!");
 		}
 		if (!fileToDownload.exists()) {

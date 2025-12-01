@@ -12,6 +12,8 @@ import com.example.app.model.Document;
 @Mapper(componentModel = "spring")
 public interface DocumentMapper {
 	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "thumbnailUrl", ignore = true)
+	@Mapping(target = "fileUrl", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "category", ignore = true)
 	@Mapping(target = "comments", ignore = true)
@@ -32,6 +34,8 @@ public interface DocumentMapper {
 	Document responseToDocument(DocumentResponse Response);
 
 	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "thumbnailUrl", ignore = true)
+	@Mapping(target = "fileUrl", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "category", ignore = true)
