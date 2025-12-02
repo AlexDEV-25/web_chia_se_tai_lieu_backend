@@ -2,6 +2,7 @@ package com.example.app.controller;
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -9,12 +10,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.UserResponse;
 import com.example.app.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
 
@@ -30,6 +34,15 @@ public class UserController {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("get by id success");
+		return apiResponse;
+	}
+
+	@GetMapping("/my-info")
+	public APIResponse<UserResponse> getMyInfo() {
+		UserResponse response = userService.getMyInfo();
+		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get my info success");
 		return apiResponse;
 	}
 
@@ -53,27 +66,30 @@ public class UserController {
 	@PostMapping
 	public APIResponse<UserResponse> create(@RequestBody UserRequest dto) {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
-		if (!this.checkEmailExist(dto.getEmail())) {
-			UserResponse response = userService.save(dto);
-			apiResponse.setResult(response);
-			apiResponse.setMessage("save success");
-		} else {
-			apiResponse.setMessage("email exist");
-		}
-		return apiResponse;
-	}
-
-	@PutMapping("/{id}")
-	public APIResponse<UserResponse> update(@PathVariable Long id, @RequestBody UserRequest dto) {
-		UserResponse response = userService.update(id, dto);
-		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
+		UserResponse response = userService.save(dto);
 		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
+		apiResponse.setMessage("save success");
 		return apiResponse;
 	}
 
-	@GetMapping("/email/{email:.+}")
-	public boolean checkEmailExist(@PathVariable String email) {
-		return userService.checkEmailExist(email);
+	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public APIResponse<UserResponse> update(@PathVariable Long id, @RequestPart("avt") MultipartFile avt,
+			@RequestPart("data") String dataJson) {
+
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			UserRequest dto = mapper.readValue(dataJson, UserRequest.class);
+
+			UserResponse response = userService.update(id, avt, dto);
+			APIResponse<UserResponse> apiResponse = new APIResponse<>();
+			apiResponse.setMessage("Upload thành công");
+			apiResponse.setResult(response);
+			return apiResponse;
+
+		} catch (Exception e) {
+			APIResponse<UserResponse> apiResponse = new APIResponse<>();
+			apiResponse.setMessage("Upload thất bại: " + e.getMessage());
+			return apiResponse;
+		}
 	}
 }

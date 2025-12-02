@@ -4,16 +4,19 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.StringJoiner;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import com.example.app.dto.request.AuthenticationRequest;
 import com.example.app.dto.request.IntrospectRequest;
 import com.example.app.dto.response.AuthenticationResponse;
 import com.example.app.dto.response.IntrospectResponse;
+import com.example.app.model.User;
 import com.example.app.repository.UserRepository;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -49,17 +52,18 @@ public class AuthenticationService {
 		boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
 		response.setAuthenticated(authenticated);
 		if (authenticated) {
-			var token = generateToken(request.getEmail());
+			var token = generateToken(user);
 			response.setToken(token);
 		}
 		return response;
 	}
 
-	private String generateToken(String email) {
+	private String generateToken(User user) {
 		JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 		JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()//
-				.subject(email)//
+				.subject(user.getUsername())//
 				.issuer("moimoi.com")//
+				.claim("scope", buildScope(user))//
 				.issueTime(new Date())//
 				.expirationTime(Date.from(Instant.now().plus(1, ChronoUnit.HOURS))).build();
 
@@ -74,6 +78,19 @@ public class AuthenticationService {
 		} catch (JOSEException e) {
 			throw new RuntimeException("JOSEException");
 		}
+	}
+
+	private String buildScope(User user) {
+		StringJoiner stringJoiner = new StringJoiner(" ");
+
+		if (!CollectionUtils.isEmpty(user.getRoles()))
+			user.getRoles().forEach(role -> {
+				stringJoiner.add("ROLE_" + role.getName());
+				if (!CollectionUtils.isEmpty(role.getPermissions()))
+					role.getPermissions().forEach(permission -> stringJoiner.add(permission.getName()));
+			});
+
+		return stringJoiner.toString();
 	}
 
 	public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {

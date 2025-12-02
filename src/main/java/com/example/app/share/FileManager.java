@@ -3,13 +3,14 @@ package com.example.app.share;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 import org.springframework.web.multipart.MultipartFile;
 
-public class FileStorage {
+public class FileManager {
 	public String saveFile(MultipartFile fileToSave, String storageDirectory) throws IOException {
 		if (fileToSave == null) {
 			throw new NullPointerException("fileToSave is null");
@@ -34,6 +35,17 @@ public class FileStorage {
 		Files.copy(fileToSave.getInputStream(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
 		return safeFilename;
+	}
+
+	public boolean deleteFile(String filePath) {
+		try {
+			Path path = Paths.get(filePath);
+
+			return Files.deleteIfExists(path);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 }

@@ -22,7 +22,7 @@ import com.example.app.model.User;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.UserRepository;
-import com.example.app.share.FileStorage;
+import com.example.app.share.FileManager;
 
 import lombok.RequiredArgsConstructor;
 
@@ -125,8 +125,7 @@ public class DocumentService {
 
 	public DocumentResponse uploadFile(MultipartFile fileToSave, MultipartFile img, DocumentRequest dto)
 			throws IOException {
-		FileStorage fileStorage = new FileStorage();
-
+		FileManager fileStorage = new FileManager();
 		String fileUrl = fileStorage.saveFile(fileToSave, documentStorage);
 		String thumbnailUrl = fileStorage.saveFile(img, thumbnailStorage);
 		Document document = documentMapper.requestToDocument(dto);

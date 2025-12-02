@@ -1,8 +1,7 @@
 package com.example.app.dto.response;
 
 import java.time.LocalDateTime;
-
-import com.example.app.share.Role;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,11 +14,10 @@ public class UserResponse {
 	private Long id;
 	private String username;
 	private String email;
-	private String password;
-	private boolean isVerified;
+	private boolean verified;
 	private String avatarUrl;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
-	private Role role = Role.USER;
+	private List<RoleResponse> roles;
 	private boolean hide;
 }
