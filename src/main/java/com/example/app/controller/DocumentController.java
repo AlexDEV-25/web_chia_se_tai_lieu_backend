@@ -1,5 +1,6 @@
 package com.example.app.controller;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -138,7 +139,7 @@ public class DocumentController {
 	@GetMapping(value = "/download-file")
 	public ResponseEntity<Resource> downloadFile(@RequestParam("fileName") String filename) {
 		try {
-			var fileToDownload = documentService.getDownloadFile(filename);
+			File fileToDownload = documentService.getDownloadFile(filename);
 			return ResponseEntity.ok()
 					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
 					.contentLength(fileToDownload.length()).contentType(MediaType.APPLICATION_OCTET_STREAM)

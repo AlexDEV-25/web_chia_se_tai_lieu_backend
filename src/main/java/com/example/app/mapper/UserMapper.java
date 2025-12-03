@@ -22,14 +22,6 @@ public interface UserMapper {
 
 	UserResponse userToResponse(User entity);
 
-	@Mapping(target = "password", ignore = true)
-	@Mapping(target = "documents", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "roles", ignore = true)
-	User responseToUser(UserResponse Response);
-
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "avatarUrl", ignore = true)
 	@Mapping(target = "email", ignore = true)

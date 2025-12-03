@@ -3,6 +3,7 @@ package com.example.app.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.RatingRequest;
@@ -34,6 +35,7 @@ public class RatingService {
 		return response;
 	}
 
+// chưa biết làm gì với nó
 	public RatingResponse getByDocumentAndUser(RatingRequest dto) {
 		Rating rating = ratingRepository.findByDocumentIdAndUserId(dto.getDocumentId(), dto.getUserId())
 				.orElseThrow(() -> new RuntimeException("not found"));
@@ -41,6 +43,7 @@ public class RatingService {
 		return response;
 	}
 
+	@PreAuthorize("hasAuthority('POST_RATING')")
 	public RatingResponse save(RatingRequest dto) {
 		Rating rating = ratingMapper.requestToRating(dto);
 		Document doc = documentRepository.findById(dto.getDocumentId())

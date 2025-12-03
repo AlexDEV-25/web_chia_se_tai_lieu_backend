@@ -26,13 +26,6 @@ public interface DocumentMapper {
 	@Mapping(source = "category.name", target = "categoryName")
 	DocumentResponse documentToResponse(Document entity);
 
-	@Mapping(target = "user", ignore = true)
-	@Mapping(target = "category", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
-	Document responseToDocument(DocumentResponse Response);
-
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "thumbnailUrl", ignore = true)
 	@Mapping(target = "fileUrl", ignore = true)
@@ -43,23 +36,6 @@ public interface DocumentMapper {
 	@Mapping(target = "favorites", ignore = true)
 	@Mapping(target = "ratings", ignore = true)
 	void updateDocument(@MappingTarget Document document, DocumentRequest Request);
-
-	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "user", ignore = true)
-	@Mapping(target = "category", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
-	@Mapping(target = "createdAt", ignore = true)
-	@Mapping(target = "title", ignore = true)
-	@Mapping(target = "fileUrl", ignore = true)
-	@Mapping(target = "type", ignore = true)
-	@Mapping(target = "description", ignore = true)
-	@Mapping(target = "thumbnailUrl", ignore = true)
-	@Mapping(target = "viewsCount", ignore = true)
-	@Mapping(target = "status", ignore = true)
-	@Mapping(target = "hide", ignore = true)
-	void updateDownloadCount(@MappingTarget Document document, DocumentRequest Request);
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "user", ignore = true)

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.CategoryRequest;
@@ -36,6 +37,7 @@ public class CategoryService {
 		return categoryMapper.categoryToResponse(find);
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public CategoryResponse save(CategoryRequest dto) {
 		Category category = categoryMapper.requestToCategory(dto);
 		Category saved = categoryRepository.save(category);
@@ -43,6 +45,7 @@ public class CategoryService {
 		return response;
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public CategoryResponse update(Long id, CategoryRequest dto) {
 		Category entity = categoryRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy category"));
@@ -51,6 +54,7 @@ public class CategoryService {
 		return categoryMapper.categoryToResponse(saved);
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public CategoryResponse hide(Long id, HideRequest dto) {
 		Category entity = categoryRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy category"));
@@ -59,6 +63,7 @@ public class CategoryService {
 		return categoryMapper.categoryToResponse(saved);
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
 		try {
 			categoryRepository.deleteById(id);

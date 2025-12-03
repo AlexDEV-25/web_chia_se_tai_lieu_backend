@@ -18,9 +18,6 @@ public interface CategoryMapper {
 
 	CategoryResponse categoryToResponse(Category entity);
 
-	@Mapping(target = "documents", ignore = true)
-	Category responseToCategory(CategoryResponse categoryResponse);
-
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "documents", ignore = true)
 	@Mapping(target = "hide", ignore = true)

@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,52 +56,9 @@ public class DocumentService {
 		return documentMapper.documentToResponse(find);
 	}
 
-	public void delete(Long id) {
-		try {
-			documentRepository.deleteById(id);
-		} catch (EmptyResultDataAccessException e) {
-			throw new RuntimeException("Document not found");
-		}
-	}
-
-	public DocumentResponse update(Long id, DocumentRequest dto) {
-		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-		documentMapper.updateDocument(entity, dto);
-		Document saved = documentRepository.save(entity);
-		return documentMapper.documentToResponse(saved);
-	}
-
-	public DocumentResponse hide(Long id, HideRequest dto) {
-		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-		documentMapper.hideDocument(entity, dto);
-		Document saved = documentRepository.save(entity);
-		return documentMapper.documentToResponse(saved);
-	}
-
-	public DocumentResponse changeStatus(Long id, DocumentRequest dto) {
-		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-		documentMapper.updateStatus(entity, dto);
-		Document saved = documentRepository.save(entity);
-		return documentMapper.documentToResponse(saved);
-	}
-
-	// Hàm riêng để tăng viewsCount
 	public void increaseView(Long id) {
-		if (id == null)
-			return;
 		documentRepository.findById(id).ifPresent(entity -> {
 			entity.setViewsCount(entity.getViewsCount() + 1);
-			documentRepository.save(entity);
-		});
-	}
-
-	public void increaseDownload(Long id) {
-
-		documentRepository.findById(id).ifPresent(entity -> {
-			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
 			documentRepository.save(entity);
 		});
 	}
@@ -123,6 +81,51 @@ public class DocumentService {
 		return response;
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
+	public void delete(Long id) {
+		try {
+			documentRepository.deleteById(id);
+		} catch (EmptyResultDataAccessException e) {
+			throw new RuntimeException("Document not found");
+		}
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public DocumentResponse hide(Long id, HideRequest dto) {
+		Document entity = documentRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+		documentMapper.hideDocument(entity, dto);
+		Document saved = documentRepository.save(entity);
+		return documentMapper.documentToResponse(saved);
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public DocumentResponse changeStatus(Long id, DocumentRequest dto) {
+		Document entity = documentRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+		documentMapper.updateStatus(entity, dto);
+		Document saved = documentRepository.save(entity);
+		return documentMapper.documentToResponse(saved);
+	}
+
+	// chưa biết làm gì với nó
+	public void increaseDownload(Long id) {
+		documentRepository.findById(id).ifPresent(entity -> {
+			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
+			documentRepository.save(entity);
+		});
+	}
+
+// chưa biết làm gì với nó
+	public DocumentResponse update(Long id, DocumentRequest dto) {
+		Document entity = documentRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+		documentMapper.updateDocument(entity, dto);
+		Document saved = documentRepository.save(entity);
+		return documentMapper.documentToResponse(saved);
+	}
+
+	@PreAuthorize("hasAuthority('UPlOAD_FILE')")
 	public DocumentResponse uploadFile(MultipartFile fileToSave, MultipartFile img, DocumentRequest dto)
 			throws IOException {
 		FileManager fileStorage = new FileManager();
@@ -141,11 +144,12 @@ public class DocumentService {
 		return response;
 	}
 
+	@PreAuthorize("hasAuthority('DOWNLOAD_FILE')")
 	public File getDownloadFile(String fileName) throws Exception {
 		if (fileName == null) {
 			throw new NullPointerException("fileName is null");
 		}
-		var fileToDownload = new File(documentStorage + File.separator + fileName);
+		File fileToDownload = new File(documentStorage + File.separator + fileName);
 		if (!Objects.equals(fileToDownload.getParent(), documentStorage)) {
 			throw new SecurityException("Unsupported filename!");
 		}

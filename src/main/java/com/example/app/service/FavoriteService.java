@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.FavoriteRequest;
@@ -27,6 +28,7 @@ public class FavoriteService {
 	private final DocumentRepository documentRepository;
 	private final FavoriteMapper favoriteMapper;
 
+	@PreAuthorize("hasRole('USER')")
 	public FavoriteResponse addFavorite(FavoriteRequest dto) {
 		Favorite favorite = favoriteMapper.requestToFavorite(dto);
 		Document doc = documentRepository.findById(dto.getDocumentId())
@@ -44,6 +46,7 @@ public class FavoriteService {
 		return response;
 	}
 
+	@PreAuthorize("hasRole('USER')")
 	public void removeFavorite(Long id) {
 		try {
 			favoriteRepository.deleteById(id);
@@ -52,6 +55,7 @@ public class FavoriteService {
 		}
 	}
 
+	@PreAuthorize("hasRole('USER')")
 	public List<FavoriteResponse> getFavoritesByUser(Long userId) {
 		List<Favorite> favorites = favoriteRepository.findByUserId(userId);
 		List<FavoriteResponse> response = new ArrayList<FavoriteResponse>();

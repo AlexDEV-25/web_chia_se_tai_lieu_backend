@@ -22,10 +22,6 @@ public interface CommentMapper {
 	@Mapping(source = "document.id", target = "documentId")
 	CommentResponse commentToResponse(Comment entity);
 
-	@Mapping(target = "user", ignore = true)
-	@Mapping(target = "document", ignore = true)
-	Comment responseToComment(CommentResponse Response);
-
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "idParent", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)

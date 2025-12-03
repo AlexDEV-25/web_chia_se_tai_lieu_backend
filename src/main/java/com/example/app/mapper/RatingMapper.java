@@ -19,10 +19,6 @@ public interface RatingMapper {
 	@Mapping(source = "document.id", target = "documentId")
 	RatingResponse ratingToResponse(Rating entity);
 
-	@Mapping(target = "user", ignore = true)
-	@Mapping(target = "document", ignore = true)
-	Rating responseToRating(RatingResponse Response);
-
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "document", ignore = true)

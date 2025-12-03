@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.request.AuthenticationRequest;
 import com.example.app.dto.request.IntrospectRequest;
+import com.example.app.dto.request.LogoutRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.AuthenticationResponse;
 import com.example.app.dto.response.IntrospectResponse;
@@ -26,7 +27,7 @@ public class AuthenticationController {
 	@PostMapping("/log-in")
 	APIResponse<AuthenticationResponse> login(@RequestBody AuthenticationRequest dto) {
 		APIResponse<AuthenticationResponse> apiResponse = new APIResponse<AuthenticationResponse>();
-		AuthenticationResponse resutl = authenticationService.authenticated(dto);
+		AuthenticationResponse resutl = authenticationService.login(dto);
 		apiResponse.setResult(resutl);
 		if (resutl.isAuthenticated()) {
 			apiResponse.setMessage("login success");
@@ -36,22 +37,25 @@ public class AuthenticationController {
 		return apiResponse;
 	}
 
+	@PostMapping("/log-out")
+	APIResponse<Void> logout(@RequestBody LogoutRequest dto) throws JOSEException, ParseException {
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
+		authenticationService.logout(dto);
+		apiResponse.setMessage("logout success");
+		return apiResponse;
+	}
+
 	@PostMapping("/introspect")
-	APIResponse<IntrospectResponse> login(@RequestBody IntrospectRequest dto) {
+	APIResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest dto)
+			throws JOSEException, ParseException {
 		APIResponse<IntrospectResponse> apiResponse = new APIResponse<IntrospectResponse>();
 		IntrospectResponse resutl;
-		try {
-			resutl = authenticationService.introspect(dto);
-			apiResponse.setResult(resutl);
-			if (resutl.isValid()) {
-				apiResponse.setMessage("token right");
-			} else {
-				apiResponse.setMessage("token wrong");
-			}
-		} catch (JOSEException e) {
-			throw new RuntimeException("JOSEException");
-		} catch (ParseException e) {
-			throw new RuntimeException("ParseException");
+		resutl = authenticationService.introspect(dto);
+		apiResponse.setResult(resutl);
+		if (resutl.isValid()) {
+			apiResponse.setMessage("token right");
+		} else {
+			apiResponse.setMessage("token wrong");
 		}
 		return apiResponse;
 	}

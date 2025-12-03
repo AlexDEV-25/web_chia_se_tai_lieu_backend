@@ -63,7 +63,7 @@ public class UserController {
 		return apiResponse;
 	}
 
-	@PostMapping
+	@PostMapping("/auth/register")
 	public APIResponse<UserResponse> create(@RequestBody UserRequest dto) {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		UserResponse response = userService.save(dto);

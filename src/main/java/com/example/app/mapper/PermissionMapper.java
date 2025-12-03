@@ -12,8 +12,6 @@ public interface PermissionMapper {
 
 	Permission requestToPermission(PermissionRequest Request);
 
-	Permission responseToPermission(PermissionResponse Response);
-
 	PermissionResponse permissionToResponse(Permission entity);
 
 	void updatePermission(@MappingTarget Permission permission, PermissionRequest Requsest);

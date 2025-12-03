@@ -20,8 +20,4 @@ public interface FavoriteMapper {
 	@Mapping(source = "document.thumbnailUrl", target = "documentThumbnailUrl")
 	FavoriteResponse favoriteToResponse(Favorite entity);
 
-	@Mapping(target = "user", ignore = true)
-	@Mapping(target = "document", ignore = true)
-	Favorite responseToFavorite(FavoriteResponse Response);
-
 }

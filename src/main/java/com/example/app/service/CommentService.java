@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.CommentRequest;
@@ -27,6 +28,7 @@ public class CommentService {
 	private final UserRepository userRepository;
 	private final CommentMapper commentMapper;
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public List<CommentResponse> getAllComments() {
 		List<Comment> comments = commentRepository.findAll();
 		List<CommentResponse> response = new ArrayList<CommentResponse>();
@@ -36,6 +38,7 @@ public class CommentService {
 		return response;
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public CommentResponse findById(Long id) {
 		Comment find = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy comment"));
 		return commentMapper.commentToResponse(find);
@@ -50,6 +53,7 @@ public class CommentService {
 		return response;
 	}
 
+	@PreAuthorize("hasAuthority('POST_COMMENT')")
 	public CommentResponse save(CommentRequest dto) {
 		Comment comment = commentMapper.requestToComment(dto);
 		Document doc = documentRepository.findById(dto.getDocumentId())
@@ -63,6 +67,7 @@ public class CommentService {
 		return response;
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public CommentResponse update(Long id, CommentRequest dto) {
 		Comment entity = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không thấy comment"));
 		commentMapper.updateComment(entity, dto);
@@ -70,6 +75,7 @@ public class CommentService {
 		return commentMapper.commentToResponse(saved);
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public CommentResponse hide(Long id, HideRequest dto) {
 		Comment entity = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không thấy comment"));
 		commentMapper.hideComment(entity, dto);
@@ -77,6 +83,7 @@ public class CommentService {
 		return commentMapper.commentToResponse(saved);
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
 		try {
 			commentRepository.deleteById(id);
