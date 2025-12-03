@@ -8,6 +8,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +30,7 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+		httpSecurity.cors();// <-- BẮT BUỘC để CORS hoạt động với Security
 		httpSecurity.authorizeHttpRequests(request -> //
 		request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS_POST).permitAll()//
 				.requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS_GET).permitAll()//
@@ -34,6 +38,7 @@ public class SecurityConfig {
 
 		httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
 				.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+
 		httpSecurity.csrf(httpSecurityCsrfConfigurer -> httpSecurityCsrfConfigurer.disable());
 		return httpSecurity.build();
 	}
@@ -49,4 +54,17 @@ public class SecurityConfig {
 		return jwtAuthenticationConverter;
 	}
 
+	@Bean
+	public CorsFilter corsFilter() {
+		CorsConfiguration corsConfiguration = new CorsConfiguration();
+
+		corsConfiguration.addAllowedOrigin("http://localhost:5173");
+		corsConfiguration.addAllowedMethod("*");
+		corsConfiguration.addAllowedHeader("*");
+		corsConfiguration.setMaxAge(3600L);
+		UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
+		urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
+
+		return new CorsFilter(urlBasedCorsConfigurationSource);
+	}
 }
