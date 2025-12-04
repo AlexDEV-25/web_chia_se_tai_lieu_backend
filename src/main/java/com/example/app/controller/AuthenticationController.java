@@ -8,14 +8,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.request.AuthenticationRequest;
-import com.example.app.dto.request.IntrospectRequest;
-import com.example.app.dto.request.LogoutRequest;
+import com.example.app.dto.request.TokenRequest;
+import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.AuthenticationResponse;
 import com.example.app.dto.response.IntrospectResponse;
+import com.example.app.dto.response.UserResponse;
+import com.example.app.exception.AppException;
 import com.example.app.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -25,7 +28,7 @@ public class AuthenticationController {
 	private final AuthenticationService authenticationService;
 
 	@PostMapping("/log-in")
-	APIResponse<AuthenticationResponse> login(@RequestBody AuthenticationRequest dto) {
+	APIResponse<AuthenticationResponse> login(@RequestBody @Valid AuthenticationRequest dto) {
 		APIResponse<AuthenticationResponse> apiResponse = new APIResponse<AuthenticationResponse>();
 		AuthenticationResponse resutl = authenticationService.login(dto);
 		apiResponse.setResult(resutl);
@@ -38,16 +41,38 @@ public class AuthenticationController {
 	}
 
 	@PostMapping("/log-out")
-	APIResponse<Void> logout(@RequestBody LogoutRequest dto) throws JOSEException, ParseException {
+	APIResponse<Void> logout(@RequestBody TokenRequest dto) throws JOSEException, ParseException, AppException {
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
 		authenticationService.logout(dto);
 		apiResponse.setMessage("logout success");
 		return apiResponse;
 	}
 
+	@PostMapping("/register")
+	public APIResponse<UserResponse> register(@RequestBody UserRequest dto) {
+		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
+		UserResponse response = authenticationService.register(dto);
+		apiResponse.setResult(response);
+		apiResponse.setMessage("register success");
+		return apiResponse;
+	}
+
+	@PostMapping("/refresh-token")
+	APIResponse<AuthenticationResponse> refreshToken(@RequestBody TokenRequest dto)
+			throws JOSEException, ParseException, AppException {
+		APIResponse<AuthenticationResponse> apiResponse = new APIResponse<AuthenticationResponse>();
+		AuthenticationResponse resutl = authenticationService.refreshToken(dto);
+		apiResponse.setResult(resutl);
+		if (resutl.isAuthenticated()) {
+			apiResponse.setMessage("refresh success");
+		} else {
+			apiResponse.setMessage("refresh false");
+		}
+		return apiResponse;
+	}
+
 	@PostMapping("/introspect")
-	APIResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest dto)
-			throws JOSEException, ParseException {
+	APIResponse<IntrospectResponse> introspect(@RequestBody TokenRequest dto) throws JOSEException, ParseException {
 		APIResponse<IntrospectResponse> apiResponse = new APIResponse<IntrospectResponse>();
 		IntrospectResponse resutl;
 		resutl = authenticationService.introspect(dto);

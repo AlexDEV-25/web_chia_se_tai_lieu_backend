@@ -34,10 +34,10 @@ public class Comment {
 	private String content;
 
 	@Column(name = "created_at")
-	private LocalDateTime createdAt = LocalDateTime.now();
+	private LocalDateTime createdAt;
 
 	@Column(name = "updated_at")
-	private LocalDateTime updatedAt = LocalDateTime.now();
+	private LocalDateTime updatedAt;
 
 	@Column(name = "id_parent")
 	private Long idParent;

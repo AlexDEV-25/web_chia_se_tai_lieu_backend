@@ -17,6 +17,7 @@ import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.CategoryResponse;
 import com.example.app.service.CategoryService;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -44,7 +45,7 @@ public class CategoryController {
 	}
 
 	@PostMapping
-	public APIResponse<CategoryResponse> create(@RequestBody CategoryRequest dto) {
+	public APIResponse<CategoryResponse> create(@RequestBody @Valid CategoryRequest dto) {
 		CategoryResponse response = categoryService.save(dto);
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
 		apiResponse.setResult(response);
@@ -53,7 +54,7 @@ public class CategoryController {
 	}
 
 	@PutMapping("/{id}")
-	public APIResponse<CategoryResponse> update(@PathVariable Long id, @RequestBody CategoryRequest dto) {
+	public APIResponse<CategoryResponse> update(@PathVariable Long id, @RequestBody @Valid CategoryRequest dto) {
 		CategoryResponse response = categoryService.update(id, dto);
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
 		apiResponse.setResult(response);

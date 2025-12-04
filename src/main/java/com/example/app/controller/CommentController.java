@@ -17,6 +17,7 @@ import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.CommentResponse;
 import com.example.app.service.CommentService;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -44,7 +45,7 @@ public class CommentController {
 	}
 
 	@PostMapping
-	public APIResponse<CommentResponse> create(@RequestBody CommentRequest dto) {
+	public APIResponse<CommentResponse> create(@RequestBody @Valid CommentRequest dto) {
 		CommentResponse response = commentService.save(dto);
 		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
 		apiResponse.setResult(response);

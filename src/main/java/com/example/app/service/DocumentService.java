@@ -1,7 +1,6 @@
 package com.example.app.service;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +8,7 @@ import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.DocumentResponse;
+import com.example.app.exception.AppException;
 import com.example.app.mapper.DocumentMapper;
 import com.example.app.model.Category;
 import com.example.app.model.Document;
@@ -52,7 +53,7 @@ public class DocumentService {
 
 	public DocumentResponse findById(Long id) {
 		Document find = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		return documentMapper.documentToResponse(find);
 	}
 
@@ -86,7 +87,7 @@ public class DocumentService {
 		try {
 			documentRepository.deleteById(id);
 		} catch (EmptyResultDataAccessException e) {
-			throw new RuntimeException("Document not found");
+			throw new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
 
@@ -102,24 +103,16 @@ public class DocumentService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public DocumentResponse changeStatus(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		documentMapper.updateStatus(entity, dto);
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}
 
-	// chưa biết làm gì với nó
-	public void increaseDownload(Long id) {
-		documentRepository.findById(id).ifPresent(entity -> {
-			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
-			documentRepository.save(entity);
-		});
-	}
-
-// chưa biết làm gì với nó
+	@PreAuthorize("hasRole('ADMIN')")
 	public DocumentResponse update(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		documentMapper.updateDocument(entity, dto);
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
@@ -134,9 +127,10 @@ public class DocumentService {
 		Document document = documentMapper.requestToDocument(dto);
 		document.setFileUrl(fileUrl);
 		document.setThumbnailUrl(thumbnailUrl);
-		User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+		User user = userRepository.findById(dto.getUserId())
+				.orElseThrow(() -> new AppException("user  không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		Category category = categoryRepository.findById(dto.getCategoryId())
-				.orElseThrow(() -> new RuntimeException("Categorys not found"));
+				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		document.setCategory(category);
 		document.setUser(user);
 		Document saved = documentRepository.save(document);
@@ -147,15 +141,23 @@ public class DocumentService {
 	@PreAuthorize("hasAuthority('DOWNLOAD_FILE')")
 	public File getDownloadFile(String fileName) throws Exception {
 		if (fileName == null) {
-			throw new NullPointerException("fileName is null");
+			throw new AppException("file is null", 1001, HttpStatus.BAD_REQUEST);
 		}
 		File fileToDownload = new File(documentStorage + File.separator + fileName);
 		if (!Objects.equals(fileToDownload.getParent(), documentStorage)) {
-			throw new SecurityException("Unsupported filename!");
+			throw new AppException("Unsupported filename!", 1001, HttpStatus.BAD_REQUEST);
 		}
 		if (!fileToDownload.exists()) {
-			throw new FileNotFoundException("No file named: " + fileName);
+			throw new AppException("No file named: " + fileName, 1001, HttpStatus.BAD_REQUEST);
 		}
 		return fileToDownload;
+	}
+
+	// chưa biết làm gì với nó
+	public void increaseDownload(Long id) {
+		documentRepository.findById(id).ifPresent(entity -> {
+			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
+			documentRepository.save(entity);
+		});
 	}
 }

@@ -3,11 +3,13 @@ package com.example.app.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.RatingRequest;
 import com.example.app.dto.response.RatingResponse;
+import com.example.app.exception.AppException;
 import com.example.app.mapper.RatingMapper;
 import com.example.app.model.Document;
 import com.example.app.model.Rating;
@@ -35,21 +37,14 @@ public class RatingService {
 		return response;
 	}
 
-// chưa biết làm gì với nó
-	public RatingResponse getByDocumentAndUser(RatingRequest dto) {
-		Rating rating = ratingRepository.findByDocumentIdAndUserId(dto.getDocumentId(), dto.getUserId())
-				.orElseThrow(() -> new RuntimeException("not found"));
-		RatingResponse response = ratingMapper.ratingToResponse(rating);
-		return response;
-	}
-
 	@PreAuthorize("hasAuthority('POST_RATING')")
 	public RatingResponse save(RatingRequest dto) {
 		Rating rating = ratingMapper.requestToRating(dto);
 		Document doc = documentRepository.findById(dto.getDocumentId())
-				.orElseThrow(() -> new RuntimeException("Document not found"));
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
-		User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+		User user = userRepository.findById(dto.getUserId())
+				.orElseThrow(() -> new AppException("username không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		rating.setDocument(doc);
 		rating.setUser(user);
 		Rating saved = ratingRepository.save(rating);

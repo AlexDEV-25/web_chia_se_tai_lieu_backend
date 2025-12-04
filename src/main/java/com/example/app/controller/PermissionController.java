@@ -35,7 +35,7 @@ public class PermissionController {
 
 	@GetMapping
 	public APIResponse<PermissionResponse> getAll() {
-		List<PermissionResponse> response = permissionService.getAllCategories();
+		List<PermissionResponse> response = permissionService.getAllPermissions();
 		APIResponse<PermissionResponse> apiResponse = new APIResponse<PermissionResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");

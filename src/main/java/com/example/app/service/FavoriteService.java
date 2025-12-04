@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.FavoriteRequest;
 import com.example.app.dto.response.FavoriteResponse;
+import com.example.app.exception.AppException;
 import com.example.app.mapper.FavoriteMapper;
 import com.example.app.model.Document;
 import com.example.app.model.Favorite;
@@ -32,12 +34,13 @@ public class FavoriteService {
 	public FavoriteResponse addFavorite(FavoriteRequest dto) {
 		Favorite favorite = favoriteMapper.requestToFavorite(dto);
 		Document doc = documentRepository.findById(dto.getDocumentId())
-				.orElseThrow(() -> new RuntimeException("Document not found"));
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
-		User user = userRepository.findById(dto.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
+		User user = userRepository.findById(dto.getUserId())
+				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		if (favoriteRepository.existsByUserAndDocument(user, doc)) {
-			throw new RuntimeException("Already favorited this document.");
+			throw new AppException("đã có trong kho Favorite", 1001, HttpStatus.BAD_REQUEST);
 		}
 		favorite.setDocument(doc);
 		favorite.setUser(user);
@@ -51,7 +54,7 @@ public class FavoriteService {
 		try {
 			favoriteRepository.deleteById(id);
 		} catch (EmptyResultDataAccessException e) {
-			throw new RuntimeException("Favorite not found");
+			throw new AppException("Favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
 

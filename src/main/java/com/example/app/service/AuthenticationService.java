@@ -9,13 +9,12 @@ import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.AuthenticationRequest;
-import com.example.app.dto.request.IntrospectRequest;
-import com.example.app.dto.request.LogoutRequest;
+import com.example.app.dto.request.TokenRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.AuthenticationResponse;
 import com.example.app.dto.response.IntrospectResponse;
@@ -51,23 +50,28 @@ public class AuthenticationService {
 	private final InvalidatedTokenRepository invalidatedTokenRepository;
 	private final RoleRepository roleRepository;
 	private final UserMapper userMapper;
-	private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+	private final PasswordEncoder passwordEncoder;
 
 	@NonFinal
 	@Value("${jwt.secretKey}")
 	protected String SIGNER_KEY;
 
+	@Value("${jwt.expirationTime}")
+	protected long EXPIRATION_TIME;
+
+	@Value("${jwt.refreshTime}")
+	protected long REFRESH_TIME;
+
 	public AuthenticationResponse login(AuthenticationRequest request) {
 		var user = userRepository.findByEmail(request.getEmail());
 		if (user == null) {
-			throw new RuntimeException("User not found");
+			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
 		}
-		PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 		AuthenticationResponse response = new AuthenticationResponse();
 		boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
 		response.setAuthenticated(authenticated);
 		if (authenticated) {
-			var token = generateToken(user);
+			String token = generateToken(user);
 			response.setToken(token);
 		}
 		return response;
@@ -81,18 +85,19 @@ public class AuthenticationService {
 				.claim("scope", buildScope(user))//
 				.jwtID(UUID.randomUUID().toString())//
 				.issueTime(new Date())//
-				.expirationTime(Date.from(Instant.now().plus(1, ChronoUnit.HOURS))).build();
+				.expirationTime(Date.from(Instant.now().plus(EXPIRATION_TIME, ChronoUnit.SECONDS))).build();
 
 		Payload payload = new Payload(jwtClaimsSet.toJSONObject());
 		JWSObject jwsObject = new JWSObject(header, payload);
 
 		try {
 			jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
-			return jwsObject.serialize();
+			String token = jwsObject.serialize();
+			return token;
 		} catch (KeyLengthException e) {
-			throw new RuntimeException("KeyLengthException: SIGNER_KEY phải >= 32 bytes");
+			throw new AppException("secretKey phải >= 32B", 1001, HttpStatus.BAD_REQUEST);
 		} catch (JOSEException e) {
-			throw new RuntimeException("JOSEException");
+			throw new AppException("JOSEException", 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
 
@@ -109,71 +114,91 @@ public class AuthenticationService {
 		return stringJoiner.toString();
 	}
 
+	public IntrospectResponse introspect(TokenRequest request) throws JOSEException, ParseException {
+		String token = request.getToken();
+		boolean isValid = true;
+		try {
+			verifyToken(token, false);
+		} catch (AppException e) {
+			isValid = false;
+		}
+		IntrospectResponse response = new IntrospectResponse();
+		response.setValid(isValid);
+		return response;
+	}
+
+	public void logout(TokenRequest request) throws JOSEException, ParseException, AppException {
+		try {
+			SignedJWT signToken = verifyToken(request.getToken(), true);
+			String jit = signToken.getJWTClaimsSet().getJWTID();
+			Date epx = signToken.getJWTClaimsSet().getExpirationTime();
+
+			InvalidatedToken invalidatedToken = new InvalidatedToken();
+			invalidatedToken.setId(jit);
+			invalidatedToken.setExprityTime(epx);
+			invalidatedTokenRepository.save(invalidatedToken);
+		} catch (AppException e) {
+			throw new AppException(e.getMessage(), e.getCode(), HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	public AuthenticationResponse refreshToken(TokenRequest request)
+			throws JOSEException, ParseException, AppException {
+		SignedJWT signToken = verifyToken(request.getToken(), true);
+		this.logout(request);
+
+		String username = signToken.getJWTClaimsSet().getSubject();
+		User user = userRepository.findByUsername(username);
+
+		AuthenticationResponse response = new AuthenticationResponse();
+		String token = generateToken(user);
+		response.setAuthenticated(true);
+		response.setToken(token);
+
+		return response;
+	}
+
+	private SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException, AppException {
+		JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+		SignedJWT signedJWT = SignedJWT.parse(token);
+
+		Date epx = (isRefresh) //
+				? new Date(signedJWT.getJWTClaimsSet().getIssueTime().toInstant()//
+						.plus(REFRESH_TIME, ChronoUnit.DAYS).toEpochMilli()) //
+				: signedJWT.getJWTClaimsSet().getExpirationTime();
+
+		boolean verified = signedJWT.verify(verifier);
+
+		if (!epx.after(new Date())) {
+			throw new AppException("token đã hết hạn", 1001, HttpStatus.BAD_REQUEST);
+		}
+		if (!verified) {
+			throw new AppException("token không đúng", 1001, HttpStatus.BAD_REQUEST);
+		}
+		if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
+			throw new AppException("log out rồi token không còn hiệu lực nữa", 1006, HttpStatus.BAD_REQUEST);
+		}
+
+		return signedJWT;
+	}
+
 	public UserResponse register(UserRequest dto) {
 		User user = userMapper.requestToUser(dto);
 
 		List<Role> roles = roleRepository.findAllById(dto.getRoles());
 		user.setRoles(roles);
 
-		if (!this.checkEmailExist(dto.getEmail()) && !this.checkUsernameExist(dto.getEmail())) {
-			user.setPassword(passwordEncoder.encode(user.getPassword()));
-			User saved = userRepository.save(user);
-			UserResponse response = userMapper.userToResponse(saved);
-			return response;
+		if (userRepository.existsByEmail(dto.getEmail())) {
+			throw new AppException("email đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
-		return null;
-	}
-
-	public boolean checkEmailExist(String email) {
-		return userRepository.existsByEmail(email);
-	}
-
-	public boolean checkUsernameExist(String username) {
-		return userRepository.existsByUsername(username);
-	}
-
-	public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException, AppException {
-		String token = request.getToken();
-		boolean isValid = true;
-		try {
-			verifyToken(token);
-		} catch (AppException e) {
-			isValid = false;
+		if (userRepository.existsByUsername(dto.getEmail())) {
+			throw new AppException("username đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
 
-		IntrospectResponse response = new IntrospectResponse();
-		response.setValid(isValid);
+		user.setPassword(passwordEncoder.encode(user.getPassword()));
+		User saved = userRepository.save(user);
+		UserResponse response = userMapper.userToResponse(saved);
 		return response;
 	}
 
-	public void logout(LogoutRequest request) throws JOSEException, ParseException {
-
-		SignedJWT signToken = verifyToken(request.getToken());
-		String jit = signToken.getJWTClaimsSet().getJWTID();
-		Date epx = signToken.getJWTClaimsSet().getExpirationTime();
-
-		InvalidatedToken invalidatedToken = new InvalidatedToken();
-		invalidatedToken.setId(jit);
-		invalidatedToken.setExprityTime(epx);
-		invalidatedTokenRepository.save(invalidatedToken);
-
-	}
-
-	public SignedJWT verifyToken(String token) throws JOSEException, ParseException {
-		JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-		SignedJWT signedJWT = SignedJWT.parse(token);
-
-		Date epx = signedJWT.getJWTClaimsSet().getExpirationTime();
-		boolean verified = signedJWT.verify(verifier);
-
-		if (!(verified && epx.after(new Date()))) {
-			throw new AppException("token khong dung hoac da het han");
-		}
-
-		if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
-			throw new AppException("log out roi khong con hieu luc nua");
-		}
-
-		return signedJWT;
-	}
 }

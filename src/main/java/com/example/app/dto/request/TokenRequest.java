@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class IntrospectRequest {
+public class TokenRequest {
 	private String token;
 }

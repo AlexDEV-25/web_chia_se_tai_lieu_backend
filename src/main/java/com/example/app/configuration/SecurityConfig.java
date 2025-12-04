@@ -3,8 +3,11 @@ package com.example.app.configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -19,18 +22,18 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-	private final String[] PUBLIC_ENDPOINTS_POST = { "/api/users/auth/register", "/api/auth/log-in",
-			"/api/auth/log-out", "/api/auth/introspect" };
+	private final String[] PUBLIC_ENDPOINTS_POST = { "/api/auth/register", "/api/auth/log-in", "/api/auth/log-out",
+			"/api/auth/introspect", "/api/auth/refresh-token" };
 
-	private final String[] PUBLIC_ENDPOINTS_GET = { "/api/categories", "/api/categories/{id}",
-			"/api/comments/document/{docId}", "/api/documents", "/api/documents/{id}", "/api/documents/user/{userId}",
+	private final String[] PUBLIC_ENDPOINTS_GET = { "/api/categories", "/api/comments/document/{docId}",
+			"/api/documents", "/api/documents/{id}", "/api/documents/user/{userId}",
 			"/api/documents/category/{categoryId}", "/api/documents/view/{id}", "/api/ratings/document/{docId}" };
 
 	private CustomJwtDecoder customJwtDecoder;
 
 	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-		httpSecurity.cors();// <-- BẮT BUỘC để CORS hoạt động với Security
+	SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+		httpSecurity.cors(Customizer.withDefaults());// <-- BẮT BUỘC để CORS hoạt động với Security
 		httpSecurity.authorizeHttpRequests(request -> //
 		request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS_POST).permitAll()//
 				.requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS_GET).permitAll()//
@@ -39,7 +42,10 @@ public class SecurityConfig {
 		httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
 				.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
+		httpSecurity.exceptionHandling(ex -> ex.authenticationEntryPoint(new CustomAuthEntryPoint()));
+
 		httpSecurity.csrf(httpSecurityCsrfConfigurer -> httpSecurityCsrfConfigurer.disable());
+
 		return httpSecurity.build();
 	}
 
@@ -55,7 +61,7 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public CorsFilter corsFilter() {
+	CorsFilter corsFilter() {
 		CorsConfiguration corsConfiguration = new CorsConfiguration();
 
 		corsConfiguration.addAllowedOrigin("http://localhost:5173");
@@ -66,5 +72,10 @@ public class SecurityConfig {
 		urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
 
 		return new CorsFilter(urlBasedCorsConfigurationSource);
+	}
+
+	@Bean
+	PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder(10);
 	}
 }
