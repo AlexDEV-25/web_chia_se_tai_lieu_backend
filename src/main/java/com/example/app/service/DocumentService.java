@@ -1,14 +1,17 @@
 package com.example.app.service;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.DocumentResponse;
+import com.example.app.dto.response.FileResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.DocumentMapper;
 import com.example.app.model.Category;
@@ -151,6 +155,24 @@ public class DocumentService {
 			throw new AppException("No file named: " + fileName, 1001, HttpStatus.BAD_REQUEST);
 		}
 		return fileToDownload;
+	}
+
+	public FileResponse loadDocumentFile(Long id) throws IOException {
+
+		Document doc = documentRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+
+		String filePath = documentStorage + "\\" + doc.getFileUrl();
+
+		File file = new File(filePath);
+
+		if (!file.exists()) {
+			throw new RuntimeException("File không tồn tại trong hệ thống");
+		}
+
+		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF);
 	}
 
 	// chưa biết làm gì với nó

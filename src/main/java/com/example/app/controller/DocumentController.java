@@ -1,6 +1,7 @@
 package com.example.app.controller;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -25,6 +26,7 @@ import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.DocumentResponse;
+import com.example.app.dto.response.FileResponse;
 import com.example.app.service.DocumentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -147,6 +149,15 @@ public class DocumentController {
 		} catch (Exception e) {
 			return ResponseEntity.notFound().build();
 		}
+	}
+
+	@GetMapping("/{id}/file")
+	public ResponseEntity<Resource> loadDocument(@PathVariable Long id) throws IOException {
+
+		FileResponse file = documentService.loadDocumentFile(id);
+
+		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
+				.body(file.getResource());
 	}
 
 }

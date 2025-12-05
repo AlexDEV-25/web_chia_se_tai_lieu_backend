@@ -62,10 +62,10 @@ public class UserService {
 		List<Role> roles = roleRepository.findAllById(dto.getRoles());
 		user.setRoles(roles);
 
-		if (userRepository.existsByEmail(dto.getEmail())) {
+		if (this.checkEmailExists(dto.getEmail())) {
 			throw new AppException("email đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
-		if (userRepository.existsByUsername(dto.getEmail())) {
+		if (this.checkUsernameExists(dto.getEmail())) {
 			throw new AppException("username đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
 
@@ -136,6 +136,14 @@ public class UserService {
 		entity.setAvatarUrl(fileUrl);
 		User saved = userRepository.save(entity);
 		return userMapper.userToResponse(saved);
+	}
+
+	public boolean checkEmailExists(String email) {
+		return userRepository.existsByEmail(email);
+	}
+
+	public boolean checkUsernameExists(String username) {
+		return userRepository.existsByUsername(username);
 	}
 
 // tính sau vì còn phải viết gửi mail

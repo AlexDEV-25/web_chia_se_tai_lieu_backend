@@ -92,4 +92,21 @@ public class UserController {
 			return apiResponse;
 		}
 	}
+
+	@GetMapping("/email/{email:.+}")
+	public APIResponse<Boolean> checkEmailExist(@PathVariable String email) {
+		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
+		apiResponse.setMessage("email đã tồn tại");
+		apiResponse.setResult(userService.checkEmailExists(email));
+		return apiResponse;
+	}
+
+	@GetMapping("/username/{username}")
+	public APIResponse<Boolean> checkUsernameExists(@PathVariable String username) {
+		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
+		apiResponse.setMessage("username đã tồn tại");
+		apiResponse.setResult(userService.checkUsernameExists(username));
+		return apiResponse;
+	}
+
 }
