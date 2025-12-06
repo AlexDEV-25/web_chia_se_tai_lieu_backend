@@ -1,7 +1,5 @@
 package com.example.app.dto.request;
 
-import java.time.LocalDateTime;
-
 import com.example.app.share.DocumentType;
 import com.example.app.share.Status;
 
@@ -18,10 +16,7 @@ public class DocumentRequest {
 	private String description;
 	private Long viewsCount = 0L;
 	private Long downloadsCount = 0L;
-	private LocalDateTime createdAt;
-	private LocalDateTime updatedAt;
 	private Status status;
 	private boolean hide = false;
 	private Long categoryId;
-	private Long userId;
 }

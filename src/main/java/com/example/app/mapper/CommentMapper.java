@@ -14,6 +14,8 @@ public interface CommentMapper {
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "document", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "updatedAt", ignore = true)
 	Comment requestToComment(CommentRequest Request);
 
 	@Mapping(source = "user.id", target = "userId")
@@ -25,6 +27,7 @@ public interface CommentMapper {
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "idParent", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "document", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "hide", ignore = true)
@@ -33,6 +36,7 @@ public interface CommentMapper {
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "idParent", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "document", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "content", ignore = true)

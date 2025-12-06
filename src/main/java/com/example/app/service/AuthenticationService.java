@@ -2,6 +2,7 @@ package com.example.app.service;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
@@ -187,7 +188,7 @@ public class AuthenticationService {
 
 		List<Role> roles = roleRepository.findAllById(dto.getRoles());
 		user.setRoles(roles);
-
+		user.setCreatedAt(LocalDateTime.now());
 		if (userRepository.existsByEmail(dto.getEmail())) {
 			throw new AppException("email đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}

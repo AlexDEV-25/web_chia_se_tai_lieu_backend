@@ -1,6 +1,7 @@
 package com.example.app.service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,8 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +23,7 @@ import com.example.app.model.User;
 import com.example.app.repository.RoleRepository;
 import com.example.app.repository.UserRepository;
 import com.example.app.share.FileManager;
+import com.example.app.share.GetUserByToken;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +34,7 @@ public class UserService {
 	private final RoleRepository roleRepository;
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
+	private final GetUserByToken getUserByToken;
 
 	@Value("${app.storage-directory-avatar}")
 	private String avatarStorage;
@@ -61,7 +62,7 @@ public class UserService {
 
 		List<Role> roles = roleRepository.findAllById(dto.getRoles());
 		user.setRoles(roles);
-
+		user.setCreatedAt(LocalDateTime.now());
 		if (this.checkEmailExists(dto.getEmail())) {
 			throw new AppException("email đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
@@ -83,13 +84,13 @@ public class UserService {
 
 		List<Role> roles = roleRepository.findAllById(dto.getRoles());
 		entity.setRoles(roles);
-
+		entity.setUpdatedAt(LocalDateTime.now());
 		FileManager fileStorage = new FileManager();
 		if (entity.getAvatarUrl() != null) {
 			fileStorage.deleteFile(avatarStorage + "\\" + entity.getAvatarUrl());
 		}
 		String fileUrl = fileStorage.saveFile(avt, avatarStorage);
-		entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+		entity.setPassword(passwordEncoder.encode(dto.getPassword()));
 		userMapper.updateUser(entity, dto);
 		entity.setAvatarUrl(fileUrl);
 		User saved = userRepository.save(entity);
@@ -116,22 +117,22 @@ public class UserService {
 
 	@PreAuthorize("hasAuthority('GET_INFO')")
 	public UserResponse getMyInfo() {
-		User info = getUserByToken();
+		User info = getUserByToken.get();
 		return userMapper.userToResponse(info);
 	}
 
 	@PreAuthorize("hasAuthority('UPDATE_INFO')")
 	public UserResponse updateMyinfo(MultipartFile avt, UserRequest dto) throws IOException {
-		User entity = getUserByToken();
+		User entity = getUserByToken.get();
 		List<Role> roles = roleRepository.findAllById(dto.getRoles());
 		entity.setRoles(roles);
-
+		entity.setUpdatedAt(LocalDateTime.now());
 		FileManager fileStorage = new FileManager();
 		if (entity.getAvatarUrl() != null) {
 			fileStorage.deleteFile(avatarStorage + "\\" + entity.getAvatarUrl());
 		}
 		String fileUrl = fileStorage.saveFile(avt, avatarStorage);
-		entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+		entity.setPassword(passwordEncoder.encode(dto.getPassword()));
 		userMapper.updateUser(entity, dto);
 		entity.setAvatarUrl(fileUrl);
 		User saved = userRepository.save(entity);
@@ -153,13 +154,5 @@ public class UserService {
 		userMapper.updateVerified(entity, dto);
 		User saved = userRepository.save(entity);
 		return userMapper.userToResponse(saved);
-	}
-
-	private User getUserByToken() {
-		SecurityContext context = SecurityContextHolder.getContext();
-		System.out.println(context.toString());
-		String name = context.getAuthentication().getName();
-		User entity = userRepository.findByUsername(name);
-		return entity;
 	}
 }

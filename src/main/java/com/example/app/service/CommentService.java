@@ -1,5 +1,6 @@
 package com.example.app.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,6 +61,7 @@ public class CommentService {
 	public CommentResponse update(Long id, CommentRequest dto) {
 		Comment entity = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không thấy comment"));
 		commentMapper.updateComment(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
 		Comment saved = commentRepository.save(entity);
 		return commentMapper.commentToResponse(saved);
 	}
@@ -91,6 +93,7 @@ public class CommentService {
 				.orElseThrow(() -> new AppException("username không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		comment.setDocument(doc);
 		comment.setUser(user);
+		comment.setCreatedAt(LocalDateTime.now());
 		Comment saved = commentRepository.save(comment);
 		CommentResponse response = commentMapper.commentToResponse(saved);
 		return response;

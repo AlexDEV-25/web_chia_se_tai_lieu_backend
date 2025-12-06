@@ -11,6 +11,8 @@ import com.example.app.model.Rating;
 @Mapper(componentModel = "spring")
 public interface RatingMapper {
 	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "document", ignore = true)
 	Rating requestToRating(RatingRequest Request);
@@ -21,6 +23,7 @@ public interface RatingMapper {
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "document", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	void updateRating(@MappingTarget Rating entity, RatingRequest Request);

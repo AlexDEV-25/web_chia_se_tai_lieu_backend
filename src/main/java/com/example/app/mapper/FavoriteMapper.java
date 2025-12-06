@@ -10,6 +10,7 @@ import com.example.app.model.Favorite;
 @Mapper(componentModel = "spring")
 public interface FavoriteMapper {
 	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "document", ignore = true)
 	Favorite requestToFavorite(FavoriteRequest request);

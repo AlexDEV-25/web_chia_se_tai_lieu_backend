@@ -1,5 +1,6 @@
 package com.example.app.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +43,7 @@ public class FavoriteService {
 		if (favoriteRepository.existsByUserAndDocument(user, doc)) {
 			throw new AppException("đã có trong kho Favorite", 1001, HttpStatus.BAD_REQUEST);
 		}
+		favorite.setCreatedAt(LocalDateTime.now());
 		favorite.setDocument(doc);
 		favorite.setUser(user);
 		Favorite saved = favoriteRepository.save(favorite);

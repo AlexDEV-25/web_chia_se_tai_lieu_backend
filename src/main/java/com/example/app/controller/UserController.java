@@ -46,6 +46,26 @@ public class UserController {
 		return apiResponse;
 	}
 
+	@PutMapping(value = "/my-info", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public APIResponse<UserResponse> updateMyInfo(@RequestPart("avt") MultipartFile avt,
+			@RequestPart("data") String dataJson) {
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			UserRequest dto = mapper.readValue(dataJson, UserRequest.class);
+
+			UserResponse response = userService.updateMyinfo(avt, dto);
+			APIResponse<UserResponse> apiResponse = new APIResponse<>();
+			apiResponse.setMessage("Upload thành công");
+			apiResponse.setResult(response);
+			return apiResponse;
+
+		} catch (Exception e) {
+			APIResponse<UserResponse> apiResponse = new APIResponse<>();
+			apiResponse.setMessage("Upload thất bại: " + e.getMessage());
+			return apiResponse;
+		}
+	}
+
 	@GetMapping
 	public APIResponse<UserResponse> getAll() {
 		List<UserResponse> response = userService.getAllUsers();

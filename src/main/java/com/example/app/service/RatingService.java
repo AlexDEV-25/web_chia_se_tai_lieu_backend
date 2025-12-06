@@ -1,5 +1,6 @@
 package com.example.app.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,6 +46,7 @@ public class RatingService {
 
 		User user = userRepository.findById(dto.getUserId())
 				.orElseThrow(() -> new AppException("username không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		rating.setCreatedAt(LocalDateTime.now());
 		rating.setDocument(doc);
 		rating.setUser(user);
 		Rating saved = ratingRepository.save(rating);

@@ -3,6 +3,7 @@ package com.example.app.service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,8 +28,8 @@ import com.example.app.model.Document;
 import com.example.app.model.User;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.DocumentRepository;
-import com.example.app.repository.UserRepository;
 import com.example.app.share.FileManager;
+import com.example.app.share.GetUserByToken;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,9 +37,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DocumentService {
 	private final DocumentRepository documentRepository;
-	private final UserRepository userRepository;
 	private final CategoryRepository categoryRepository;
 	private final DocumentMapper documentMapper;
+	private final GetUserByToken getUserByToken;
 
 	@Value("${app.storage-directory-document}")
 	private String documentStorage;
@@ -118,6 +119,7 @@ public class DocumentService {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		documentMapper.updateDocument(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}
@@ -131,10 +133,10 @@ public class DocumentService {
 		Document document = documentMapper.requestToDocument(dto);
 		document.setFileUrl(fileUrl);
 		document.setThumbnailUrl(thumbnailUrl);
-		User user = userRepository.findById(dto.getUserId())
-				.orElseThrow(() -> new AppException("user  không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		document.setCreatedAt(LocalDateTime.now());
 		Category category = categoryRepository.findById(dto.getCategoryId())
 				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		User user = getUserByToken.get();
 		document.setCategory(category);
 		document.setUser(user);
 		Document saved = documentRepository.save(document);
@@ -182,4 +184,5 @@ public class DocumentService {
 			documentRepository.save(entity);
 		});
 	}
+
 }
