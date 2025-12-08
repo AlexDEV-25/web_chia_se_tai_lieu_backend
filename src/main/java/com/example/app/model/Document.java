@@ -3,7 +3,6 @@ package com.example.app.model;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.app.share.DocumentType;
 import com.example.app.share.Status;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -42,10 +41,6 @@ public class Document {
 
 	@Column(name = "file_url", nullable = false)
 	private String fileUrl;
-
-	@Enumerated(EnumType.STRING)
-	@Column(name = "type", nullable = false)
-	private DocumentType type = DocumentType.PDF;
 
 	@Lob
 	@Column(name = "description")

@@ -127,13 +127,29 @@ public class DocumentService {
 	@PreAuthorize("hasAuthority('UPlOAD_FILE')")
 	public DocumentResponse uploadFile(MultipartFile fileToSave, MultipartFile img, DocumentRequest dto)
 			throws IOException {
+		Document document = documentMapper.requestToDocument(dto);
 		FileManager fileStorage = new FileManager();
 		String fileUrl = fileStorage.saveFile(fileToSave, documentStorage);
-		String thumbnailUrl = fileStorage.saveFile(img, thumbnailStorage);
-		Document document = documentMapper.requestToDocument(dto);
+		if (!fileUrl.endsWith(".pdf")) {
+			int index = fileUrl.lastIndexOf(".");
+			String result = (index != -1) ? fileUrl.substring(0, index) + ".pdf" : fileUrl;
+
+			fileStorage.convertToPDF(documentStorage + "\\" + fileUrl, documentStorage + "\\" + result);
+			fileStorage.deleteFile(documentStorage + "\\" + fileUrl);
+
+			fileUrl = result;
+		}
 		document.setFileUrl(fileUrl);
-		document.setThumbnailUrl(thumbnailUrl);
+
+		if (img.getOriginalFilename().endsWith(".png") || img.getOriginalFilename().endsWith(".jpg")) {
+			String thumbnailUrl = fileStorage.saveFile(img, thumbnailStorage);
+			document.setThumbnailUrl(thumbnailUrl);
+		} else {
+			throw new AppException("ảnh không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+		}
+
 		document.setCreatedAt(LocalDateTime.now());
+
 		Category category = categoryRepository.findById(dto.getCategoryId())
 				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		User user = getUserByToken.get();

@@ -131,10 +131,17 @@ public class UserService {
 		if (entity.getAvatarUrl() != null) {
 			fileStorage.deleteFile(avatarStorage + "\\" + entity.getAvatarUrl());
 		}
-		String fileUrl = fileStorage.saveFile(avt, avatarStorage);
+
+		if (avt.getOriginalFilename().endsWith(".png") || avt.getOriginalFilename().endsWith(".jpg")) {
+			String avtUrl = fileStorage.saveFile(avt, avatarStorage);
+			entity.setAvatarUrl(avtUrl);
+		} else {
+			throw new AppException("ảnh không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+		}
+
 		entity.setPassword(passwordEncoder.encode(dto.getPassword()));
 		userMapper.updateUser(entity, dto);
-		entity.setAvatarUrl(fileUrl);
+
 		User saved = userRepository.save(entity);
 		return userMapper.userToResponse(saved);
 	}
