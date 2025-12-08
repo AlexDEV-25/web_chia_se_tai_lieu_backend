@@ -40,28 +40,28 @@ public class CategoryService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public CategoryResponse save(CategoryRequest dto) {
-		Category category = categoryMapper.requestToCategory(dto);
+	public CategoryResponse save(CategoryRequest request) {
+		Category category = categoryMapper.requestToCategory(request);
 		Category saved = categoryRepository.save(category);
 		CategoryResponse response = categoryMapper.categoryToResponse(saved);
 		return response;
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public CategoryResponse update(Long id, CategoryRequest dto) {
-		Category entity = categoryRepository.findById(id)
+	public CategoryResponse update(Long id, CategoryRequest request) {
+		Category category = categoryRepository.findById(id)
 				.orElseThrow(() -> new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST));
-		categoryMapper.updateCategory(entity, dto);
-		Category saved = categoryRepository.save(entity);
+		categoryMapper.updateCategory(category, request);
+		Category saved = categoryRepository.save(category);
 		return categoryMapper.categoryToResponse(saved);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public CategoryResponse hide(Long id, HideRequest dto) {
-		Category entity = categoryRepository.findById(id)
+	public CategoryResponse hide(Long id, HideRequest request) {
+		Category category = categoryRepository.findById(id)
 				.orElseThrow(() -> new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST));
-		categoryMapper.hideCategory(entity, dto);
-		Category saved = categoryRepository.save(entity);
+		category.setHide(request.isHide());
+		Category saved = categoryRepository.save(category);
 		return categoryMapper.categoryToResponse(saved);
 	}
 

@@ -11,11 +11,11 @@ import com.example.app.model.Role;
 @Mapper(componentModel = "spring")
 public interface RoleMapper {
 	@Mapping(target = "permissions", ignore = true)
-	Role requestToRole(RoleRequest Request);
+	Role requestToRole(RoleRequest request);
 
 	RoleResponse roleToResponse(Role entity);
 
 	@Mapping(target = "permissions", ignore = true)
-	void updateRole(@MappingTarget Role role, RoleRequest Requsest);
+	void updateRole(@MappingTarget Role role, RoleRequest request);
 
 }

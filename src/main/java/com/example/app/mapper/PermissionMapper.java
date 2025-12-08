@@ -10,9 +10,9 @@ import com.example.app.model.Permission;
 @Mapper(componentModel = "spring")
 public interface PermissionMapper {
 
-	Permission requestToPermission(PermissionRequest Request);
+	Permission requestToPermission(PermissionRequest request);
 
 	PermissionResponse permissionToResponse(Permission entity);
 
-	void updatePermission(@MappingTarget Permission permission, PermissionRequest Requsest);
+	void updatePermission(@MappingTarget Permission entity, PermissionRequest request);
 }

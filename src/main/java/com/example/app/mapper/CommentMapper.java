@@ -5,7 +5,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.example.app.dto.request.CommentRequest;
-import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.CommentResponse;
 import com.example.app.model.Comment;
 
@@ -16,7 +15,7 @@ public interface CommentMapper {
 	@Mapping(target = "document", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
-	Comment requestToComment(CommentRequest Request);
+	Comment requestToComment(CommentRequest request);
 
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "user.username", target = "username")
@@ -31,15 +30,5 @@ public interface CommentMapper {
 	@Mapping(target = "document", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "hide", ignore = true)
-	void updateComment(@MappingTarget Comment entity, CommentRequest Request);
-
-	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "idParent", ignore = true)
-	@Mapping(target = "createdAt", ignore = true)
-	@Mapping(target = "updatedAt", ignore = true)
-	@Mapping(target = "document", ignore = true)
-	@Mapping(target = "user", ignore = true)
-	@Mapping(target = "content", ignore = true)
-	void hideComment(@MappingTarget Comment entity, HideRequest Request);
-
+	void updateComment(@MappingTarget Comment entity, CommentRequest request);
 }

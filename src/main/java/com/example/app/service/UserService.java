@@ -101,7 +101,7 @@ public class UserService {
 	public UserResponse hide(Long id, HideRequest dto) {
 		User entity = userRepository.findById(id)
 				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		userMapper.hideUser(entity, dto);
+		entity.setHide(dto.isHide());
 		User saved = userRepository.save(entity);
 		return userMapper.userToResponse(saved);
 	}
@@ -151,7 +151,7 @@ public class UserService {
 	public UserResponse verified(Long id, UserRequest dto) {
 		User entity = userRepository.findById(id)
 				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		userMapper.updateVerified(entity, dto);
+		entity.setVerified(dto.isVerified());
 		User saved = userRepository.save(entity);
 		return userMapper.userToResponse(saved);
 	}

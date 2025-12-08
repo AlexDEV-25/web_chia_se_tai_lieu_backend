@@ -15,7 +15,7 @@ public interface RatingMapper {
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "document", ignore = true)
-	Rating requestToRating(RatingRequest Request);
+	Rating requestToRating(RatingRequest request);
 
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "document.id", target = "documentId")
@@ -26,5 +26,5 @@ public interface RatingMapper {
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "document", ignore = true)
 	@Mapping(target = "user", ignore = true)
-	void updateRating(@MappingTarget Rating entity, RatingRequest Request);
+	void updateRating(@MappingTarget Rating entity, RatingRequest request);
 }

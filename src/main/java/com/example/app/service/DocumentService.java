@@ -100,7 +100,7 @@ public class DocumentService {
 	public DocumentResponse hide(Long id, HideRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-		documentMapper.hideDocument(entity, dto);
+		entity.setHide(dto.isHide());
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}
@@ -109,7 +109,7 @@ public class DocumentService {
 	public DocumentResponse changeStatus(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		documentMapper.updateStatus(entity, dto);
+		entity.setStatus(dto.getStatus());
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}

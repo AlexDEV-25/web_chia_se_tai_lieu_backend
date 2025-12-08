@@ -183,16 +183,16 @@ public class AuthenticationService {
 		return signedJWT;
 	}
 
-	public UserResponse register(UserRequest dto) {
-		User user = userMapper.requestToUser(dto);
+	public UserResponse register(UserRequest request) {
+		User user = userMapper.requestToUser(request);
 
-		List<Role> roles = roleRepository.findAllById(dto.getRoles());
+		List<Role> roles = roleRepository.findAllById(request.getRoles());
 		user.setRoles(roles);
 		user.setCreatedAt(LocalDateTime.now());
-		if (userRepository.existsByEmail(dto.getEmail())) {
+		if (userRepository.existsByEmail(request.getEmail())) {
 			throw new AppException("email đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
-		if (userRepository.existsByUsername(dto.getEmail())) {
+		if (userRepository.existsByUsername(request.getEmail())) {
 			throw new AppException("username đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
 

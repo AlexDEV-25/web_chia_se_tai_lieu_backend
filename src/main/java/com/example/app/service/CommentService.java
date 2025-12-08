@@ -58,18 +58,18 @@ public class CommentService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public CommentResponse update(Long id, CommentRequest dto) {
-		Comment entity = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không thấy comment"));
-		commentMapper.updateComment(entity, dto);
-		entity.setUpdatedAt(LocalDateTime.now());
-		Comment saved = commentRepository.save(entity);
+	public CommentResponse update(Long id, CommentRequest request) {
+		Comment comment = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không thấy comment"));
+		commentMapper.updateComment(comment, request);
+		comment.setUpdatedAt(LocalDateTime.now());
+		Comment saved = commentRepository.save(comment);
 		return commentMapper.commentToResponse(saved);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public CommentResponse hide(Long id, HideRequest dto) {
 		Comment entity = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không thấy comment"));
-		commentMapper.hideComment(entity, dto);
+		entity.setHide(dto.isHide());
 		Comment saved = commentRepository.save(entity);
 		return commentMapper.commentToResponse(saved);
 	}
