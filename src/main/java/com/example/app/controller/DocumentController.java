@@ -117,15 +117,21 @@ public class DocumentController {
 		return apiResponse;
 	}
 
+	@PostMapping("/download/{id}")
+	public APIResponse<DocumentResponse> increaseDownload(@PathVariable Long id) {
+		documentService.increaseDownload(id);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setMessage("increase success");
+		return apiResponse;
+	}
+
 	@PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public APIResponse<DocumentResponse> create(@RequestPart("file") MultipartFile file,
-			@RequestPart("img") MultipartFile img, @RequestPart("data") String dataJson // nhận JSON dạng chuỗi
-	) {
+			@RequestPart("data") String dataJson) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			DocumentRequest dto = mapper.readValue(dataJson, DocumentRequest.class);
-
-			DocumentResponse response = documentService.uploadFile(file, img, dto);
+			DocumentResponse response = documentService.uploadFile(file, dto);
 			APIResponse<DocumentResponse> apiResponse = new APIResponse<>();
 			apiResponse.setMessage("Upload thành công");
 			apiResponse.setResult(response);

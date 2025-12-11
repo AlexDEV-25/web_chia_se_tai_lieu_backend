@@ -1,5 +1,6 @@
 package com.example.app.service;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -129,7 +130,7 @@ public class UserService {
 		entity.setUpdatedAt(LocalDateTime.now());
 		FileManager fileStorage = new FileManager();
 		if (entity.getAvatarUrl() != null) {
-			fileStorage.deleteFile(avatarStorage + "\\" + entity.getAvatarUrl());
+			fileStorage.deleteFile(avatarStorage + File.separator + entity.getAvatarUrl());
 		}
 
 		if (avt.getOriginalFilename().endsWith(".png") || avt.getOriginalFilename().endsWith(".jpg")) {
@@ -154,7 +155,7 @@ public class UserService {
 		return userRepository.existsByUsername(username);
 	}
 
-// tính sau vì còn phải viết gửi mail
+	// tính sau vì còn phải viết gửi mail
 	public UserResponse verified(Long id, UserRequest dto) {
 		User entity = userRepository.findById(id)
 				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));

@@ -29,6 +29,7 @@ import com.example.app.model.User;
 import com.example.app.repository.InvalidatedTokenRepository;
 import com.example.app.repository.RoleRepository;
 import com.example.app.repository.UserRepository;
+import com.example.app.share.SendMail;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -52,6 +53,7 @@ public class AuthenticationService {
 	private final RoleRepository roleRepository;
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
+	private final SendMail sendMail;
 
 	@NonFinal
 	@Value("${jwt.secretKey}")
@@ -64,9 +66,12 @@ public class AuthenticationService {
 	protected long REFRESH_TIME;
 
 	public AuthenticationResponse login(AuthenticationRequest request) {
-		var user = userRepository.findByEmail(request.getEmail());
+		User user = userRepository.findByEmail(request.getEmail());
 		if (user == null) {
 			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
+		}
+		if (user.isVerified() == false) {
+			throw new AppException("tài khoản chưa kích hoạt", 1001, HttpStatus.BAD_REQUEST);
 		}
 		AuthenticationResponse response = new AuthenticationResponse();
 		boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
@@ -186,6 +191,8 @@ public class AuthenticationService {
 	public UserResponse register(UserRequest request) {
 		User user = userMapper.requestToUser(request);
 
+		String activationCode = this.generateActivationCode();
+
 		List<Role> roles = roleRepository.findAllById(request.getRoles());
 		user.setRoles(roles);
 		user.setCreatedAt(LocalDateTime.now());
@@ -197,9 +204,33 @@ public class AuthenticationService {
 		}
 
 		user.setPassword(passwordEncoder.encode(user.getPassword()));
+		user.setActivationCode(activationCode);
+
 		User saved = userRepository.save(user);
+		sendMail.sendEmail(saved.getEmail(), activationCode);
+
 		UserResponse response = userMapper.userToResponse(saved);
 		return response;
+	}
+
+	public void activateAccount(String email, String activationCode) {
+		User user = userRepository.findByEmail(email);
+		if (user == null) {
+			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
+		}
+		if (user.isVerified()) {
+			throw new AppException("tài khoản đã kích hoạt rồi", 1001, HttpStatus.BAD_REQUEST);
+		}
+		if (user.getActivationCode().equals(activationCode)) {
+			user.setVerified(true);
+			userRepository.save(user);
+		} else {
+			throw new AppException("mã kích hoạt không đúng", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	private String generateActivationCode() {
+		return UUID.randomUUID().toString();
 	}
 
 }

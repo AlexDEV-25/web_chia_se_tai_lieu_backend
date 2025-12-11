@@ -2,9 +2,11 @@ package com.example.app.controller;
 
 import java.text.ParseException;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.request.AuthenticationRequest;
@@ -54,6 +56,14 @@ public class AuthenticationController {
 		UserResponse response = authenticationService.register(dto);
 		apiResponse.setResult(response);
 		apiResponse.setMessage("register success");
+		return apiResponse;
+	}
+
+	@GetMapping("/activate")
+	public APIResponse<Void> activateAccount(@RequestParam String email, @RequestParam String activationCode) {
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
+		authenticationService.activateAccount(email, activationCode);
+		apiResponse.setMessage("acctivate success");
 		return apiResponse;
 	}
 

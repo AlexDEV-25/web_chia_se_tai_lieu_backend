@@ -44,6 +44,9 @@ public class User {
 	@Column(name = "verified")
 	private boolean verified;
 
+	@Column(name = "activation_code")
+	private String activationCode;
+
 	@Column(name = "avatar_url")
 	private String avatarUrl;
 

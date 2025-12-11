@@ -1,5 +1,6 @@
 package com.example.app.service;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,7 +8,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
+import javax.imageio.ImageIO;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -31,6 +37,7 @@ import com.example.app.repository.DocumentRepository;
 import com.example.app.share.FileManager;
 import com.example.app.share.GetUserByToken;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -65,6 +72,13 @@ public class DocumentService {
 	public void increaseView(Long id) {
 		documentRepository.findById(id).ifPresent(entity -> {
 			entity.setViewsCount(entity.getViewsCount() + 1);
+			documentRepository.save(entity);
+		});
+	}
+
+	public void increaseDownload(Long id) {
+		documentRepository.findById(id).ifPresent(entity -> {
+			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
 			documentRepository.save(entity);
 		});
 	}
@@ -114,7 +128,7 @@ public class DocumentService {
 		return documentMapper.documentToResponse(saved);
 	}
 
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')") // chỉnh lại sau
 	public DocumentResponse update(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
@@ -125,36 +139,24 @@ public class DocumentService {
 	}
 
 	@PreAuthorize("hasAuthority('UPlOAD_FILE')")
-	public DocumentResponse uploadFile(MultipartFile fileToSave, MultipartFile img, DocumentRequest dto)
-			throws IOException {
+	@Transactional
+	public DocumentResponse uploadFile(MultipartFile fileToSave, DocumentRequest dto) throws IOException {
 		Document document = documentMapper.requestToDocument(dto);
-		FileManager fileStorage = new FileManager();
-		String fileUrl = fileStorage.saveFile(fileToSave, documentStorage);
-		if (!fileUrl.endsWith(".pdf")) {
-			int index = fileUrl.lastIndexOf(".");
-			String result = (index != -1) ? fileUrl.substring(0, index) + ".pdf" : fileUrl;
+		document.setCreatedAt(LocalDateTime.now());
 
-			fileStorage.convertToPDF(documentStorage + "\\" + fileUrl, documentStorage + "\\" + result);
-			fileStorage.deleteFile(documentStorage + "\\" + fileUrl);
-
-			fileUrl = result;
-		}
+		String fileUrl = handlefile(fileToSave);
 		document.setFileUrl(fileUrl);
 
-		if (img.getOriginalFilename().endsWith(".png") || img.getOriginalFilename().endsWith(".jpg")) {
-			String thumbnailUrl = fileStorage.saveFile(img, thumbnailStorage);
-			document.setThumbnailUrl(thumbnailUrl);
-		} else {
-			throw new AppException("ảnh không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
-		}
-
-		document.setCreatedAt(LocalDateTime.now());
+		String thumbnailUrl = handleThumbnail(documentStorage + "\\" + fileUrl);
+		document.setThumbnailUrl(thumbnailUrl);
 
 		Category category = categoryRepository.findById(dto.getCategoryId())
 				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		User user = getUserByToken.get();
 		document.setCategory(category);
+
+		User user = getUserByToken.get();
 		document.setUser(user);
+
 		Document saved = documentRepository.save(document);
 		DocumentResponse response = documentMapper.documentToResponse(saved);
 		return response;
@@ -193,12 +195,40 @@ public class DocumentService {
 		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF);
 	}
 
-	// chưa biết làm gì với nó
-	public void increaseDownload(Long id) {
-		documentRepository.findById(id).ifPresent(entity -> {
-			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
-			documentRepository.save(entity);
-		});
+	private String handlefile(MultipartFile fileToSave) throws IOException {
+		FileManager fileStorage = new FileManager();
+		String fileUrl = fileStorage.saveFile(fileToSave, documentStorage);
+		if (!fileUrl.endsWith(".pdf")) {
+			int index = fileUrl.lastIndexOf(".");
+			String result = (index != -1) ? fileUrl.substring(0, index) + ".pdf" : fileUrl;
+
+			String input = documentStorage + File.separator + fileUrl;
+			String output = documentStorage + File.separator + result;
+
+			fileStorage.convertToPDF(input, output);
+			fileStorage.deleteFile(input);
+
+			fileUrl = result;
+		}
+		return fileUrl;
+	}
+
+	private String handleThumbnail(String url) {
+		File docFile = new File(url);
+		// Load pdf
+		try (PDDocument doc = PDDocument.load(docFile)) {
+			// Render trang đầu
+			PDFRenderer renderer = new PDFRenderer(doc);
+			BufferedImage image = renderer.renderImageWithDPI(0, 150); // 0 = trang đầu
+
+			// Lưu ra ảnh PNG
+			String thumbnailUrl = UUID.randomUUID().toString() + ".png";
+			String outputPath = thumbnailStorage + File.separator + thumbnailUrl;
+			ImageIO.write(image, "png", new File(outputPath));
+			return thumbnailUrl;
+		} catch (Exception e) {
+			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
+		}
 	}
 
 }
