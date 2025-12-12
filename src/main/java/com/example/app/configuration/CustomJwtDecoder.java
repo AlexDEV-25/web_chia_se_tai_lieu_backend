@@ -13,7 +13,6 @@ import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Component;
 
-import com.example.app.dto.request.TokenRequest;
 import com.example.app.dto.response.IntrospectResponse;
 import com.example.app.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
@@ -31,9 +30,7 @@ public class CustomJwtDecoder implements JwtDecoder {
 	@Override
 	public Jwt decode(String token) throws JwtException {
 		try {
-			TokenRequest tokenRequest = new TokenRequest();
-			tokenRequest.setToken(token);
-			IntrospectResponse response = authenticationService.introspect(tokenRequest);
+			IntrospectResponse response = authenticationService.introspect(token);
 			if (!response.isValid())
 				throw new JwtException("Token invalid");
 		} catch (JOSEException | ParseException e) {

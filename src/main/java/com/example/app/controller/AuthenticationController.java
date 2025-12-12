@@ -2,6 +2,7 @@ package com.example.app.controller;
 
 import java.text.ParseException;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.request.AuthenticationRequest;
-import com.example.app.dto.request.TokenRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.AuthenticationResponse;
@@ -20,6 +20,7 @@ import com.example.app.exception.AppException;
 import com.example.app.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
@@ -43,9 +44,10 @@ public class AuthenticationController {
 	}
 
 	@PostMapping("/log-out")
-	APIResponse<Void> logout(@RequestBody TokenRequest dto) throws JOSEException, ParseException, AppException {
+	APIResponse<Void> logout(HttpServletRequest dto) throws JOSEException, ParseException, AppException {
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		authenticationService.logout(dto);
+		String token = this.extractTokenFromHeader(dto);
+		authenticationService.logout(token);
 		apiResponse.setMessage("logout success");
 		return apiResponse;
 	}
@@ -68,10 +70,11 @@ public class AuthenticationController {
 	}
 
 	@PostMapping("/refresh-token")
-	APIResponse<AuthenticationResponse> refreshToken(@RequestBody TokenRequest dto)
+	APIResponse<AuthenticationResponse> refreshToken(HttpServletRequest dto)
 			throws JOSEException, ParseException, AppException {
+		String oldToken = this.extractTokenFromHeader(dto);
 		APIResponse<AuthenticationResponse> apiResponse = new APIResponse<AuthenticationResponse>();
-		AuthenticationResponse resutl = authenticationService.refreshToken(dto);
+		AuthenticationResponse resutl = authenticationService.refreshToken(oldToken);
 		apiResponse.setResult(resutl);
 		if (resutl.isAuthenticated()) {
 			apiResponse.setMessage("refresh success");
@@ -82,10 +85,11 @@ public class AuthenticationController {
 	}
 
 	@PostMapping("/introspect")
-	APIResponse<IntrospectResponse> introspect(@RequestBody TokenRequest dto) throws JOSEException, ParseException {
+	APIResponse<IntrospectResponse> introspect(HttpServletRequest dto) throws JOSEException, ParseException {
+		String token = this.extractTokenFromHeader(dto);
 		APIResponse<IntrospectResponse> apiResponse = new APIResponse<IntrospectResponse>();
 		IntrospectResponse resutl;
-		resutl = authenticationService.introspect(dto);
+		resutl = authenticationService.introspect(token);
 		apiResponse.setResult(resutl);
 		if (resutl.isValid()) {
 			apiResponse.setMessage("token right");
@@ -93,5 +97,15 @@ public class AuthenticationController {
 			apiResponse.setMessage("token wrong");
 		}
 		return apiResponse;
+	}
+
+	private String extractTokenFromHeader(HttpServletRequest request) {
+		String authHeader = request.getHeader("Authorization");
+
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			throw new AppException("thiếu token", 1001, HttpStatus.BAD_REQUEST);
+		}
+
+		return authHeader.substring(7);
 	}
 }

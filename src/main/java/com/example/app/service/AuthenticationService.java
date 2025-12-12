@@ -15,7 +15,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.AuthenticationRequest;
-import com.example.app.dto.request.TokenRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.AuthenticationResponse;
 import com.example.app.dto.response.IntrospectResponse;
@@ -120,22 +119,9 @@ public class AuthenticationService {
 		return stringJoiner.toString();
 	}
 
-	public IntrospectResponse introspect(TokenRequest request) throws JOSEException, ParseException {
-		String token = request.getToken();
-		boolean isValid = true;
+	public void logout(String token) throws JOSEException, ParseException, AppException {
 		try {
-			verifyToken(token, false);
-		} catch (AppException e) {
-			isValid = false;
-		}
-		IntrospectResponse response = new IntrospectResponse();
-		response.setValid(isValid);
-		return response;
-	}
-
-	public void logout(TokenRequest request) throws JOSEException, ParseException, AppException {
-		try {
-			SignedJWT signToken = verifyToken(request.getToken(), true);
+			SignedJWT signToken = verifyToken(token);
 			String jit = signToken.getJWTClaimsSet().getJWTID();
 			Date epx = signToken.getJWTClaimsSet().getExpirationTime();
 
@@ -148,10 +134,9 @@ public class AuthenticationService {
 		}
 	}
 
-	public AuthenticationResponse refreshToken(TokenRequest request)
-			throws JOSEException, ParseException, AppException {
-		SignedJWT signToken = verifyToken(request.getToken(), true);
-		this.logout(request);
+	public AuthenticationResponse refreshToken(String oldToken) throws JOSEException, ParseException, AppException {
+		SignedJWT signToken = verifyToken(oldToken);
+		this.logout(oldToken);
 
 		String username = signToken.getJWTClaimsSet().getSubject();
 		User user = userRepository.findByUsername(username);
@@ -164,14 +149,23 @@ public class AuthenticationService {
 		return response;
 	}
 
-	private SignedJWT verifyToken(String token, boolean isRefresh) throws JOSEException, ParseException, AppException {
+	public IntrospectResponse introspect(String token) throws JOSEException, ParseException {
+		boolean isValid = true;
+		try {
+			verifyToken(token);
+		} catch (AppException e) {
+			isValid = false;
+		}
+		IntrospectResponse response = new IntrospectResponse();
+		response.setValid(isValid);
+		return response;
+	}
+
+	private SignedJWT verifyToken(String token) throws JOSEException, ParseException, AppException {
 		JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
 		SignedJWT signedJWT = SignedJWT.parse(token);
 
-		Date epx = (isRefresh) //
-				? new Date(signedJWT.getJWTClaimsSet().getIssueTime().toInstant()//
-						.plus(REFRESH_TIME, ChronoUnit.DAYS).toEpochMilli()) //
-				: signedJWT.getJWTClaimsSet().getExpirationTime();
+		Date epx = signedJWT.getJWTClaimsSet().getExpirationTime();
 
 		boolean verified = signedJWT.verify(verifier);
 

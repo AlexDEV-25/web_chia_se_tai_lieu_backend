@@ -197,20 +197,27 @@ public class DocumentService {
 
 	private String handlefile(MultipartFile fileToSave) throws IOException {
 		FileManager fileStorage = new FileManager();
-		String fileUrl = fileStorage.saveFile(fileToSave, documentStorage);
-		if (!fileUrl.endsWith(".pdf")) {
-			int index = fileUrl.lastIndexOf(".");
-			String result = (index != -1) ? fileUrl.substring(0, index) + ".pdf" : fileUrl;
+		String fileName = fileToSave.getOriginalFilename();
+		if (fileName.endsWith(".pdf") || fileName.endsWith(".doc") || fileName.endsWith(".docx")
+				|| fileName.endsWith(".ppt") || fileName.endsWith(".pptx")) {
 
-			String input = documentStorage + File.separator + fileUrl;
-			String output = documentStorage + File.separator + result;
+			String fileUrl = fileStorage.saveFile(fileToSave, documentStorage);
+			if (!fileUrl.endsWith(".pdf")) {
+				int index = fileUrl.lastIndexOf(".");
+				String result = (index != -1) ? fileUrl.substring(0, index) + ".pdf" : fileUrl;
 
-			fileStorage.convertToPDF(input, output);
-			fileStorage.deleteFile(input);
+				String input = documentStorage + File.separator + fileUrl;
+				String output = documentStorage + File.separator + result;
 
-			fileUrl = result;
+				fileStorage.convertToPDF(input, output);
+				fileStorage.deleteFile(input);
+
+				fileUrl = result;
+			}
+			return fileUrl;
+		} else {
+			throw new AppException("file không hợp lệ", 1001, HttpStatus.BAD_REQUEST);
 		}
-		return fileUrl;
 	}
 
 	private String handleThumbnail(String url) {
