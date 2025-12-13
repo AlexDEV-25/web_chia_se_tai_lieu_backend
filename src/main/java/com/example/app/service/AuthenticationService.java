@@ -21,11 +21,9 @@ import com.example.app.dto.response.IntrospectResponse;
 import com.example.app.dto.response.UserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.UserMapper;
-import com.example.app.model.InvalidatedToken;
 import com.example.app.model.Permission;
 import com.example.app.model.Role;
 import com.example.app.model.User;
-import com.example.app.repository.InvalidatedTokenRepository;
 import com.example.app.repository.RoleRepository;
 import com.example.app.repository.UserRepository;
 import com.example.app.share.SendMail;
@@ -48,7 +46,6 @@ import lombok.experimental.NonFinal;
 @RequiredArgsConstructor
 public class AuthenticationService {
 	private final UserRepository userRepository;
-	private final InvalidatedTokenRepository invalidatedTokenRepository;
 	private final RoleRepository roleRepository;
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
@@ -119,24 +116,8 @@ public class AuthenticationService {
 		return stringJoiner.toString();
 	}
 
-	public void logout(String token) throws JOSEException, ParseException, AppException {
-		try {
-			SignedJWT signToken = verifyToken(token);
-			String jit = signToken.getJWTClaimsSet().getJWTID();
-			Date epx = signToken.getJWTClaimsSet().getExpirationTime();
-
-			InvalidatedToken invalidatedToken = new InvalidatedToken();
-			invalidatedToken.setId(jit);
-			invalidatedToken.setExprityTime(epx);
-			invalidatedTokenRepository.save(invalidatedToken);
-		} catch (AppException e) {
-			throw new AppException(e.getMessage(), e.getCode(), HttpStatus.BAD_REQUEST);
-		}
-	}
-
 	public AuthenticationResponse refreshToken(String oldToken) throws JOSEException, ParseException, AppException {
 		SignedJWT signToken = verifyToken(oldToken);
-		this.logout(oldToken);
 
 		String username = signToken.getJWTClaimsSet().getSubject();
 		User user = userRepository.findByUsername(username);
@@ -174,9 +155,6 @@ public class AuthenticationService {
 		}
 		if (!verified) {
 			throw new AppException("token không đúng", 1001, HttpStatus.BAD_REQUEST);
-		}
-		if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
-			throw new AppException("log out rồi token không còn hiệu lực nữa", 1006, HttpStatus.BAD_REQUEST);
 		}
 
 		return signedJWT;

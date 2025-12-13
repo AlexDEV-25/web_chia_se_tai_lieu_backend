@@ -43,15 +43,6 @@ public class AuthenticationController {
 		return apiResponse;
 	}
 
-	@PostMapping("/log-out")
-	APIResponse<Void> logout(HttpServletRequest dto) throws JOSEException, ParseException, AppException {
-		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		String token = this.extractTokenFromHeader(dto);
-		authenticationService.logout(token);
-		apiResponse.setMessage("logout success");
-		return apiResponse;
-	}
-
 	@PostMapping("/register")
 	public APIResponse<UserResponse> register(@RequestBody UserRequest dto) {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
