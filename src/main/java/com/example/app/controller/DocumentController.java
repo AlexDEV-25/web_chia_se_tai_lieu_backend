@@ -110,17 +110,17 @@ public class DocumentController {
 	}
 
 	@PostMapping("/view/{id}")
-	public APIResponse<DocumentResponse> increaseView(@PathVariable Long id) {
+	public APIResponse<Void> increaseView(@PathVariable Long id) {
 		documentService.increaseView(id);
-		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
 		apiResponse.setMessage("increase success");
 		return apiResponse;
 	}
 
 	@PostMapping("/download/{id}")
-	public APIResponse<DocumentResponse> increaseDownload(@PathVariable Long id) {
+	public APIResponse<Void> increaseDownload(@PathVariable Long id) {
 		documentService.increaseDownload(id);
-		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
 		apiResponse.setMessage("increase success");
 		return apiResponse;
 	}

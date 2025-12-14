@@ -47,6 +47,7 @@ public class DocumentService {
 	private final CategoryRepository categoryRepository;
 	private final DocumentMapper documentMapper;
 	private final GetUserByToken getUserByToken;
+	private final FileManager fileStorage;
 
 	@Value("${app.storage-directory-document}")
 	private String documentStorage;
@@ -196,7 +197,6 @@ public class DocumentService {
 	}
 
 	private String handlefile(MultipartFile fileToSave) throws IOException {
-		FileManager fileStorage = new FileManager();
 		String fileName = fileToSave.getOriginalFilename();
 		if (fileName.endsWith(".pdf") || fileName.endsWith(".doc") || fileName.endsWith(".docx")
 				|| fileName.endsWith(".ppt") || fileName.endsWith(".pptx")) {
@@ -210,7 +210,7 @@ public class DocumentService {
 				String output = documentStorage + File.separator + result;
 
 				fileStorage.convertToPDF(input, output);
-				fileStorage.deleteFile(input);
+				System.out.println(fileStorage.deleteFile(input));
 
 				fileUrl = result;
 			}

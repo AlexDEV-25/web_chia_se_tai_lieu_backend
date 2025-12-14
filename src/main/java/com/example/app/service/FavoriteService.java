@@ -19,6 +19,7 @@ import com.example.app.model.User;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.FavoriteRepository;
 import com.example.app.repository.UserRepository;
+import com.example.app.share.GetUserByToken;
 
 import lombok.AllArgsConstructor;
 
@@ -30,6 +31,7 @@ public class FavoriteService {
 	private final UserRepository userRepository;
 	private final DocumentRepository documentRepository;
 	private final FavoriteMapper favoriteMapper;
+	private final GetUserByToken getUserByToken;
 
 	@PreAuthorize("hasRole('USER')")
 	public FavoriteResponse addFavorite(FavoriteRequest dto) {
@@ -61,8 +63,9 @@ public class FavoriteService {
 	}
 
 	@PreAuthorize("hasRole('USER')")
-	public List<FavoriteResponse> getFavoritesByUser(Long userId) {
-		List<Favorite> favorites = favoriteRepository.findByUserId(userId);
+	public List<FavoriteResponse> getFavoritesByUser() {
+		User user = getUserByToken.get();
+		List<Favorite> favorites = favoriteRepository.findByUserId(user.getId());
 		List<FavoriteResponse> response = new ArrayList<FavoriteResponse>();
 		for (Favorite f : favorites) {
 			response.add(favoriteMapper.favoriteToResponse(f));

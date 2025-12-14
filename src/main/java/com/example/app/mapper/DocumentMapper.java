@@ -25,6 +25,7 @@ public interface DocumentMapper {
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "category.id", target = "categoryId")
 	@Mapping(source = "category.name", target = "categoryName")
+	@Mapping(source = "user.username", target = "userName")
 	DocumentResponse documentToResponse(Document entity);
 
 	@Mapping(target = "id", ignore = true)

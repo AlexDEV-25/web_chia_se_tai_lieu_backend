@@ -34,17 +34,17 @@ public class FavoriteController {
 	}
 
 	@DeleteMapping("/{id}")
-	public APIResponse<FavoriteResponse> removeFavorite(@PathVariable Long id) {
+	public APIResponse<Void> removeFavorite(@PathVariable Long id) {
 		favoriteService.removeFavorite(id);
-		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
 		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
 	// Get user's favorites
-	@GetMapping("/user/{userId}")
-	public APIResponse<FavoriteResponse> getFavoritesByUser(@PathVariable Long userId) {
-		List<FavoriteResponse> response = favoriteService.getFavoritesByUser(userId);
+	@GetMapping("/user")
+	public APIResponse<FavoriteResponse> getFavoritesByUser() {
+		List<FavoriteResponse> response = favoriteService.getFavoritesByUser();
 		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");

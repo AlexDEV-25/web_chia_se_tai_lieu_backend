@@ -9,8 +9,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+@Component
 public class FileManager {
 	@Value("${libreoffice.path}")
 	private String libreOfficePath;
@@ -37,14 +39,12 @@ public class FileManager {
 
 		// Copy file
 		Files.copy(fileToSave.getInputStream(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
 		return safeFilename;
 	}
 
 	public boolean deleteFile(String filePath) {
 		try {
 			Path path = Paths.get(filePath);
-
 			return Files.deleteIfExists(path);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -59,7 +59,6 @@ public class FileManager {
 
 			Process process = pb.start();
 			process.waitFor();
-			System.out.println("Done");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

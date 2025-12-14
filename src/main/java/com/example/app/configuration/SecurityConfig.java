@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -20,16 +21,16 @@ import lombok.RequiredArgsConstructor;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfig {
 
 	private final String[] PUBLIC_ENDPOINTS_POST = { "/api/auth/register", "/api/auth/log-in", "/api/auth/introspect",
-			"/api/auth/refresh-token" };
+			"/api/auth/refresh-token", "/api/documents/view/{id}" };
 
 	private final String[] PUBLIC_ENDPOINTS_GET = { "/api/categories", "/api/comments/document/{docId}",
 			"/api/documents", "/api/documents/{id}", "/api/documents/user/{userId}",
-			"/api/documents/category/{categoryId}", "/api/documents/view/{id}", "/api/documents/{id}/file",
-			"/api/ratings/document/{docId}", "/api/users/email/{email:.+}", "/api/users/username/{username}",
-			"/api/images/**", "/api/auth/activate" };
+			"/api/documents/category/{categoryId}", "/api/documents/{id}/file", "/api/ratings/document/{docId}",
+			"/api/users/email/{email:.+}", "/api/users/username/{username}", "/api/images/**", "/api/auth/activate" };
 
 	private CustomJwtDecoder customJwtDecoder;
 
