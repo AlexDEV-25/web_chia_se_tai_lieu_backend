@@ -65,6 +65,10 @@ public class User {
 
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
 	@JsonManagedReference
+	private List<Lesson> lessons;
+
+	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
 	private List<Comment> comments;
 
 	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })

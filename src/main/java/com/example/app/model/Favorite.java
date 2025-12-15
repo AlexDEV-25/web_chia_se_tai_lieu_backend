@@ -38,7 +38,12 @@ public class Favorite {
 	private User user;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
-	@JoinColumn(name = "document_id", nullable = false)
+	@JoinColumn(name = "document_id")
 	@JsonBackReference
 	private Document document;
+
+	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
+	@JoinColumn(name = "lesson_id")
+	@JsonBackReference
+	private Lesson lesson;
 }

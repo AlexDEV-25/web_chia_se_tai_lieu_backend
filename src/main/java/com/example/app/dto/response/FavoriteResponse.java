@@ -16,4 +16,5 @@ public class FavoriteResponse {
 	private Long documentId;
 	private String documentTitle;
 	private String documentThumbnailUrl;
+	private String authorName;
 }

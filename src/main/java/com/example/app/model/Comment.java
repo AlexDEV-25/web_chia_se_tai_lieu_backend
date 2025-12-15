@@ -51,7 +51,12 @@ public class Comment {
 	private Document document;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
-	@JoinColumn(name = "user_id")
+	@JsonBackReference
+	@JoinColumn(name = "lesson_id")
+	private Lesson lesson;
+
+	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
+	@JoinColumn(name = "user_id", nullable = false)
 	@JsonBackReference
 	private User user;
 
