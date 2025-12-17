@@ -1,5 +1,6 @@
 package com.example.app.exception;
 
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +47,11 @@ public class GlobalException {
 		error.setCode(e.getCode());
 		error.setMessage(e.getMessage());
 		return ResponseEntity.status(e.getStatusCode()).body(error);
+	}
+
+	@ExceptionHandler(TransientAiException.class)
+	public ResponseEntity<?> handleAiBusy(TransientAiException ex) {
+		return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("AI đang bận, vui lòng thử lại sau vài giây");
 	}
 
 }
