@@ -21,7 +21,6 @@ import com.example.app.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -31,9 +30,23 @@ public class AuthenticationController {
 	private final AuthenticationService authenticationService;
 
 	@PostMapping("/log-in")
-	APIResponse<AuthenticationResponse> login(@RequestBody @Valid AuthenticationRequest dto) {
+	APIResponse<AuthenticationResponse> login(@RequestBody AuthenticationRequest dto) {
 		APIResponse<AuthenticationResponse> apiResponse = new APIResponse<AuthenticationResponse>();
 		AuthenticationResponse resutl = authenticationService.login(dto);
+		apiResponse.setResult(resutl);
+		if (resutl.isAuthenticated()) {
+			apiResponse.setMessage("login success");
+		} else {
+			apiResponse.setMessage("login false");
+		}
+		return apiResponse;
+	}
+
+	@PostMapping("/log-in-google")
+	APIResponse<AuthenticationResponse> loginWithGoogle(@RequestParam String code) {
+		APIResponse<AuthenticationResponse> apiResponse = new APIResponse<AuthenticationResponse>();
+
+		AuthenticationResponse resutl = authenticationService.loginWithGoogle(code);
 		apiResponse.setResult(resutl);
 		if (resutl.isAuthenticated()) {
 			apiResponse.setMessage("login success");

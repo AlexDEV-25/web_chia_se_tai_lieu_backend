@@ -15,8 +15,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.AuthenticationRequest;
+import com.example.app.dto.request.ExchangeTokenRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.AuthenticationResponse;
+import com.example.app.dto.response.ExchangeTokenResponse;
 import com.example.app.dto.response.IntrospectResponse;
 import com.example.app.dto.response.UserResponse;
 import com.example.app.exception.AppException;
@@ -26,6 +28,7 @@ import com.example.app.model.Role;
 import com.example.app.model.User;
 import com.example.app.repository.RoleRepository;
 import com.example.app.repository.UserRepository;
+import com.example.app.repository.httpclient.OutboundIdentityClient;
 import com.example.app.share.SendMail;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -47,6 +50,7 @@ import lombok.experimental.NonFinal;
 public class AuthenticationService {
 	private final UserRepository userRepository;
 	private final RoleRepository roleRepository;
+	private final OutboundIdentityClient outboundIdentityClient;
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
 	private final SendMail sendMail;
@@ -58,8 +62,17 @@ public class AuthenticationService {
 	@Value("${jwt.expirationTime}")
 	protected long EXPIRATION_TIME;
 
-	@Value("${jwt.refreshTime}")
-	protected long REFRESH_TIME;
+	@Value("${outbound.identity.client-id}")
+	protected String CLIENT_ID;
+
+	@Value("${outbound.identity.client-secret}")
+	protected String CLIENT_SECRET;
+
+	@Value("${outbound.identity.redirect-uri}")
+	protected String REDIRECT_URI;
+
+	@Value("${outbound.identity.grant-types}")
+	protected String GRANT_TYPES;
 
 	public AuthenticationResponse login(AuthenticationRequest request) {
 		User user = userRepository.findByEmail(request.getEmail());
@@ -203,6 +216,20 @@ public class AuthenticationService {
 
 	private String generateActivationCode() {
 		return UUID.randomUUID().toString();
+	}
+
+	public AuthenticationResponse loginWithGoogle(String code) {
+		ExchangeTokenRequest request = new ExchangeTokenRequest(code, CLIENT_ID, CLIENT_SECRET, REDIRECT_URI,
+				GRANT_TYPES);
+		AuthenticationResponse response = new AuthenticationResponse();
+		try {
+			ExchangeTokenResponse exchangeTokenResponse = outboundIdentityClient.exchangeToken(request);
+			response.setToken(exchangeTokenResponse.getAccessToken());
+			response.setAuthenticated(true);
+		} catch (Exception e) {
+			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
+		}
+		return response;
 	}
 
 }
