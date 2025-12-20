@@ -33,7 +33,7 @@ public class FavoriteService {
 	private final FavoriteMapper favoriteMapper;
 	private final GetUserByToken getUserByToken;
 
-	@PreAuthorize("hasRole('USER')")
+	@PreAuthorize("hasAuthority('ADD_FAVORITE')")
 	public FavoriteResponse addFavorite(FavoriteRequest dto) {
 		Favorite favorite = favoriteMapper.requestToFavorite(dto);
 		Document doc = documentRepository.findById(dto.getDocumentId())
@@ -53,7 +53,7 @@ public class FavoriteService {
 		return response;
 	}
 
-	@PreAuthorize("hasRole('USER')")
+	@PreAuthorize("hasAuthority('REMOVE_FAVORITE')")
 	public void removeFavorite(Long id) {
 		try {
 			favoriteRepository.deleteById(id);
@@ -62,7 +62,7 @@ public class FavoriteService {
 		}
 	}
 
-	@PreAuthorize("hasRole('USER')")
+	@PreAuthorize("hasAuthority('GET_FAVORITE')")
 	public List<FavoriteResponse> getFavoritesByUser() {
 		User user = getUserByToken.get();
 		List<Favorite> favorites = favoriteRepository.findByUserId(user.getId());

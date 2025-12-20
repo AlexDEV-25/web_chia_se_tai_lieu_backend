@@ -47,7 +47,7 @@ public class UserController {
 	}
 
 	@PutMapping(value = "/my-info", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public APIResponse<UserResponse> updateMyInfo(@RequestPart("avt") MultipartFile avt,
+	public APIResponse<UserResponse> updateMyInfo(@RequestPart(value = "avt", required = false) MultipartFile avt,
 			@RequestPart("data") String dataJson) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();

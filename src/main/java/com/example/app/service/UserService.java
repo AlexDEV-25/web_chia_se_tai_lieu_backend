@@ -128,18 +128,19 @@ public class UserService {
 		List<Role> roles = roleRepository.findAllById(dto.getRoles());
 		entity.setRoles(roles);
 		entity.setUpdatedAt(LocalDateTime.now());
-		FileManager fileStorage = new FileManager();
-		if (entity.getAvatarUrl() != null) {
-			fileStorage.deleteFile(avatarStorage + File.separator + entity.getAvatarUrl());
-		}
+		if (avt != null) {
+			FileManager fileStorage = new FileManager();
+			if (entity.getAvatarUrl() != null) {
+				fileStorage.deleteFile(avatarStorage + File.separator + entity.getAvatarUrl());
+			}
 
-		if (avt.getOriginalFilename().endsWith(".png") || avt.getOriginalFilename().endsWith(".jpg")) {
-			String avtUrl = fileStorage.saveFile(avt, avatarStorage);
-			entity.setAvatarUrl(avtUrl);
-		} else {
-			throw new AppException("ảnh không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+			if (avt.getOriginalFilename().endsWith(".png") || avt.getOriginalFilename().endsWith(".jpg")) {
+				String avtUrl = fileStorage.saveFile(avt, avatarStorage);
+				entity.setAvatarUrl(avtUrl);
+			} else {
+				throw new AppException("ảnh không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+			}
 		}
-
 		entity.setPassword(passwordEncoder.encode(dto.getPassword()));
 		userMapper.updateUser(entity, dto);
 
@@ -153,14 +154,5 @@ public class UserService {
 
 	public boolean checkUsernameExists(String username) {
 		return userRepository.existsByUsername(username);
-	}
-
-	// tính sau vì còn phải viết gửi mail
-	public UserResponse verified(Long id, UserRequest dto) {
-		User entity = userRepository.findById(id)
-				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		entity.setVerified(dto.isVerified());
-		User saved = userRepository.save(entity);
-		return userMapper.userToResponse(saved);
 	}
 }

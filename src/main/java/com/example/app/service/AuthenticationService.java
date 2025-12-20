@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.StringJoiner;
@@ -20,6 +21,7 @@ import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.AuthenticationResponse;
 import com.example.app.dto.response.ExchangeTokenResponse;
 import com.example.app.dto.response.IntrospectResponse;
+import com.example.app.dto.response.OutboudUserResponse;
 import com.example.app.dto.response.UserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.UserMapper;
@@ -29,6 +31,7 @@ import com.example.app.model.User;
 import com.example.app.repository.RoleRepository;
 import com.example.app.repository.UserRepository;
 import com.example.app.repository.httpclient.OutboundIdentityClient;
+import com.example.app.repository.httpclient.OutboundUserClient;
 import com.example.app.share.SendMail;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -51,6 +54,7 @@ public class AuthenticationService {
 	private final UserRepository userRepository;
 	private final RoleRepository roleRepository;
 	private final OutboundIdentityClient outboundIdentityClient;
+	private final OutboundUserClient outboundUserClient;
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
 	private final SendMail sendMail;
@@ -224,7 +228,32 @@ public class AuthenticationService {
 		AuthenticationResponse response = new AuthenticationResponse();
 		try {
 			ExchangeTokenResponse exchangeTokenResponse = outboundIdentityClient.exchangeToken(request);
-			response.setToken(exchangeTokenResponse.getAccessToken());
+
+			String bearerToken = "Bearer " + exchangeTokenResponse.getAccessToken();
+			OutboudUserResponse userInfo = outboundUserClient.getUserDetails(bearerToken);
+
+			boolean exist = userRepository.existsByEmail(userInfo.getEmail());
+
+			String token = "";
+			if (exist == false) {
+				List<String> Stringroles = new ArrayList<String>();
+				Stringroles.add("USER");
+				List<Role> roles = roleRepository.findAllById(Stringroles);
+
+				User newUser = new User();
+				newUser.setUsername(userInfo.getEmail());
+				newUser.setEmail(userInfo.getEmail());
+				newUser.setVerified(true);
+				newUser.setHide(false);
+				newUser.setRoles(roles);
+				User save = userRepository.save(newUser);
+				token = generateToken(save);
+			} else {
+				User user = userRepository.findByEmail(userInfo.getEmail());
+				token = generateToken(user);
+			}
+
+			response.setToken(token);
 			response.setAuthenticated(true);
 		} catch (Exception e) {
 			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);

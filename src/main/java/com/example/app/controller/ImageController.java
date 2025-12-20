@@ -27,7 +27,7 @@ public class ImageController {
 	private String avatarStorage;
 
 	@GetMapping("/avatar/{name}")
-	public ResponseEntity<Resource> getAvatar(@PathVariable String name) {
+	public ResponseEntity<Resource> getAvatar(@PathVariable(required = false) String name) {
 		try {
 			Resource resource = imageService.loadImage(avatarStorage, name);
 
