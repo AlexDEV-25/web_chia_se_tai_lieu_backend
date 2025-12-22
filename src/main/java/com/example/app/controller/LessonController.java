@@ -181,4 +181,30 @@ public class LessonController {
 		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
 				.body(file.getResource());
 	}
+
+	@GetMapping("/my-lesson")
+	public APIResponse<LessonResponse> getMylesson() {
+		List<LessonResponse> response = lessonService.getMyLesson();
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@PutMapping("my-lesson/{id}")
+	public APIResponse<LessonResponse> updateMyLesson(@PathVariable Long id, @RequestBody LessonRequest dto) {
+		LessonResponse response = lessonService.updateMyDocument(id, dto);
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("update success");
+		return apiResponse;
+	}
+
+	@DeleteMapping("my-lesson/{id}")
+	public APIResponse<LessonResponse> deleteMyLesson(@PathVariable Long id) {
+		lessonService.deleteMyLesson(id);
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+		apiResponse.setMessage("delete success");
+		return apiResponse;
+	}
 }

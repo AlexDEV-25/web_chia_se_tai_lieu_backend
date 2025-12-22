@@ -105,6 +105,10 @@ public class DocumentService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
 		try {
+			Document doc = documentRepository.findById(id)
+					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+			fileStorage.deleteFile(documentStorage + File.separator + doc.getFileUrl());
+			fileStorage.deleteFile(thumbnailStorage + File.separator + doc.getThumbnailUrl());
 			documentRepository.deleteById(id);
 		} catch (EmptyResultDataAccessException e) {
 			throw new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST);
@@ -139,7 +143,7 @@ public class DocumentService {
 		return documentMapper.documentToResponse(saved);
 	}
 
-	@PreAuthorize("hasAuthority('UPlOAD_FILE')")
+	@PreAuthorize("hasAuthority('UPLOAD_FILE')")
 	@Transactional
 	public DocumentResponse uploadFile(MultipartFile fileToSave, DocumentRequest dto) throws IOException {
 		Document document = documentMapper.requestToDocument(dto);
@@ -176,6 +180,42 @@ public class DocumentService {
 			throw new AppException("No file named: " + fileName, 1001, HttpStatus.BAD_REQUEST);
 		}
 		return fileToDownload;
+	}
+
+	@PreAuthorize("hasAuthority('GET_MY_DOCUMENT')")
+	public List<DocumentResponse> getMyDocument() {
+		User user = getUserByToken.get();
+		List<Document> documents = documentRepository.findByUserId(user.getId());
+		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+		for (Document d : documents) {
+			response.add(documentMapper.documentToResponse(d));
+		}
+		return response;
+	}
+
+	@PreAuthorize("hasAuthority('UPDATE_MY_DOCUMENT')")
+	public DocumentResponse updateMyDocument(Long id, DocumentRequest dto) {
+		User user = getUserByToken.get();
+		Document entity = documentRepository.findByIdAndUserId(id, user.getId())
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		documentMapper.updateDocument(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
+		Document saved = documentRepository.save(entity);
+		return documentMapper.documentToResponse(saved);
+	}
+
+	@PreAuthorize("hasAuthority('DELETE_MY_DOCUMENT')")
+	public void deleteMyDocument(Long id) {
+		try {
+			User user = getUserByToken.get();
+			Document doc = documentRepository.findByIdAndUserId(id, user.getId())
+					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+			fileStorage.deleteFile(documentStorage + File.separator + doc.getFileUrl());
+			fileStorage.deleteFile(thumbnailStorage + File.separator + doc.getThumbnailUrl());
+			documentRepository.deleteById(id);
+		} catch (EmptyResultDataAccessException e) {
+			throw new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		}
 	}
 
 	public FileResponse loadDocumentFile(Long id) throws IOException {

@@ -203,6 +203,49 @@ public class LessonService {
 		return fileToDownload;
 	}
 
+	@PreAuthorize("hasAuthority('GET_MY_LESSON')")
+	public List<LessonResponse> getMyLesson() {
+		User user = getUserByToken.get();
+		List<Lesson> lessons = lessonRepository.findByUserId(user.getId());
+		List<LessonResponse> response = new ArrayList<LessonResponse>();
+		for (Lesson l : lessons) {
+			response.add(lessonMapper.lessonToResponse(l));
+		}
+		return response;
+	}
+
+	@PreAuthorize("hasAuthority('UPDATE_MY_LESSON')")
+	public LessonResponse updateMyDocument(Long id, LessonRequest dto) {
+		User user = getUserByToken.get();
+		Lesson entity = lessonRepository.findByIdAndUserId(id, user.getId())
+				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		lessonMapper.updateLesson(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
+		Lesson saved = lessonRepository.save(entity);
+		return lessonMapper.lessonToResponse(saved);
+	}
+
+	@PreAuthorize("hasAuthority('DELETE_MY_LESSON')")
+	public void deleteMyLesson(Long id) {
+		try {
+			User user = getUserByToken.get();
+			Lesson doc = lessonRepository.findByIdAndUserId(id, user.getId())
+					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+			fileStorage.deleteFile(videoStorage + File.separator + doc.getLessonUrl());
+			fileStorage.deleteFile(thumbnailStorage + File.separator + doc.getThumbnailUrl());
+			if (doc.getDocumentUrl() != null) {
+				fileStorage.deleteFile(documentStorage + File.separator + doc.getDocumentUrl());
+			}
+			if (doc.getSubFileUrl() != null) {
+				fileStorage.deleteFile(documentStorage + File.separator + doc.getSubFileUrl());
+			}
+
+			lessonRepository.deleteById(id);
+		} catch (EmptyResultDataAccessException e) {
+			throw new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
 	public FileResponse loadVideo(Long id) throws IOException {
 
 		Lesson lesson = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));

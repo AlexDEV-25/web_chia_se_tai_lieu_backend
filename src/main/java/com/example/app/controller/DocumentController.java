@@ -166,4 +166,29 @@ public class DocumentController {
 				.body(file.getResource());
 	}
 
+	@GetMapping("/my-document")
+	public APIResponse<DocumentResponse> getMyDocument() {
+		List<DocumentResponse> response = documentService.getMyDocument();
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@PutMapping("/my-document/{id}")
+	public APIResponse<DocumentResponse> updateMyDocument(@PathVariable Long id, @RequestBody DocumentRequest dto) {
+		DocumentResponse response = documentService.updateMyDocument(id, dto);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("update success");
+		return apiResponse;
+	}
+
+	@DeleteMapping("/my-document/{id}")
+	public APIResponse<DocumentResponse> deleteMyDocument(@PathVariable Long id) {
+		documentService.deleteMyDocument(id);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setMessage("delete success");
+		return apiResponse;
+	}
 }
