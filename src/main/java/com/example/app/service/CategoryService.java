@@ -65,12 +65,12 @@ public class CategoryService {
 		return categoryMapper.categoryToResponse(saved);
 	}
 
-	@PreAuthorize("hasRole('ADMIN')")
-	public void delete(Long id) {
-		try {
-			categoryRepository.deleteById(id);
-		} catch (AppException e) {
-			throw new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
+//	@PreAuthorize("hasRole('ADMIN')")
+//	public void delete(Long id) {
+//		try {
+//			categoryRepository.deleteById(id);
+//		} catch (AppException e) {
+//			throw new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST);
+//		}
+//	}
 }

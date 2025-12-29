@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.app.model.Document;
 import com.example.app.model.Favorite;
+import com.example.app.model.Lesson;
 import com.example.app.model.User;
 
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
@@ -20,4 +21,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 	Optional<Favorite> findByUserAndDocument(User user, Document document);
 
 	boolean existsByUserAndDocument(User user, Document document);
+
+	boolean existsByUserAndLesson(User user, Lesson lesson);
 }

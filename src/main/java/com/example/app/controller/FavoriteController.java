@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.app.dto.request.FavoriteRequest;
+import com.example.app.dto.request.FavoriteDocumentRequest;
+import com.example.app.dto.request.FavoriteLessonRequest;
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.FavoriteResponse;
+import com.example.app.dto.response.FavoriteDocumentResponse;
+import com.example.app.dto.response.FavoriteLessonResponse;
 import com.example.app.service.FavoriteService;
 
 import lombok.AllArgsConstructor;
@@ -24,10 +26,19 @@ public class FavoriteController {
 
 	private final FavoriteService favoriteService;
 
-	@PostMapping
-	public APIResponse<FavoriteResponse> addFavorite(@RequestBody FavoriteRequest dto) {
-		FavoriteResponse response = favoriteService.addFavorite(dto);
-		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
+	@PostMapping("/document")
+	public APIResponse<FavoriteDocumentResponse> addDocumentFavorite(@RequestBody FavoriteDocumentRequest dto) {
+		FavoriteDocumentResponse response = favoriteService.addDocumentFavorite(dto);
+		APIResponse<FavoriteDocumentResponse> apiResponse = new APIResponse<FavoriteDocumentResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("save success");
+		return apiResponse;
+	}
+
+	@PostMapping("/lesson")
+	public APIResponse<FavoriteDocumentResponse> addLessonFavorite(@RequestBody FavoriteLessonRequest dto) {
+		FavoriteDocumentResponse response = favoriteService.addLessonFavorite(dto);
+		APIResponse<FavoriteDocumentResponse> apiResponse = new APIResponse<FavoriteDocumentResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("save success");
 		return apiResponse;
@@ -41,11 +52,19 @@ public class FavoriteController {
 		return apiResponse;
 	}
 
-	// Get user's favorites
-	@GetMapping("/user")
-	public APIResponse<FavoriteResponse> getFavoritesByUser() {
-		List<FavoriteResponse> response = favoriteService.getFavoritesByUser();
-		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
+	@GetMapping("/document/user")
+	public APIResponse<FavoriteDocumentResponse> getDocumentFavoritesByUser() {
+		List<FavoriteDocumentResponse> response = favoriteService.getDocumentFavoritesByUser();
+		APIResponse<FavoriteDocumentResponse> apiResponse = new APIResponse<FavoriteDocumentResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/lesson/user")
+	public APIResponse<FavoriteLessonResponse> getLessonFavoritesByUser() {
+		List<FavoriteLessonResponse> response = favoriteService.getLessonFavoritesByUser();
+		APIResponse<FavoriteLessonResponse> apiResponse = new APIResponse<FavoriteLessonResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;

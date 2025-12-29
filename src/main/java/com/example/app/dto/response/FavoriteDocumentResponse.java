@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FavoriteResponse {
+public class FavoriteDocumentResponse {
 	private Long id;
 	private LocalDateTime createdAt;
 	private Long userId;
