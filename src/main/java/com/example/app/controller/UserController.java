@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.UserResponse;
@@ -34,6 +35,15 @@ public class UserController {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("get by id success");
+		return apiResponse;
+	}
+
+	@PutMapping("hide/{id}")
+	public APIResponse<UserResponse> hide(@PathVariable Long id, @RequestBody HideRequest dto) {
+		UserResponse response = userService.hide(id, dto);
+		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("hide success");
 		return apiResponse;
 	}
 
