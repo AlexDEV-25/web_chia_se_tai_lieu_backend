@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
+import com.example.app.dto.request.StatusRequest;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.LessonResponse;
 import com.example.app.exception.AppException;
@@ -120,20 +121,11 @@ public class LessonService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public LessonResponse changeStatus(Long id, LessonRequest dto) {
+	public LessonResponse changeStatus(Long id, StatusRequest dto) {
 		Lesson entity = lessonRepository.findById(id)
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		entity.setStatus(dto.getStatus());
-		Lesson saved = lessonRepository.save(entity);
-		return lessonMapper.lessonToResponse(saved);
-	}
-
-	@PreAuthorize("hasRole('ADMIN')") // chỉnh lại sau
-	public LessonResponse update(Long id, LessonRequest dto) {
-		Lesson entity = lessonRepository.findById(id)
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		lessonMapper.updateLesson(entity, dto);
-		entity.setUpdatedAt(LocalDateTime.now());
+		entity.setUpdatedAt(dto.getUpdatedAt());
 		Lesson saved = lessonRepository.save(entity);
 		return lessonMapper.lessonToResponse(saved);
 	}
@@ -246,7 +238,7 @@ public class LessonService {
 		}
 	}
 
-	public FileResponse loadVideo(Long id) throws IOException {
+	public File loadVideoFile(Long id) {
 
 		Lesson lesson = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));
 
@@ -256,10 +248,7 @@ public class LessonService {
 			throw new RuntimeException("File không tồn tại trong hệ thống");
 		}
 
-		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-		return new FileResponse(resource, file.length(), MediaType.valueOf("video/mp4"));
-
+		return file;
 	}
 
 	public FileResponse loadDocumentFile(Long id) throws IOException {
@@ -365,4 +354,13 @@ public class LessonService {
 		return thumbnailUrl;
 	}
 
+//	@PreAuthorize("hasRole('ADMIN')") // chỉnh lại sau
+//	public LessonResponse update(Long id, LessonRequest dto) {
+//		Lesson entity = lessonRepository.findById(id)
+//				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+//		lessonMapper.updateLesson(entity, dto);
+//		entity.setUpdatedAt(LocalDateTime.now());
+//		Lesson saved = lessonRepository.save(entity);
+//		return lessonMapper.lessonToResponse(saved);
+//	}
 }

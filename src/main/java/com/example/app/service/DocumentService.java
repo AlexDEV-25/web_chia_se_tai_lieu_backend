@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.request.StatusRequest;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.exception.AppException;
@@ -125,20 +126,11 @@ public class DocumentService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public DocumentResponse changeStatus(Long id, DocumentRequest dto) {
+	public DocumentResponse changeStatus(Long id, StatusRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		entity.setStatus(dto.getStatus());
-		Document saved = documentRepository.save(entity);
-		return documentMapper.documentToResponse(saved);
-	}
-
-	@PreAuthorize("hasRole('ADMIN')") // chỉnh lại sau
-	public DocumentResponse update(Long id, DocumentRequest dto) {
-		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		documentMapper.updateDocument(entity, dto);
-		entity.setUpdatedAt(LocalDateTime.now());
+		entity.setUpdatedAt(dto.getUpdatedAt());
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}
@@ -278,4 +270,13 @@ public class DocumentService {
 		}
 	}
 
+//	@PreAuthorize("hasRole('ADMIN')") // chỉnh lại sau
+//	public DocumentResponse update(Long id, DocumentRequest dto) {
+//		Document entity = documentRepository.findById(id)
+//				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+//		documentMapper.updateDocument(entity, dto);
+//		entity.setUpdatedAt(LocalDateTime.now());
+//		Document saved = documentRepository.save(entity);
+//		return documentMapper.documentToResponse(saved);
+//	}
 }

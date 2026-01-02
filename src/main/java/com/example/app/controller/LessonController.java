@@ -1,13 +1,17 @@
 package com.example.app.controller;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
 
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -24,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
+import com.example.app.dto.request.StatusRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.LessonResponse;
@@ -64,15 +70,6 @@ public class LessonController {
 		return apiResponse;
 	}
 
-	@PutMapping("/{id}")
-	public APIResponse<LessonResponse> update(@PathVariable Long id, @RequestBody LessonRequest dto) {
-		LessonResponse response = lessonService.update(id, dto);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
-		return apiResponse;
-	}
-
 	@GetMapping("/user/{userId}")
 	public APIResponse<LessonResponse> getByUser(@PathVariable Long userId) {
 		List<LessonResponse> response = lessonService.getByUser(userId);
@@ -101,7 +98,7 @@ public class LessonController {
 	}
 
 	@PutMapping("status/{id}")
-	public APIResponse<LessonResponse> changeStatus(@PathVariable Long id, @RequestBody LessonRequest dto) {
+	public APIResponse<LessonResponse> changeStatus(@PathVariable Long id, @RequestBody StatusRequest dto) {
 		LessonResponse response = lessonService.changeStatus(id, dto);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResult(response);
@@ -164,13 +161,37 @@ public class LessonController {
 		}
 	}
 
-	@GetMapping(value = "/{id}/video")
-	public ResponseEntity<Resource> getLessonVideo(@PathVariable Long id) throws IOException {
+	@GetMapping("/{id}/video")
+	public ResponseEntity<Resource> getLessonVideo(@PathVariable Long id, @RequestHeader HttpHeaders headers)
+			throws IOException {
 
-		FileResponse fileResponse = lessonService.loadVideo(id);
+		File video = lessonService.loadVideoFile(id);
+		long fileLength = video.length();
 
-		return ResponseEntity.ok().contentType(fileResponse.getMediaType()).contentLength(fileResponse.getLength())
-				.body(fileResponse.getResource());
+		String range = headers.getFirst(HttpHeaders.RANGE);
+
+		// 👉 Trường hợp browser chưa seek
+		if (range == null) {
+			return ResponseEntity.ok().contentType(MediaType.valueOf("video/mp4")).contentLength(fileLength)
+					.header(HttpHeaders.ACCEPT_RANGES, "bytes").body(new FileSystemResource(video));
+		}
+
+		// 👉 Browser yêu cầu seek
+		long start = Long.parseLong(range.replace("bytes=", "").replace("-", ""));
+		long end = fileLength - 1;
+		long contentLength = end - start + 1;
+
+		HttpHeaders responseHeaders = new HttpHeaders();
+		responseHeaders.set(HttpHeaders.CONTENT_TYPE, "video/mp4");
+		responseHeaders.set(HttpHeaders.ACCEPT_RANGES, "bytes");
+		responseHeaders.set(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileLength);
+		responseHeaders.set(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength));
+
+		InputStream inputStream = new FileInputStream(video);
+		inputStream.skip(start);
+
+		return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).headers(responseHeaders)
+				.body(new InputStreamResource(inputStream));
 	}
 
 	@GetMapping("/{id}/document")
@@ -207,4 +228,13 @@ public class LessonController {
 		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
+
+//	@PutMapping("/{id}")
+//	public APIResponse<LessonResponse> update(@PathVariable Long id, @RequestBody LessonRequest dto) {
+//		LessonResponse response = lessonService.update(id, dto);
+//		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+//		apiResponse.setResult(response);
+//		apiResponse.setMessage("update success");
+//		return apiResponse;
+//	}
 }

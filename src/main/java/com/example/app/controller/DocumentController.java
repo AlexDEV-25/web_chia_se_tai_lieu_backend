@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.request.StatusRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.dto.response.FileResponse;
@@ -64,15 +65,6 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-	@PutMapping("/{id}")
-	public APIResponse<DocumentResponse> update(@PathVariable Long id, @RequestBody DocumentRequest dto) {
-		DocumentResponse response = documentService.update(id, dto);
-		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
-		return apiResponse;
-	}
-
 	@GetMapping("/user/{userId}")
 	public APIResponse<DocumentResponse> getByUser(@PathVariable Long userId) {
 		List<DocumentResponse> response = documentService.getByUser(userId);
@@ -101,7 +93,7 @@ public class DocumentController {
 	}
 
 	@PutMapping("status/{id}")
-	public APIResponse<DocumentResponse> changeStatus(@PathVariable Long id, @RequestBody DocumentRequest dto) {
+	public APIResponse<DocumentResponse> changeStatus(@PathVariable Long id, @RequestBody StatusRequest dto) {
 		DocumentResponse response = documentService.changeStatus(id, dto);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResult(response);
@@ -191,4 +183,14 @@ public class DocumentController {
 		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
+
+//	@PutMapping("/{id}")
+//	public APIResponse<DocumentResponse> update(@PathVariable Long id, @RequestBody DocumentRequest dto) {
+//		DocumentResponse response = documentService.update(id, dto);
+//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+//		apiResponse.setResult(response);
+//		apiResponse.setMessage("update success");
+//		return apiResponse;
+//	}
+
 }
