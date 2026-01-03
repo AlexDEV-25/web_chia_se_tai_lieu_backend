@@ -9,8 +9,9 @@ import com.example.app.model.Rating;
 
 @Repository
 public interface RatingRepository extends JpaRepository<Rating, Long> {
-
 	List<Rating> findByDocumentId(Long documentId);
+
+	List<Rating> findByLessonId(Long lessonId);
 
 	boolean existsById(Long id);
 }

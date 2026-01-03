@@ -7,8 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RatingRequest {
-	private Integer rating;
+public class CommentDocumentRequest {
+	private String content;
+	private Long idParent;
+	private boolean hide = false;
 	private Long documentId;
 	private Long userId;
 }

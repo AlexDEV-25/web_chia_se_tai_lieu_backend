@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.app.dto.request.RatingRequest;
+import com.example.app.dto.request.RatingDocumentRequest;
+import com.example.app.dto.request.RatingLessonRequest;
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.RatingResponse;
+import com.example.app.dto.response.RatingDocumentResponse;
+import com.example.app.dto.response.RatingLessonResponse;
 import com.example.app.service.RatingService;
 
 import lombok.AllArgsConstructor;
@@ -23,18 +25,36 @@ public class RatingController {
 	private final RatingService ratingService;
 
 	@GetMapping("/document/{docId}")
-	public APIResponse<RatingResponse> getByDocument(@PathVariable Long docId) {
-		List<RatingResponse> response = ratingService.getByDocument(docId);
-		APIResponse<RatingResponse> apiResponse = new APIResponse<RatingResponse>();
+	public APIResponse<RatingDocumentResponse> getByDocument(@PathVariable Long docId) {
+		List<RatingDocumentResponse> response = ratingService.getByDocument(docId);
+		APIResponse<RatingDocumentResponse> apiResponse = new APIResponse<RatingDocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	@PostMapping
-	public APIResponse<RatingResponse> create(@RequestBody RatingRequest dto) {
-		RatingResponse response = ratingService.save(dto);
-		APIResponse<RatingResponse> apiResponse = new APIResponse<RatingResponse>();
+	@PostMapping("/document")
+	public APIResponse<RatingDocumentResponse> createRatingDocument(@RequestBody RatingDocumentRequest dto) {
+		RatingDocumentResponse response = ratingService.save(dto);
+		APIResponse<RatingDocumentResponse> apiResponse = new APIResponse<RatingDocumentResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("save success");
+		return apiResponse;
+	}
+
+	@GetMapping("/lesson/{lessonId}")
+	public APIResponse<RatingLessonResponse> getByLesson(@PathVariable Long lessonId) {
+		List<RatingLessonResponse> response = ratingService.getByLesson(lessonId);
+		APIResponse<RatingLessonResponse> apiResponse = new APIResponse<RatingLessonResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@PostMapping("/lesson")
+	public APIResponse<RatingLessonResponse> createRatingLesson(@RequestBody RatingLessonRequest dto) {
+		RatingLessonResponse response = ratingService.save(dto);
+		APIResponse<RatingLessonResponse> apiResponse = new APIResponse<RatingLessonResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("save success");
 		return apiResponse;

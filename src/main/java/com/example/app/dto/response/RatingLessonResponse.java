@@ -9,11 +9,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RatingResponse {
+public class RatingLessonResponse {
 	private Long id;
 	private Integer rating;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 	private Long userId;
-	private Long documentId;
+	private Long lessonId;
 }

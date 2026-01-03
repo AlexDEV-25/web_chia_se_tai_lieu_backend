@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentRequest {
+public class CommentLessonRequest {
 	private String content;
 	private Long idParent;
 	private boolean hide = false;
-	private Long documentId;
+	private Long LessonId;
 	private Long userId;
 }

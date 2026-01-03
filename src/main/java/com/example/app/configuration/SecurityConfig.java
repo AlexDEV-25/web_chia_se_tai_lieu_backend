@@ -29,9 +29,10 @@ public class SecurityConfig {
 			"/api/lessons/view/{id}" };
 
 	private final String[] PUBLIC_ENDPOINTS_GET = { "/api/categories", "/api/comments/document/{docId}",
-			"/api/documents", "/api/documents/{id}", "/api/documents/user/{userId}",
+			"/api/comments/lesson/{lessonId}", "/api/documents", "/api/documents/{id}", "/api/documents/user/{userId}",
 			"/api/documents/category/{categoryId}", "/api/documents/{id}/file", "/api/ratings/document/{docId}",
-			"/api/users/email/{email:.+}", "/api/users/username/{username}", "/api/images/**", "/api/auth/activate",
+			"/api/ratings/lesson/{lessonId}", "/api/users/email/{email:.+}", "/api/users/username/{username}",
+			"/api/images/**", "/api/auth/activate",
 
 //			"/api/comments/document/{docId}",
 			"/api/lessons", "/api/lessons/{id}", "/api/lessons/user/{userId}", "/api/lessons/category/{categoryId}",

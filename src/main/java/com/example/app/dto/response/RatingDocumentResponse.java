@@ -9,15 +9,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentResponse {
+public class RatingDocumentResponse {
 	private Long id;
-	private String content;
+	private Integer rating;
 	private LocalDateTime createdAt;
-	private Long idParent;
 	private LocalDateTime updatedAt;
 	private Long userId;
-	private String username;
-	private String userAvatar;
 	private Long documentId;
-	private boolean hide;
 }
