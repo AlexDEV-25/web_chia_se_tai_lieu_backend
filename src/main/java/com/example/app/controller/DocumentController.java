@@ -24,13 +24,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
-import com.example.app.dto.request.StatusRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.service.DocumentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -84,7 +84,7 @@ public class DocumentController {
 	}
 
 	@PutMapping("hide/{id}")
-	public APIResponse<DocumentResponse> hide(@PathVariable Long id, @RequestBody HideRequest dto) {
+	public APIResponse<DocumentResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
 		DocumentResponse response = documentService.hide(id, dto);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResult(response);
@@ -92,12 +92,12 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-	@PutMapping("status/{id}")
-	public APIResponse<DocumentResponse> changeStatus(@PathVariable Long id, @RequestBody StatusRequest dto) {
-		DocumentResponse response = documentService.changeStatus(id, dto);
+	@PutMapping("/{id}")
+	public APIResponse<DocumentResponse> update(@PathVariable Long id, @RequestBody DocumentRequest dto) {
+		DocumentResponse response = documentService.update(id, dto);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
+		apiResponse.setMessage("update success");
 		return apiResponse;
 	}
 
@@ -123,10 +123,12 @@ public class DocumentController {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			DocumentRequest dto = mapper.readValue(dataJson, DocumentRequest.class);
+			System.out.println(dto.toString());
 			DocumentResponse response = documentService.uploadFile(file, dto);
 			APIResponse<DocumentResponse> apiResponse = new APIResponse<>();
 			apiResponse.setMessage("Upload thành công");
 			apiResponse.setResult(response);
+			System.out.println(apiResponse.getResult().toString());
 			return apiResponse;
 
 		} catch (Exception e) {
@@ -168,7 +170,8 @@ public class DocumentController {
 	}
 
 	@PutMapping("/my-document/{id}")
-	public APIResponse<DocumentResponse> updateMyDocument(@PathVariable Long id, @RequestBody DocumentRequest dto) {
+	public APIResponse<DocumentResponse> updateMyDocument(@PathVariable Long id,
+			@RequestBody @Valid DocumentRequest dto) {
 		DocumentResponse response = documentService.updateMyDocument(id, dto);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResult(response);
@@ -183,14 +186,4 @@ public class DocumentController {
 		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
-
-//	@PutMapping("/{id}")
-//	public APIResponse<DocumentResponse> update(@PathVariable Long id, @RequestBody DocumentRequest dto) {
-//		DocumentResponse response = documentService.update(id, dto);
-//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-//		apiResponse.setResult(response);
-//		apiResponse.setMessage("update success");
-//		return apiResponse;
-//	}
-
 }

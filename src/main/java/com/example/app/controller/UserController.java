@@ -21,6 +21,7 @@ import com.example.app.dto.response.UserResponse;
 import com.example.app.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -39,7 +40,7 @@ public class UserController {
 	}
 
 	@PutMapping("hide/{id}")
-	public APIResponse<UserResponse> hide(@PathVariable Long id, @RequestBody HideRequest dto) {
+	public APIResponse<UserResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
 		UserResponse response = userService.hide(id, dto);
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		apiResponse.setResult(response);
@@ -94,7 +95,7 @@ public class UserController {
 	}
 
 	@PostMapping
-	public APIResponse<UserResponse> create(@RequestBody UserRequest dto) {
+	public APIResponse<UserResponse> create(@RequestBody @Valid UserRequest dto) {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		UserResponse response = userService.save(dto);
 		apiResponse.setResult(response);

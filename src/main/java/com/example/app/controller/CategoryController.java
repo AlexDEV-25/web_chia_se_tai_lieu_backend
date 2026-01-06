@@ -62,7 +62,7 @@ public class CategoryController {
 	}
 
 	@PutMapping("hide/{id}")
-	public APIResponse<CategoryResponse> hide(@PathVariable Long id, @RequestBody HideRequest dto) {
+	public APIResponse<CategoryResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
 		CategoryResponse response = categoryService.hide(id, dto);
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
 		apiResponse.setResult(response);

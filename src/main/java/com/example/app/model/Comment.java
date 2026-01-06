@@ -47,12 +47,12 @@ public class Comment {
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JsonBackReference
-	@JoinColumn(name = "document_id")
+	@JoinColumn(name = "document_id", nullable = true)
 	private Document document;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JsonBackReference
-	@JoinColumn(name = "lesson_id")
+	@JoinColumn(name = "lesson_id", nullable = true)
 	private Lesson lesson;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })

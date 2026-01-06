@@ -29,13 +29,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
-import com.example.app.dto.request.StatusRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.LessonResponse;
 import com.example.app.service.LessonService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -89,7 +89,7 @@ public class LessonController {
 	}
 
 	@PutMapping("hide/{id}")
-	public APIResponse<LessonResponse> hide(@PathVariable Long id, @RequestBody HideRequest dto) {
+	public APIResponse<LessonResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
 		LessonResponse response = lessonService.hide(id, dto);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResult(response);
@@ -97,12 +97,12 @@ public class LessonController {
 		return apiResponse;
 	}
 
-	@PutMapping("status/{id}")
-	public APIResponse<LessonResponse> changeStatus(@PathVariable Long id, @RequestBody StatusRequest dto) {
-		LessonResponse response = lessonService.changeStatus(id, dto);
+	@PutMapping("/{id}")
+	public APIResponse<LessonResponse> update(@PathVariable Long id, @RequestBody LessonRequest dto) {
+		LessonResponse response = lessonService.update(id, dto);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
+		apiResponse.setMessage("update success");
 		return apiResponse;
 	}
 
@@ -213,7 +213,7 @@ public class LessonController {
 	}
 
 	@PutMapping("my-lesson/{id}")
-	public APIResponse<LessonResponse> updateMyLesson(@PathVariable Long id, @RequestBody LessonRequest dto) {
+	public APIResponse<LessonResponse> updateMyLesson(@PathVariable Long id, @RequestBody @Valid LessonRequest dto) {
 		LessonResponse response = lessonService.updateMyDocument(id, dto);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResult(response);
@@ -228,13 +228,4 @@ public class LessonController {
 		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
-
-//	@PutMapping("/{id}")
-//	public APIResponse<LessonResponse> update(@PathVariable Long id, @RequestBody LessonRequest dto) {
-//		LessonResponse response = lessonService.update(id, dto);
-//		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-//		apiResponse.setResult(response);
-//		apiResponse.setMessage("update success");
-//		return apiResponse;
-//	}
 }

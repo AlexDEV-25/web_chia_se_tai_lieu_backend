@@ -26,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
-import com.example.app.dto.request.StatusRequest;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.LessonResponse;
 import com.example.app.exception.AppException;
@@ -121,11 +120,11 @@ public class LessonService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public LessonResponse changeStatus(Long id, StatusRequest dto) {
+	public LessonResponse update(Long id, LessonRequest dto) {
 		Lesson entity = lessonRepository.findById(id)
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		entity.setStatus(dto.getStatus());
-		entity.setUpdatedAt(dto.getUpdatedAt());
+		lessonMapper.updateLesson(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
 		Lesson saved = lessonRepository.save(entity);
 		return lessonMapper.lessonToResponse(saved);
 	}
@@ -153,8 +152,8 @@ public class LessonService {
 		String thumbnailUrl = handleThumbnail(videoStorage + "\\" + lessonUrl);
 		lesson.setThumbnailUrl(thumbnailUrl);
 
-		Category category = categoryRepository.findById(dto.getCategoryId())
-				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		Category category = dto.getCategoryId() != null ? categoryRepository.findById(dto.getCategoryId())
+				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST)) : null;
 		lesson.setCategory(category);
 
 		User user = getUserByToken.get();
@@ -353,14 +352,4 @@ public class LessonService {
 
 		return thumbnailUrl;
 	}
-
-//	@PreAuthorize("hasRole('ADMIN')") // chỉnh lại sau
-//	public LessonResponse update(Long id, LessonRequest dto) {
-//		Lesson entity = lessonRepository.findById(id)
-//				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-//		lessonMapper.updateLesson(entity, dto);
-//		entity.setUpdatedAt(LocalDateTime.now());
-//		Lesson saved = lessonRepository.save(entity);
-//		return lessonMapper.lessonToResponse(saved);
-//	}
 }

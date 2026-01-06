@@ -24,6 +24,7 @@ import com.example.app.repository.FavoriteRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.repository.UserRepository;
 import com.example.app.share.GetUserByToken;
+import com.example.app.share.Status;
 
 import lombok.AllArgsConstructor;
 
@@ -34,7 +35,7 @@ public class FavoriteService {
 	private final FavoriteRepository favoriteRepository;
 	private final UserRepository userRepository;
 	private final DocumentRepository documentRepository;
-	private final LessonRepository lesonRepository;
+	private final LessonRepository lessonRepository;
 	private final FavoriteMapper favoriteMapper;
 	private final GetUserByToken getUserByToken;
 
@@ -61,7 +62,7 @@ public class FavoriteService {
 	@PreAuthorize("hasAuthority('ADD_LESSON_FAVORITE')")
 	public FavoriteDocumentResponse addLessonFavorite(FavoriteLessonRequest dto) {
 		Favorite favorite = new Favorite();
-		Lesson lesson = lesonRepository.findById(dto.getLessonId())
+		Lesson lesson = lessonRepository.findById(dto.getLessonId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		User user = userRepository.findById(dto.getUserId())
@@ -85,7 +86,13 @@ public class FavoriteService {
 		List<FavoriteDocumentResponse> response = new ArrayList<FavoriteDocumentResponse>();
 		for (Favorite f : favorites) {
 			if (f.getDocument() != null) {
-				response.add(favoriteMapper.favoriteDocumentToResponse(f));
+				Document doc = documentRepository.findById(f.getDocument().getId())
+						.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				Status status = Status.PUBLISHED;
+				if (doc.isHide() == false && doc.getStatus() == status) {
+					response.add(favoriteMapper.favoriteDocumentToResponse(f));
+				}
+
 			}
 		}
 		return response;
@@ -98,10 +105,14 @@ public class FavoriteService {
 		List<FavoriteLessonResponse> response = new ArrayList<FavoriteLessonResponse>();
 		for (Favorite f : favorites) {
 			if (f.getLesson() != null) {
-				response.add(favoriteMapper.favoriteLessonToResponse(f));
+				Lesson lesson = lessonRepository.findById(f.getLesson().getId())
+						.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				Status status = Status.PUBLISHED;
+				if (lesson.isHide() == false && lesson.getStatus() == status) {
+					response.add(favoriteMapper.favoriteLessonToResponse(f));
+				}
 			}
 		}
-
 		return response;
 	}
 

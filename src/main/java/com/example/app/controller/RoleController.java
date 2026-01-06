@@ -16,6 +16,7 @@ import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.RoleResponse;
 import com.example.app.service.RoleService;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -43,7 +44,7 @@ public class RoleController {
 	}
 
 	@PostMapping
-	public APIResponse<RoleResponse> create(@RequestBody RoleRequest dto) {
+	public APIResponse<RoleResponse> create(@RequestBody @Valid RoleRequest dto) {
 		RoleResponse response = roleService.save(dto);
 		APIResponse<RoleResponse> apiResponse = new APIResponse<RoleResponse>();
 		apiResponse.setResult(response);
@@ -52,7 +53,7 @@ public class RoleController {
 	}
 
 	@PutMapping("/{name}")
-	public APIResponse<RoleResponse> update(@PathVariable String name, @RequestBody RoleRequest dto) {
+	public APIResponse<RoleResponse> update(@PathVariable String name, @RequestBody @Valid RoleRequest dto) {
 		RoleResponse response = roleService.update(name, dto);
 		APIResponse<RoleResponse> apiResponse = new APIResponse<RoleResponse>();
 		apiResponse.setResult(response);

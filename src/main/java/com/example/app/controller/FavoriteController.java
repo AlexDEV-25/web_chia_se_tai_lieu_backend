@@ -17,6 +17,7 @@ import com.example.app.dto.response.FavoriteDocumentResponse;
 import com.example.app.dto.response.FavoriteLessonResponse;
 import com.example.app.service.FavoriteService;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -27,7 +28,7 @@ public class FavoriteController {
 	private final FavoriteService favoriteService;
 
 	@PostMapping("/document")
-	public APIResponse<FavoriteDocumentResponse> addDocumentFavorite(@RequestBody FavoriteDocumentRequest dto) {
+	public APIResponse<FavoriteDocumentResponse> addDocumentFavorite(@RequestBody @Valid FavoriteDocumentRequest dto) {
 		FavoriteDocumentResponse response = favoriteService.addDocumentFavorite(dto);
 		APIResponse<FavoriteDocumentResponse> apiResponse = new APIResponse<FavoriteDocumentResponse>();
 		apiResponse.setResult(response);
@@ -36,7 +37,7 @@ public class FavoriteController {
 	}
 
 	@PostMapping("/lesson")
-	public APIResponse<FavoriteDocumentResponse> addLessonFavorite(@RequestBody FavoriteLessonRequest dto) {
+	public APIResponse<FavoriteDocumentResponse> addLessonFavorite(@RequestBody @Valid FavoriteLessonRequest dto) {
 		FavoriteDocumentResponse response = favoriteService.addLessonFavorite(dto);
 		APIResponse<FavoriteDocumentResponse> apiResponse = new APIResponse<FavoriteDocumentResponse>();
 		apiResponse.setResult(response);

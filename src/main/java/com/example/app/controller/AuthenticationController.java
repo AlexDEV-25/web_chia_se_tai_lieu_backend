@@ -21,6 +21,7 @@ import com.example.app.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -30,7 +31,7 @@ public class AuthenticationController {
 	private final AuthenticationService authenticationService;
 
 	@PostMapping("/log-in")
-	APIResponse<AuthenticationResponse> login(@RequestBody AuthenticationRequest dto) {
+	APIResponse<AuthenticationResponse> login(@RequestBody @Valid AuthenticationRequest dto) {
 		APIResponse<AuthenticationResponse> apiResponse = new APIResponse<AuthenticationResponse>();
 		AuthenticationResponse resutl = authenticationService.login(dto);
 		apiResponse.setResult(resutl);
@@ -57,7 +58,7 @@ public class AuthenticationController {
 	}
 
 	@PostMapping("/register")
-	public APIResponse<UserResponse> register(@RequestBody UserRequest dto) {
+	public APIResponse<UserResponse> register(@RequestBody @Valid UserRequest dto) {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		UserResponse response = authenticationService.register(dto);
 		apiResponse.setResult(response);

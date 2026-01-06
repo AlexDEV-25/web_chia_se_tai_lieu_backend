@@ -16,6 +16,7 @@ import com.example.app.dto.response.RatingDocumentResponse;
 import com.example.app.dto.response.RatingLessonResponse;
 import com.example.app.service.RatingService;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -34,7 +35,7 @@ public class RatingController {
 	}
 
 	@PostMapping("/document")
-	public APIResponse<RatingDocumentResponse> createRatingDocument(@RequestBody RatingDocumentRequest dto) {
+	public APIResponse<RatingDocumentResponse> createRatingDocument(@RequestBody @Valid RatingDocumentRequest dto) {
 		RatingDocumentResponse response = ratingService.save(dto);
 		APIResponse<RatingDocumentResponse> apiResponse = new APIResponse<RatingDocumentResponse>();
 		apiResponse.setResult(response);
@@ -52,7 +53,7 @@ public class RatingController {
 	}
 
 	@PostMapping("/lesson")
-	public APIResponse<RatingLessonResponse> createRatingLesson(@RequestBody RatingLessonRequest dto) {
+	public APIResponse<RatingLessonResponse> createRatingLesson(@RequestBody @Valid RatingLessonRequest dto) {
 		RatingLessonResponse response = ratingService.save(dto);
 		APIResponse<RatingLessonResponse> apiResponse = new APIResponse<RatingLessonResponse>();
 		apiResponse.setResult(response);

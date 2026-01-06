@@ -65,7 +65,8 @@ public class CommentController {
 	}
 
 	@PutMapping("/{id}")
-	public APIResponse<CommentDocumentResponse> update(@PathVariable Long id, @RequestBody CommentDocumentRequest dto) {
+	public APIResponse<CommentDocumentResponse> update(@PathVariable Long id,
+			@RequestBody @Valid CommentDocumentRequest dto) {
 		CommentDocumentResponse response = commentService.update(id, dto);
 		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
 		apiResponse.setResult(response);
@@ -74,7 +75,7 @@ public class CommentController {
 	}
 
 	@PutMapping("hide/{id}")
-	public APIResponse<CommentDocumentResponse> hide(@PathVariable Long id, @RequestBody HideRequest dto) {
+	public APIResponse<CommentDocumentResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
 		CommentDocumentResponse response = commentService.hide(id, dto);
 		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
 		apiResponse.setResult(response);

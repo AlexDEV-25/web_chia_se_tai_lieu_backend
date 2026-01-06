@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "name")
 public class Role {
 	@Id
-	@Column(name = "name")
+	@Column(name = "name", nullable = false)
 	private String name;
 	@Column(name = "description")
 	private String description;

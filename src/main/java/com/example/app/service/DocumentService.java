@@ -25,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
-import com.example.app.dto.request.StatusRequest;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.exception.AppException;
@@ -126,11 +125,11 @@ public class DocumentService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public DocumentResponse changeStatus(Long id, StatusRequest dto) {
+	public DocumentResponse update(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		entity.setStatus(dto.getStatus());
-		entity.setUpdatedAt(dto.getUpdatedAt());
+		documentMapper.updateDocument(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}
@@ -147,8 +146,8 @@ public class DocumentService {
 		String thumbnailUrl = handleThumbnail(documentStorage + "\\" + fileUrl);
 		document.setThumbnailUrl(thumbnailUrl);
 
-		Category category = categoryRepository.findById(dto.getCategoryId())
-				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		Category category = dto.getCategoryId() != null ? categoryRepository.findById(dto.getCategoryId())
+				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST)) : null;
 		document.setCategory(category);
 
 		User user = getUserByToken.get();
@@ -269,14 +268,4 @@ public class DocumentService {
 			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
-
-//	@PreAuthorize("hasRole('ADMIN')") // chỉnh lại sau
-//	public DocumentResponse update(Long id, DocumentRequest dto) {
-//		Document entity = documentRepository.findById(id)
-//				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-//		documentMapper.updateDocument(entity, dto);
-//		entity.setUpdatedAt(LocalDateTime.now());
-//		Document saved = documentRepository.save(entity);
-//		return documentMapper.documentToResponse(saved);
-//	}
 }

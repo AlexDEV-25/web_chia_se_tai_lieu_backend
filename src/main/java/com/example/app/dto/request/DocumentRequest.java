@@ -2,6 +2,7 @@ package com.example.app.dto.request;
 
 import com.example.app.share.Status;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,11 +11,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DocumentRequest {
+
+	@NotBlank(message = "title không được để trống")
 	private String title;
+
 	private String description;
-	private Long viewsCount;
-	private Long downloadsCount;
+
+	@NotBlank(message = "status không được để trống")
 	private Status status;
-	private boolean hide = false;
+
+	private boolean hide;
+
 	private Long categoryId;
 }

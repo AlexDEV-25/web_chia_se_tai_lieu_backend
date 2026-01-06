@@ -73,12 +73,12 @@ public class Lesson {
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JsonBackReference
-	@JoinColumn(name = "category_id")
+	@JoinColumn(name = "category_id", nullable = true)
 	private Category category;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JsonBackReference
-	@JoinColumn(name = "user_id")
+	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
 	@OneToMany(mappedBy = "lesson", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })

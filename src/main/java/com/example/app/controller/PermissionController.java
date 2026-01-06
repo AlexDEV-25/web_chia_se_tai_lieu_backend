@@ -16,6 +16,7 @@ import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.PermissionResponse;
 import com.example.app.service.PermissionService;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -43,7 +44,7 @@ public class PermissionController {
 	}
 
 	@PostMapping
-	public APIResponse<PermissionResponse> create(@RequestBody PermissionRequest dto) {
+	public APIResponse<PermissionResponse> create(@RequestBody @Valid PermissionRequest dto) {
 		PermissionResponse response = permissionService.save(dto);
 		APIResponse<PermissionResponse> apiResponse = new APIResponse<PermissionResponse>();
 		apiResponse.setResult(response);
@@ -52,7 +53,8 @@ public class PermissionController {
 	}
 
 	@PutMapping("/{name}")
-	public APIResponse<PermissionResponse> update(@PathVariable String name, @RequestBody PermissionRequest dto) {
+	public APIResponse<PermissionResponse> update(@PathVariable String name,
+			@RequestBody @Valid PermissionRequest dto) {
 		PermissionResponse response = permissionService.update(name, dto);
 		APIResponse<PermissionResponse> apiResponse = new APIResponse<PermissionResponse>();
 		apiResponse.setResult(response);
