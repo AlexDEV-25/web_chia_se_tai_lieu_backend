@@ -18,7 +18,7 @@ public class SendMail {
 	@Value("${spring.mail.username}")
 	private String FROM;
 
-	public void sendEmail(String email, String activationCode) {
+	public void sendEmailActivateAccount(String email, String activationCode) {
 		String subject = "Kích hoạt tài khoản của bạn";
 
 		String url = "http://localhost:5173/activate/" + email + "/" + activationCode;
@@ -27,6 +27,20 @@ public class SendMail {
 		String html = "<html><body>" + "<h2 style='color:#4A90E2'>Kích hoạt tài khoản</h2>"
 				+ "<p>Vui lòng sử dụng mã sau:</p>" + "<h1 style='color:green'>" + activationCode + "</h1>"
 				+ "<p>Bấm vào link để kích hoạt:</p>" + "<a href='" + url + "'>Nhấn vào đây để kích hoạt</a>"
+				+ "</body></html>";
+
+		sendHtmlEmail(FROM, email, subject, html);
+	}
+
+	public void sendEmailChangePassword(String email, String forgotPassWordCode) {
+		String subject = "Đặt lại mật khẩu tài khoản của bạn";
+
+		String url = "http://localhost:5173/change-password/" + email + "/" + forgotPassWordCode;
+
+		// HTML content
+		String html = "<html><body>" + "<h2 style='color:#4A90E2'>Đặt lại mật khẩu</h2>"
+				+ "<p>Vui lòng sử dụng mã sau:</p>" + "<h1 style='color:green'>" + forgotPassWordCode + "</h1>"
+				+ "<p>Bấm vào link để kích hoạt:</p>" + "<a href='" + url + "'>Nhấn vào đây để đặt lại mật khẩu</a>"
 				+ "</body></html>";
 
 		sendHtmlEmail(FROM, email, subject, html);

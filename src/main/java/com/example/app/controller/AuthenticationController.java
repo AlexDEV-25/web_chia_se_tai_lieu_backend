@@ -3,14 +3,15 @@ package com.example.app.controller;
 import java.text.ParseException;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.app.dto.request.ActiveAccountRequest;
 import com.example.app.dto.request.AuthenticationRequest;
+import com.example.app.dto.request.ChangePasswordRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.AuthenticationResponse;
@@ -66,11 +67,27 @@ public class AuthenticationController {
 		return apiResponse;
 	}
 
-	@GetMapping("/activate")
-	public APIResponse<Void> activateAccount(@RequestParam String email, @RequestParam String activationCode) {
+	@PostMapping("/activate")
+	public APIResponse<Void> activateAccount(@RequestBody ActiveAccountRequest dto) {
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		authenticationService.activateAccount(email, activationCode);
+		authenticationService.activateAccount(dto);
 		apiResponse.setMessage("acctivate success");
+		return apiResponse;
+	}
+
+	@PostMapping("/forgot-password")
+	public APIResponse<Void> forgotPassword(@RequestParam String email) {
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
+		authenticationService.forgotPassword(email);
+		apiResponse.setMessage("send email success");
+		return apiResponse;
+	}
+
+	@PostMapping("/change-password")
+	public APIResponse<UserResponse> ChangePassword(@RequestBody ChangePasswordRequest dto) {
+		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
+		authenticationService.changePassword(dto);
+		apiResponse.setMessage("change password success");
 		return apiResponse;
 	}
 

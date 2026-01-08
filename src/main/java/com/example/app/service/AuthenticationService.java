@@ -15,7 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.app.dto.request.ActiveAccountRequest;
 import com.example.app.dto.request.AuthenticationRequest;
+import com.example.app.dto.request.ChangePasswordRequest;
 import com.example.app.dto.request.ExchangeTokenRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.AuthenticationResponse;
@@ -196,25 +198,56 @@ public class AuthenticationService {
 		user.setActivationCode(activationCode);
 
 		User saved = userRepository.save(user);
-		sendMail.sendEmail(saved.getEmail(), activationCode);
+		sendMail.sendEmailActivateAccount(saved.getEmail(), activationCode);
 
 		UserResponse response = userMapper.userToResponse(saved);
 		return response;
 	}
 
-	public void activateAccount(String email, String activationCode) {
-		User user = userRepository.findByEmail(email);
+	public void activateAccount(ActiveAccountRequest request) {
+		User user = userRepository.findByEmail(request.getEmail());
 		if (user == null) {
 			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
 		}
 		if (user.isVerified()) {
 			throw new AppException("tài khoản đã kích hoạt rồi", 1001, HttpStatus.BAD_REQUEST);
 		}
-		if (user.getActivationCode().equals(activationCode)) {
+		if (user.getActivationCode().equals(request.getActivationCode())) {
 			user.setVerified(true);
+			user.setActivationCode(null);
 			userRepository.save(user);
 		} else {
 			throw new AppException("mã kích hoạt không đúng", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	public void forgotPassword(String email) {
+		if (userRepository.existsByEmail(email)) {
+			User user = userRepository.findByEmail(email);
+			String forgotPassWordCode = this.generateActivationCode();
+			user.setForgotPasswordCode(forgotPassWordCode);
+			userRepository.save(user);
+			sendMail.sendEmailChangePassword(email, forgotPassWordCode);
+		} else {
+			throw new AppException("email không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	public UserResponse changePassword(ChangePasswordRequest request) {
+		User user = userRepository.findByEmail(request.getEmail());
+		if (user == null) {
+			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
+		}
+
+		if (user.getForgotPasswordCode().equals(request.getForgotPasswordCode())) {
+			user.setForgotPasswordCode(null);
+			user.setPassword(passwordEncoder.encode(request.getPassword()));
+			user.setUpdatedAt(LocalDateTime.now());
+			User saved = userRepository.save(user);
+			UserResponse response = userMapper.userToResponse(saved);
+			return response;
+		} else {
+			throw new AppException("mã không đúng", 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
 

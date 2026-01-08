@@ -47,6 +47,9 @@ public class User {
 	@Column(name = "activation_code")
 	private String activationCode;
 
+	@Column(name = "forgot_password_code")
+	private String forgotPasswordCode;
+
 	@Column(name = "avatar_url")
 	private String avatarUrl;
 

@@ -12,6 +12,7 @@ import com.example.app.model.User;
 public interface UserMapper {
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "activationCode", ignore = true)
+	@Mapping(target = "forgotPasswordCode", ignore = true)
 	@Mapping(target = "avatarUrl", ignore = true)
 	@Mapping(target = "lessons", ignore = true)
 	@Mapping(target = "documents", ignore = true)
@@ -31,6 +32,7 @@ public interface UserMapper {
 	@Mapping(target = "username", ignore = true)
 	@Mapping(target = "password", ignore = true)
 	@Mapping(target = "activationCode", ignore = true)
+	@Mapping(target = "forgotPasswordCode", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "lessons", ignore = true)

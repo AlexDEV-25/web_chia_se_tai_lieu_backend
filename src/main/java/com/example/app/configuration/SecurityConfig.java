@@ -26,13 +26,13 @@ public class SecurityConfig {
 
 	private final String[] PUBLIC_ENDPOINTS_POST = { "/api/auth/register", "/api/auth/log-in",
 			"/api/auth/log-in-google", "/api/auth/introspect", "/api/auth/refresh-token", "/api/documents/view/{id}",
-			"/api/lessons/view/{id}" };
+			"/api/lessons/view/{id}", "/api/auth/activate", "/api/auth/forgot-password", "/api/auth/change-password" };
 
 	private final String[] PUBLIC_ENDPOINTS_GET = { "/api/categories", "/api/comments/document/{docId}",
 			"/api/comments/lesson/{lessonId}", "/api/documents", "/api/documents/{id}", "/api/documents/user/{userId}",
 			"/api/documents/category/{categoryId}", "/api/documents/{id}/file", "/api/ratings/document/{docId}",
 			"/api/ratings/lesson/{lessonId}", "/api/users/email/{email:.+}", "/api/users/username/{username}",
-			"/api/images/**", "/api/auth/activate",
+			"/api/images/**",
 
 //			"/api/comments/document/{docId}",
 			"/api/lessons", "/api/lessons/{id}", "/api/lessons/user/{userId}", "/api/lessons/category/{categoryId}",
