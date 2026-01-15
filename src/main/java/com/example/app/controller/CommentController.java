@@ -90,19 +90,19 @@ public class CommentController {
 	}
 
 	@GetMapping("/document/{docId}")
-	public APIResponse<CommentTreeResponse> getDocumentCommentTree(@PathVariable Long docId) {
+	public APIResponse<List<CommentTreeResponse>> getDocumentCommentTree(@PathVariable Long docId) {
 		List<CommentTreeResponse> response = commentService.getDocumentCommentTree(docId);
-		APIResponse<CommentTreeResponse> apiResponse = new APIResponse<CommentTreeResponse>();
-		apiResponse.setResultList(response);
+		APIResponse<List<CommentTreeResponse>> apiResponse = new APIResponse<List<CommentTreeResponse>>();
+		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson/{lessonId}")
-	public APIResponse<CommentTreeResponse> getLessonCommentTree(@PathVariable Long lessonId) {
+	public APIResponse<List<CommentTreeResponse>> getLessonCommentTree(@PathVariable Long lessonId) {
 		List<CommentTreeResponse> response = commentService.getLessonCommentTree(lessonId);
-		APIResponse<CommentTreeResponse> apiResponse = new APIResponse<CommentTreeResponse>();
-		apiResponse.setResultList(response);
+		APIResponse<List<CommentTreeResponse>> apiResponse = new APIResponse<List<CommentTreeResponse>>();
+		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
