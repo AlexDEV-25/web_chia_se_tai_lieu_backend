@@ -2,11 +2,14 @@ package com.example.app.model;
 
 import java.time.LocalDateTime;
 
+import com.example.app.share.Type;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,6 +34,10 @@ public class Favorite {
 
 	@Column(name = "created_at")
 	private LocalDateTime createdAt = LocalDateTime.now();
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "type", nullable = false)
+	private Type type;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JoinColumn(name = "user_id", nullable = false)

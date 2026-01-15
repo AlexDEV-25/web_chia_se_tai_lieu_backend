@@ -3,6 +3,7 @@ package com.example.app.dto.request;
 import com.example.app.share.Status;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,7 +18,7 @@ public class DocumentRequest {
 
 	private String description;
 
-	@NotBlank(message = "status không được để trống")
+	@NotNull(message = "Status không được null")
 	private Status status;
 
 	private boolean hide;

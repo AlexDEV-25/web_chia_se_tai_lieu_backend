@@ -1,5 +1,7 @@
 package com.example.app.dto.request;
 
+import com.example.app.share.Type;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -9,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentDocumentRequest {
+public class CommentRequest {
 
 	@NotBlank(message = "content không được để trống")
 	private String content;
@@ -18,9 +20,12 @@ public class CommentDocumentRequest {
 
 	private boolean hide;
 
-	@NotNull(message = "documentId không được để trống")
-	private Long documentId;
+	@NotNull(message = "contentId không được để trống")
+	private Long contentId;
 
 	@NotNull(message = "userId không được để trống")
 	private Long userId;
+
+	@NotNull(message = "Type không được null")
+	private Type type;
 }

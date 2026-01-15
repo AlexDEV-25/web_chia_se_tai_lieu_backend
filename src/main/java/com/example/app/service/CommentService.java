@@ -2,18 +2,20 @@ package com.example.app.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.example.app.dto.request.CommentDocumentRequest;
-import com.example.app.dto.request.CommentLessonRequest;
+import com.example.app.dto.request.CommentRequest;
 import com.example.app.dto.request.HideRequest;
-import com.example.app.dto.response.CommentDocumentResponse;
-import com.example.app.dto.response.CommentLessonResponse;
+import com.example.app.dto.response.CommentResponse;
+import com.example.app.dto.response.CommentTreeResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.CommentMapper;
 import com.example.app.model.Comment;
@@ -36,28 +38,65 @@ public class CommentService {
 	private final UserRepository userRepository;
 	private final CommentMapper commentMapper;
 
-	public List<CommentDocumentResponse> getByDocument(Long docId) {
-		List<Comment> comments = commentRepository.findByDocumentId(docId);
-		List<CommentDocumentResponse> response = new ArrayList<CommentDocumentResponse>();
-		for (Comment c : comments) {
-			response.add(commentMapper.commentToCommentDocumentResponse(c));
+	public List<CommentTreeResponse> getDocumentCommentTree(Long docId) {
+		List<Comment> list = commentRepository.findByDocumentId(docId);
+		Map<Long, CommentTreeResponse> map = new HashMap<>();
+
+		for (Comment c : list) {
+			if (c.isHide())
+				continue;
+			CommentTreeResponse dto = commentMapper.commentToCommentDocumentTreeResponse(c);
+			map.put(dto.getId(), dto);
 		}
-		return response;
+		List<CommentTreeResponse> roots = builtTree(map);
+		sortRecursively(roots);
+		return roots;
 	}
 
-	public List<CommentLessonResponse> getByLesson(Long lessonId) {
-		List<Comment> comments = commentRepository.findByLessonId(lessonId);
-		List<CommentLessonResponse> response = new ArrayList<CommentLessonResponse>();
-		for (Comment c : comments) {
-			response.add(commentMapper.commentToCommentLessonResponse(c));
+	public List<CommentTreeResponse> getLessonCommentTree(Long lessonId) {
+		List<Comment> list = commentRepository.findByLessonId(lessonId);
+		Map<Long, CommentTreeResponse> map = new HashMap<>();
+		for (Comment c : list) {
+			if (c.getIdParent() == null && c.isHide())
+				continue;
+			CommentTreeResponse dto = commentMapper.commentToCommentLessonTreeResponse(c);
+			map.put(dto.getId(), dto);
 		}
-		return response;
+
+		List<CommentTreeResponse> roots = builtTree(map);
+		sortRecursively(roots);
+		return roots;
+	}
+
+	private List<CommentTreeResponse> builtTree(Map<Long, CommentTreeResponse> map) {
+		List<CommentTreeResponse> roots = new ArrayList<CommentTreeResponse>();
+		for (CommentTreeResponse dto : map.values()) {
+			Long parentId = dto.getIdParent();
+			if (parentId == null || parentId == 0) {
+				roots.add(dto);
+			} else {
+				CommentTreeResponse parent = map.get(parentId);
+				if (parent != null) {
+					parent.getChildren().add(dto);
+				}
+			}
+		}
+		return roots;
+	}
+
+	private void sortRecursively(List<CommentTreeResponse> list) {
+		if (list == null || list.isEmpty())
+			return;
+		list.sort(Comparator.comparing(CommentTreeResponse::getCreatedAt));
+		for (CommentTreeResponse c : list) {
+			sortRecursively(c.getChildren());
+		}
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public List<CommentDocumentResponse> getAllComments() {
+	public List<CommentResponse> getAllComments() {
 		List<Comment> comments = commentRepository.findAll();
-		List<CommentDocumentResponse> response = new ArrayList<CommentDocumentResponse>();
+		List<CommentResponse> response = new ArrayList<CommentResponse>();
 		for (Comment c : comments) {
 			response.add(commentMapper.commentToCommentDocumentResponse(c));
 		}
@@ -65,23 +104,23 @@ public class CommentService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public CommentDocumentResponse findById(Long id) {
+	public CommentResponse findById(Long id) {
 		Comment find = commentRepository.findById(id)
 				.orElseThrow(() -> new AppException("không tìm thấy comment", 1001, HttpStatus.BAD_REQUEST));
 		return commentMapper.commentToCommentDocumentResponse(find);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public CommentDocumentResponse update(Long id, CommentDocumentRequest request) {
+	public CommentResponse update(Long id, CommentRequest request) {
 		Comment comment = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không thấy comment"));
-		commentMapper.updateCommentDocument(comment, request);
+		commentMapper.updateComment(comment, request);
 		comment.setUpdatedAt(LocalDateTime.now());
 		Comment saved = commentRepository.save(comment);
 		return commentMapper.commentToCommentDocumentResponse(saved);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public CommentDocumentResponse hide(Long id, HideRequest dto) {
+	public CommentResponse hide(Long id, HideRequest dto) {
 		Comment entity = commentRepository.findById(id).orElseThrow(() -> new RuntimeException("Không thấy comment"));
 		entity.setHide(dto.isHide());
 		Comment saved = commentRepository.save(entity);
@@ -98,9 +137,9 @@ public class CommentService {
 	}
 
 	@PreAuthorize("hasAuthority('POST_LESSON_COMMENT')")
-	public CommentDocumentResponse saveCommentDocument(CommentDocumentRequest dto) {
-		Comment comment = commentMapper.commentDocumentRequestToComment(dto);
-		Document doc = documentRepository.findById(dto.getDocumentId())
+	public CommentResponse saveCommentDocument(CommentRequest dto) {
+		Comment comment = commentMapper.commentRequestToComment(dto);
+		Document doc = documentRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		User user = userRepository.findById(dto.getUserId())
@@ -108,15 +147,16 @@ public class CommentService {
 		comment.setDocument(doc);
 		comment.setUser(user);
 		comment.setCreatedAt(LocalDateTime.now());
+		comment.setType(dto.getType());
 		Comment saved = commentRepository.save(comment);
-		CommentDocumentResponse response = commentMapper.commentToCommentDocumentResponse(saved);
+		CommentResponse response = commentMapper.commentToCommentDocumentResponse(saved);
 		return response;
 	}
 
 	@PreAuthorize("hasAuthority('POST_LESSON_COMMENT')")
-	public CommentLessonResponse saveCommentLesson(CommentLessonRequest dto) {
-		Comment comment = commentMapper.commentLessonRequestToComment(dto);
-		Lesson lesson = lessonRepository.findById(dto.getLessonId())
+	public CommentResponse saveCommentLesson(CommentRequest dto) {
+		Comment comment = commentMapper.commentRequestToComment(dto);
+		Lesson lesson = lessonRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		User user = userRepository.findById(dto.getUserId())
@@ -124,8 +164,9 @@ public class CommentService {
 		comment.setLesson(lesson);
 		comment.setUser(user);
 		comment.setCreatedAt(LocalDateTime.now());
+		comment.setType(dto.getType());
 		Comment saved = commentRepository.save(comment);
-		CommentLessonResponse response = commentMapper.commentToCommentLessonResponse(saved);
+		CommentResponse response = commentMapper.commentToCommentLessonResponse(saved);
 		return response;
 	}
 }

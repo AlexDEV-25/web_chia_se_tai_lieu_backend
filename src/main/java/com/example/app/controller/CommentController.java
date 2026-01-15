@@ -11,12 +11,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.app.dto.request.CommentDocumentRequest;
-import com.example.app.dto.request.CommentLessonRequest;
+import com.example.app.dto.request.CommentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.CommentDocumentResponse;
-import com.example.app.dto.response.CommentLessonResponse;
+import com.example.app.dto.response.CommentResponse;
+import com.example.app.dto.response.CommentTreeResponse;
 import com.example.app.service.CommentService;
 
 import jakarta.validation.Valid;
@@ -29,81 +28,80 @@ public class CommentController {
 	private final CommentService commentService;
 
 	@GetMapping("/{id}")
-	public APIResponse<CommentDocumentResponse> getById(@PathVariable Long id) {
-		CommentDocumentResponse response = commentService.findById(id);
-		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
+	public APIResponse<CommentResponse> getById(@PathVariable Long id) {
+		CommentResponse response = commentService.findById(id);
+		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("get by id success");
 		return apiResponse;
 	}
 
 	@GetMapping
-	public APIResponse<CommentDocumentResponse> getAll() {
-		List<CommentDocumentResponse> response = commentService.getAllComments();
-		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
+	public APIResponse<CommentResponse> getAll() {
+		List<CommentResponse> response = commentService.getAllComments();
+		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@PostMapping("/document")
-	public APIResponse<CommentDocumentResponse> createCommentDocument(@RequestBody @Valid CommentDocumentRequest dto) {
-		CommentDocumentResponse response = commentService.saveCommentDocument(dto);
-		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
+	public APIResponse<CommentResponse> createCommentDocument(@RequestBody @Valid CommentRequest dto) {
+		CommentResponse response = commentService.saveCommentDocument(dto);
+		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("save success");
 		return apiResponse;
 	}
 
 	@PostMapping("/lesson")
-	public APIResponse<CommentLessonResponse> createCommentLesson(@RequestBody @Valid CommentLessonRequest dto) {
-		CommentLessonResponse response = commentService.saveCommentLesson(dto);
-		APIResponse<CommentLessonResponse> apiResponse = new APIResponse<CommentLessonResponse>();
+	public APIResponse<CommentResponse> createCommentLesson(@RequestBody @Valid CommentRequest dto) {
+		CommentResponse response = commentService.saveCommentLesson(dto);
+		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("save success");
 		return apiResponse;
 	}
 
 	@PutMapping("/{id}")
-	public APIResponse<CommentDocumentResponse> update(@PathVariable Long id,
-			@RequestBody @Valid CommentDocumentRequest dto) {
-		CommentDocumentResponse response = commentService.update(id, dto);
-		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
+	public APIResponse<CommentResponse> update(@PathVariable Long id, @RequestBody @Valid CommentRequest dto) {
+		CommentResponse response = commentService.update(id, dto);
+		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("update success");
 		return apiResponse;
 	}
 
 	@PutMapping("hide/{id}")
-	public APIResponse<CommentDocumentResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
-		CommentDocumentResponse response = commentService.hide(id, dto);
-		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
+	public APIResponse<CommentResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
+		CommentResponse response = commentService.hide(id, dto);
+		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("hide success");
 		return apiResponse;
 	}
 
 	@DeleteMapping("/{id}")
-	public APIResponse<CommentDocumentResponse> delete(@PathVariable Long id) {
+	public APIResponse<CommentResponse> delete(@PathVariable Long id) {
 		commentService.delete(id);
-		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
+		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
 		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
 	@GetMapping("/document/{docId}")
-	public APIResponse<CommentDocumentResponse> getByDocument(@PathVariable Long docId) {
-		List<CommentDocumentResponse> response = commentService.getByDocument(docId);
-		APIResponse<CommentDocumentResponse> apiResponse = new APIResponse<CommentDocumentResponse>();
+	public APIResponse<CommentTreeResponse> getDocumentCommentTree(@PathVariable Long docId) {
+		List<CommentTreeResponse> response = commentService.getDocumentCommentTree(docId);
+		APIResponse<CommentTreeResponse> apiResponse = new APIResponse<CommentTreeResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson/{lessonId}")
-	public APIResponse<CommentLessonResponse> getByLesson(@PathVariable Long lessonId) {
-		List<CommentLessonResponse> response = commentService.getByLesson(lessonId);
-		APIResponse<CommentLessonResponse> apiResponse = new APIResponse<CommentLessonResponse>();
+	public APIResponse<CommentTreeResponse> getLessonCommentTree(@PathVariable Long lessonId) {
+		List<CommentTreeResponse> response = commentService.getLessonCommentTree(lessonId);
+		APIResponse<CommentTreeResponse> apiResponse = new APIResponse<CommentTreeResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;

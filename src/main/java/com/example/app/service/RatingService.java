@@ -8,10 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.example.app.dto.request.RatingDocumentRequest;
-import com.example.app.dto.request.RatingLessonRequest;
-import com.example.app.dto.response.RatingDocumentResponse;
-import com.example.app.dto.response.RatingLessonResponse;
+import com.example.app.dto.request.RatingRequest;
+import com.example.app.dto.response.RatingResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.RatingMapper;
 import com.example.app.model.Document;
@@ -34,9 +32,9 @@ public class RatingService {
 	private final UserRepository userRepository;
 	private final RatingMapper ratingMapper;
 
-	public List<RatingDocumentResponse> getByDocument(Long docId) {
+	public List<RatingResponse> getByDocument(Long docId) {
 		List<Rating> ratings = ratingRepository.findByDocumentId(docId);
-		List<RatingDocumentResponse> response = new ArrayList<RatingDocumentResponse>();
+		List<RatingResponse> response = new ArrayList<RatingResponse>();
 		for (Rating r : ratings) {
 			response.add(ratingMapper.ratingToRatingDocumentResponse(r));
 		}
@@ -44,9 +42,9 @@ public class RatingService {
 	}
 
 	@PreAuthorize("hasAuthority('POST_DOCUMENT_RATING')")
-	public RatingDocumentResponse save(RatingDocumentRequest dto) {
+	public RatingResponse saveRatingDocument(RatingRequest dto) {
 		Rating rating = ratingMapper.ratingDocumentRequestToRating(dto);
-		Document doc = documentRepository.findById(dto.getDocumentId())
+		Document doc = documentRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		User user = userRepository.findById(dto.getUserId())
@@ -55,13 +53,13 @@ public class RatingService {
 		rating.setDocument(doc);
 		rating.setUser(user);
 		Rating saved = ratingRepository.save(rating);
-		RatingDocumentResponse response = ratingMapper.ratingToRatingDocumentResponse(saved);
+		RatingResponse response = ratingMapper.ratingToRatingDocumentResponse(saved);
 		return response;
 	}
 
-	public List<RatingLessonResponse> getByLesson(Long LessonId) {
+	public List<RatingResponse> getByLesson(Long LessonId) {
 		List<Rating> ratings = ratingRepository.findByLessonId(LessonId);
-		List<RatingLessonResponse> response = new ArrayList<RatingLessonResponse>();
+		List<RatingResponse> response = new ArrayList<RatingResponse>();
 		for (Rating r : ratings) {
 			response.add(ratingMapper.ratingToRatingLessonResponse(r));
 		}
@@ -69,9 +67,9 @@ public class RatingService {
 	}
 
 	@PreAuthorize("hasAuthority('POST_LESSON_RATING')")
-	public RatingLessonResponse save(RatingLessonRequest dto) {
+	public RatingResponse saveRatingLesson(RatingRequest dto) {
 		Rating rating = ratingMapper.ratingLessonRequestToRating(dto);
-		Lesson lesson = lessonRepository.findById(dto.getLessonId())
+		Lesson lesson = lessonRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		User user = userRepository.findById(dto.getUserId())
@@ -80,7 +78,7 @@ public class RatingService {
 		rating.setLesson(lesson);
 		rating.setUser(user);
 		Rating saved = ratingRepository.save(rating);
-		RatingLessonResponse response = ratingMapper.ratingToRatingLessonResponse(saved);
+		RatingResponse response = ratingMapper.ratingToRatingLessonResponse(saved);
 		return response;
 	}
 }

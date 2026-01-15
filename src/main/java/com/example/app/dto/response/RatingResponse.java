@@ -2,6 +2,8 @@ package com.example.app.dto.response;
 
 import java.time.LocalDateTime;
 
+import com.example.app.share.Type;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,11 +11,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RatingLessonResponse {
+public class RatingResponse {
 	private Long id;
 	private Integer rating;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 	private Long userId;
-	private Long lessonId;
+	private Long contentId;
+	private Type type;
 }
