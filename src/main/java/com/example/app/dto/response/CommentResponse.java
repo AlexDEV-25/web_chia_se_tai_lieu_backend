@@ -21,6 +21,7 @@ public class CommentResponse {
 	private String username;
 	private String userAvatar;
 	private Long contentId;
+	private Long level;
 	private boolean hide;
 	private Type type;
 }

@@ -26,6 +26,7 @@ import com.example.app.repository.CommentRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.repository.UserRepository;
+import com.example.app.share.Type;
 
 import lombok.AllArgsConstructor;
 
@@ -38,44 +39,35 @@ public class CommentService {
 	private final UserRepository userRepository;
 	private final CommentMapper commentMapper;
 
-	public List<CommentTreeResponse> getDocumentCommentTree(Long docId) {
-		List<Comment> list = commentRepository.findByDocumentId(docId);
-		Map<Long, CommentTreeResponse> map = new HashMap<>();
-
-		for (Comment c : list) {
-			if (c.isHide())
-				continue;
-			CommentTreeResponse dto = commentMapper.commentToCommentDocumentTreeResponse(c);
-			map.put(dto.getId(), dto);
-		}
-		List<CommentTreeResponse> roots = builtTree(map);
-		sortRecursively(roots);
-		return roots;
+	private List<Comment> filterAndSort(List<Comment> comments) {
+		return comments.stream().filter(c -> !c.isHide())
+				.sorted(Comparator.comparing(Comment::getLevel).thenComparing(Comment::getCreatedAt)).toList();
 	}
 
-	public List<CommentTreeResponse> getLessonCommentTree(Long lessonId) {
-		List<Comment> list = commentRepository.findByLessonId(lessonId);
+	private Map<Long, CommentTreeResponse> mapToTreeDto(List<Comment> comments, Type type) {
 		Map<Long, CommentTreeResponse> map = new HashMap<>();
-		for (Comment c : list) {
-			if (c.getIdParent() == null && c.isHide())
-				continue;
-			CommentTreeResponse dto = commentMapper.commentToCommentLessonTreeResponse(c);
-			map.put(dto.getId(), dto);
+		if (type == Type.DOCUMENT) {
+			for (Comment c : comments) {
+				CommentTreeResponse dto = commentMapper.commentToCommentDocumentTreeResponse(c);
+				map.put(dto.getId(), dto);
+			}
+		} else {
+			for (Comment c : comments) {
+				CommentTreeResponse dto = commentMapper.commentToCommentLessonTreeResponse(c);
+				map.put(dto.getId(), dto);
+			}
 		}
-
-		List<CommentTreeResponse> roots = builtTree(map);
-		sortRecursively(roots);
-		return roots;
+		return map;
 	}
 
-	private List<CommentTreeResponse> builtTree(Map<Long, CommentTreeResponse> map) {
-		List<CommentTreeResponse> roots = new ArrayList<CommentTreeResponse>();
+	private List<CommentTreeResponse> buildTreeFromMap(Map<Long, CommentTreeResponse> map) {
+		List<CommentTreeResponse> roots = new ArrayList<>();
+
 		for (CommentTreeResponse dto : map.values()) {
-			Long parentId = dto.getIdParent();
-			if (parentId == null || parentId == 0) {
+			if (dto.getLevel() == 0) {
 				roots.add(dto);
 			} else {
-				CommentTreeResponse parent = map.get(parentId);
+				CommentTreeResponse parent = map.get(dto.getIdParent());
 				if (parent != null) {
 					parent.getChildren().add(dto);
 				}
@@ -84,13 +76,20 @@ public class CommentService {
 		return roots;
 	}
 
-	private void sortRecursively(List<CommentTreeResponse> list) {
-		if (list == null || list.isEmpty())
-			return;
-		list.sort(Comparator.comparing(CommentTreeResponse::getCreatedAt));
-		for (CommentTreeResponse c : list) {
-			sortRecursively(c.getChildren());
-		}
+	/* ================= DOCUMENT ================= */
+
+	public List<CommentTreeResponse> getDocumentCommentTree(Long docId) {
+		List<Comment> comments = commentRepository.findByDocumentId(docId);
+		List<Comment> cleaned = filterAndSort(comments);
+		Map<Long, CommentTreeResponse> map = mapToTreeDto(cleaned, Type.DOCUMENT);
+		return buildTreeFromMap(map);
+	}
+
+	public List<CommentTreeResponse> getLessonCommentTree(Long lessonId) {
+		List<Comment> comments = commentRepository.findByLessonId(lessonId);
+		List<Comment> cleaned = filterAndSort(comments);
+		Map<Long, CommentTreeResponse> map = mapToTreeDto(cleaned, Type.LESSON);
+		return buildTreeFromMap(map);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
@@ -147,7 +146,13 @@ public class CommentService {
 		comment.setDocument(doc);
 		comment.setUser(user);
 		comment.setCreatedAt(LocalDateTime.now());
-		comment.setType(dto.getType());
+		if (comment.getIdParent() == 0) {
+			comment.setLevel(0L);
+		} else {
+			Comment find = commentRepository.findById(comment.getIdParent())
+					.orElseThrow(() -> new AppException("không tìm thấy comment", 1001, HttpStatus.BAD_REQUEST));
+			comment.setLevel(find.getLevel() + 1);
+		}
 		Comment saved = commentRepository.save(comment);
 		CommentResponse response = commentMapper.commentToCommentDocumentResponse(saved);
 		return response;
@@ -164,7 +169,13 @@ public class CommentService {
 		comment.setLesson(lesson);
 		comment.setUser(user);
 		comment.setCreatedAt(LocalDateTime.now());
-		comment.setType(dto.getType());
+		if (comment.getIdParent() == 0) {
+			comment.setLevel(0L);
+		} else {
+			Comment find = commentRepository.findById(comment.getIdParent())
+					.orElseThrow(() -> new AppException("không tìm thấy comment", 1001, HttpStatus.BAD_REQUEST));
+			comment.setLevel(find.getLevel() + 1);
+		}
 		Comment saved = commentRepository.save(comment);
 		CommentResponse response = commentMapper.commentToCommentLessonResponse(saved);
 		return response;

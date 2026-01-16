@@ -13,6 +13,7 @@ import com.example.app.model.Comment;
 public interface CommentMapper {
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "user", ignore = true)
+	@Mapping(target = "level", ignore = true)
 	@Mapping(target = "document", ignore = true)
 	@Mapping(target = "lesson", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
@@ -47,6 +48,7 @@ public interface CommentMapper {
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "idParent", ignore = true)
+	@Mapping(target = "level", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "document", ignore = true)

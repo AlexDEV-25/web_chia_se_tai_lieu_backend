@@ -45,6 +45,9 @@ public class Comment {
 	@Column(name = "id_parent")
 	private Long idParent;
 
+	@Column(name = "level")
+	private Long level;
+
 	@Column(name = "hide")
 	private boolean hide;
 

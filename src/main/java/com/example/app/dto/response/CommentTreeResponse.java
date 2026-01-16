@@ -23,6 +23,7 @@ public class CommentTreeResponse {
 	private String username;
 	private String userAvatar;
 	private Long ContentId;
+	private Long level;
 	private boolean hide;
 	private Type type;
 	private List<CommentTreeResponse> children = new ArrayList<>();
