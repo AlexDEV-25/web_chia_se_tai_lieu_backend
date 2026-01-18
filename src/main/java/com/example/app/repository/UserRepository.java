@@ -1,9 +1,16 @@
 package com.example.app.repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import com.example.app.dto.response.DailyCountResponse;
 import com.example.app.model.User;
+
+import feign.Param;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -18,4 +25,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	boolean existsById(Long id);
 
 	boolean existsByAvatarUrl(String avatarUrl);
+
+	@Query("""
+				SELECT new com.example.app.dto.response.DailyCountResponse(
+			    CAST(FUNCTION('date', u.createdAt) AS java.time.LocalDate),
+			    COUNT(u)
+			)
+
+				FROM User u
+				WHERE (u.hide = false OR u.hide IS NULL)
+				AND u.createdAt >= :fromDate
+				GROUP BY FUNCTION('date', u.createdAt)
+				ORDER BY FUNCTION('date', u.createdAt)
+			""")
+	List<DailyCountResponse> countUserByDay(@Param("fromDate") LocalDateTime fromDate);
 }
