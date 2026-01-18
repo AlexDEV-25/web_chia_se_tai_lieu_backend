@@ -39,45 +39,6 @@ public class CommentService {
 	private final UserRepository userRepository;
 	private final CommentMapper commentMapper;
 
-	private List<Comment> filterAndSort(List<Comment> comments) {
-		return comments.stream().filter(c -> !c.isHide())
-				.sorted(Comparator.comparing(Comment::getLevel).thenComparing(Comment::getCreatedAt)).toList();
-	}
-
-	private Map<Long, CommentTreeResponse> mapToTreeDto(List<Comment> comments, Type type) {
-		Map<Long, CommentTreeResponse> map = new HashMap<>();
-		if (type == Type.DOCUMENT) {
-			for (Comment c : comments) {
-				CommentTreeResponse dto = commentMapper.commentToCommentDocumentTreeResponse(c);
-				map.put(dto.getId(), dto);
-			}
-		} else {
-			for (Comment c : comments) {
-				CommentTreeResponse dto = commentMapper.commentToCommentLessonTreeResponse(c);
-				map.put(dto.getId(), dto);
-			}
-		}
-		return map;
-	}
-
-	private List<CommentTreeResponse> buildTreeFromMap(Map<Long, CommentTreeResponse> map) {
-		List<CommentTreeResponse> roots = new ArrayList<>();
-
-		for (CommentTreeResponse dto : map.values()) {
-			if (dto.getLevel() == 0) {
-				roots.add(dto);
-			} else {
-				CommentTreeResponse parent = map.get(dto.getIdParent());
-				if (parent != null) {
-					parent.getChildren().add(dto);
-				}
-			}
-		}
-		return roots;
-	}
-
-	/* ================= DOCUMENT ================= */
-
 	public List<CommentTreeResponse> getDocumentCommentTree(Long docId) {
 		List<Comment> comments = commentRepository.findByDocumentId(docId);
 		List<Comment> cleaned = filterAndSort(comments);
@@ -179,5 +140,42 @@ public class CommentService {
 		Comment saved = commentRepository.save(comment);
 		CommentResponse response = commentMapper.commentToCommentLessonResponse(saved);
 		return response;
+	}
+
+	private List<Comment> filterAndSort(List<Comment> comments) {
+		return comments.stream().filter(c -> !c.isHide())
+				.sorted(Comparator.comparing(Comment::getLevel).thenComparing(Comment::getCreatedAt)).toList();
+	}
+
+	private Map<Long, CommentTreeResponse> mapToTreeDto(List<Comment> comments, Type type) {
+		Map<Long, CommentTreeResponse> map = new HashMap<>();
+		if (type == Type.DOCUMENT) {
+			for (Comment c : comments) {
+				CommentTreeResponse dto = commentMapper.commentToCommentDocumentTreeResponse(c);
+				map.put(dto.getId(), dto);
+			}
+		} else {
+			for (Comment c : comments) {
+				CommentTreeResponse dto = commentMapper.commentToCommentLessonTreeResponse(c);
+				map.put(dto.getId(), dto);
+			}
+		}
+		return map;
+	}
+
+	private List<CommentTreeResponse> buildTreeFromMap(Map<Long, CommentTreeResponse> map) {
+		List<CommentTreeResponse> roots = new ArrayList<>();
+
+		for (CommentTreeResponse dto : map.values()) {
+			if (dto.getLevel() == 0) {
+				roots.add(dto);
+			} else {
+				CommentTreeResponse parent = map.get(dto.getIdParent());
+				if (parent != null) {
+					parent.getChildren().add(dto);
+				}
+			}
+		}
+		return roots;
 	}
 }
