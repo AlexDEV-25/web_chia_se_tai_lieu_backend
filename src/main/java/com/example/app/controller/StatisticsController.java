@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.CategoryCountResponse;
 import com.example.app.dto.response.DailyCountResponse;
 import com.example.app.service.StatisticsService;
@@ -20,27 +21,47 @@ public class StatisticsController {
 	private final StatisticsService statisticsService;
 
 	@GetMapping("/users/last-7-days")
-	public List<DailyCountResponse> userLast7Days() {
-		return statisticsService.userLast7Days();
+	public APIResponse<DailyCountResponse> userLast7Days() {
+		List<DailyCountResponse> response = statisticsService.userLast7Days();
+		APIResponse<DailyCountResponse> apiResponse = new APIResponse<DailyCountResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
 	}
 
 	@GetMapping("/documents/last-7-days")
-	public List<DailyCountResponse> documentLast7Days() {
-		return statisticsService.documentLast7Days();
+	public APIResponse<DailyCountResponse> documentLast7Days() {
+		List<DailyCountResponse> response = statisticsService.documentLast7Days();
+		APIResponse<DailyCountResponse> apiResponse = new APIResponse<DailyCountResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
 	}
 
 	@GetMapping("/documents/by-category")
-	public List<CategoryCountResponse> documentByCategory() {
-		return statisticsService.documentByCategory();
+	public APIResponse<CategoryCountResponse> documentByCategory() {
+		List<CategoryCountResponse> response = statisticsService.documentByCategory();
+		APIResponse<CategoryCountResponse> apiResponse = new APIResponse<CategoryCountResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
 	}
 
 	@GetMapping("/lessons/last-7-days")
-	public List<DailyCountResponse> lessonLast7Days() {
-		return statisticsService.lessonLast7Days();
+	public APIResponse<DailyCountResponse> lessonLast7Days() {
+		List<DailyCountResponse> response = statisticsService.lessonLast7Days();
+		APIResponse<DailyCountResponse> apiResponse = new APIResponse<DailyCountResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
 	}
 
 	@GetMapping("/lessons/by-category")
-	public List<CategoryCountResponse> lessonByCategory() {
-		return statisticsService.lessonByCategory();
+	public APIResponse<CategoryCountResponse> lessonByCategory() {
+		List<CategoryCountResponse> response = statisticsService.lessonByCategory();
+		APIResponse<CategoryCountResponse> apiResponse = new APIResponse<CategoryCountResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
 	}
 }
