@@ -1,11 +1,8 @@
 package com.example.app.controller;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,7 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -138,17 +134,14 @@ public class DocumentController {
 		}
 	}
 
-	@GetMapping(value = "/download-file")
-	public ResponseEntity<Resource> downloadFile(@RequestParam("fileName") String filename) {
-		try {
-			File fileToDownload = documentService.getDownloadFile(filename);
-			return ResponseEntity.ok()
-					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-					.contentLength(fileToDownload.length()).contentType(MediaType.APPLICATION_OCTET_STREAM)
-					.body(new InputStreamResource(Files.newInputStream(fileToDownload.toPath())));
-		} catch (Exception e) {
-			return ResponseEntity.notFound().build();
-		}
+	@GetMapping("/{id}/download")
+	public ResponseEntity<Resource> download(@PathVariable Long id) throws IOException {
+
+		FileResponse file = documentService.downloadById(id);
+
+		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
+				.body(file.getResource());
 	}
 
 	@GetMapping("/{id}/file")

@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
@@ -165,33 +164,47 @@ public class LessonService {
 	}
 
 	@PreAuthorize("hasAuthority('DOWNLOAD_LESSON_DOCUMENT')")
-	public File getDownloadDocument(String fileName) throws Exception {
-		if (fileName == null) {
-			throw new AppException("file is null", 1001, HttpStatus.BAD_REQUEST);
+	public FileResponse downloadDocumentByLessonId(Long lessonId) throws IOException {
+
+		Lesson lesson = lessonRepository.findById(lessonId)
+				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
+
+		if (lesson.getDocumentUrl() == null) {
+			throw new AppException("Lesson không có tài liệu", 1001, HttpStatus.BAD_REQUEST);
 		}
-		File fileToDownload = new File(documentStorage + File.separator + fileName);
-		if (!Objects.equals(fileToDownload.getParent(), videoStorage)) {
-			throw new AppException("Unsupported filename!", 1001, HttpStatus.BAD_REQUEST);
+
+		File file = new File(documentStorage + File.separator + lesson.getDocumentUrl());
+
+		if (!file.exists()) {
+			throw new AppException("File không tồn tại trong hệ thống", 1001, HttpStatus.NOT_FOUND);
 		}
-		if (!fileToDownload.exists()) {
-			throw new AppException("No file named: " + fileName, 1001, HttpStatus.BAD_REQUEST);
-		}
-		return fileToDownload;
+
+		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+		String downloadName = lesson.getTitle() + ".pdf";
+
+		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, downloadName);
 	}
 
 	@PreAuthorize("hasAuthority('DOWNLOAD_LESSON_SUBFILE')")
-	public File getDownloadSubFile(String fileName) throws Exception {
-		if (fileName == null) {
-			throw new AppException("file is null", 1001, HttpStatus.BAD_REQUEST);
+	public FileResponse downloadSubFileByLessonId(Long lessonId) throws IOException {
+
+		Lesson lesson = lessonRepository.findById(lessonId)
+				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
+
+		if (lesson.getSubFileUrl() == null) {
+			throw new AppException("Lesson không có file đính kèm", 1001, HttpStatus.BAD_REQUEST);
 		}
-		File fileToDownload = new File(subfileStorage + File.separator + fileName);
-		if (!Objects.equals(fileToDownload.getParent(), videoStorage)) {
-			throw new AppException("Unsupported filename!", 1001, HttpStatus.BAD_REQUEST);
+
+		File file = new File(subfileStorage + File.separator + lesson.getSubFileUrl());
+
+		if (!file.exists()) {
+			throw new AppException("File không tồn tại trong hệ thống", 1001, HttpStatus.NOT_FOUND);
 		}
-		if (!fileToDownload.exists()) {
-			throw new AppException("No file named: " + fileName, 1001, HttpStatus.BAD_REQUEST);
-		}
-		return fileToDownload;
+
+		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+		return new FileResponse(resource, file.length(), MediaType.APPLICATION_OCTET_STREAM, lesson.getSubFileUrl());
 	}
 
 	@PreAuthorize("hasAuthority('GET_MY_LESSON')")
@@ -264,7 +277,7 @@ public class LessonService {
 
 		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
-		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF);
+		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, doc.getTitle());
 	}
 
 	private String handleVideo(MultipartFile video) throws IOException {

@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.List;
 
 import org.springframework.core.io.FileSystemResource;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -135,30 +133,24 @@ public class LessonController {
 		}
 	}
 
-	@GetMapping(value = "/download-document")
-	public ResponseEntity<Resource> downloadDocument(@RequestParam("fileName") String filename) {
-		try {
-			File fileToDownload = lessonService.getDownloadDocument(filename);
-			return ResponseEntity.ok()
-					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-					.contentLength(fileToDownload.length()).contentType(MediaType.APPLICATION_OCTET_STREAM)
-					.body(new InputStreamResource(Files.newInputStream(fileToDownload.toPath())));
-		} catch (Exception e) {
-			return ResponseEntity.notFound().build();
-		}
+	@GetMapping("/{id}/download-document")
+	public ResponseEntity<Resource> downloadDocument(@PathVariable Long id) throws IOException {
+
+		FileResponse file = lessonService.downloadDocumentByLessonId(id);
+
+		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
+				.body(file.getResource());
 	}
 
-	@GetMapping(value = "/download-subfile")
-	public ResponseEntity<Resource> downloadSubFile(@RequestParam("fileName") String filename) {
-		try {
-			File fileToDownload = lessonService.getDownloadSubFile(filename);
-			return ResponseEntity.ok()
-					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-					.contentLength(fileToDownload.length()).contentType(MediaType.APPLICATION_OCTET_STREAM)
-					.body(new InputStreamResource(Files.newInputStream(fileToDownload.toPath())));
-		} catch (Exception e) {
-			return ResponseEntity.notFound().build();
-		}
+	@GetMapping("/{id}/download-subfile")
+	public ResponseEntity<Resource> downloadSubFile(@PathVariable Long id) throws IOException {
+
+		FileResponse file = lessonService.downloadSubFileByLessonId(id);
+
+		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
+				.body(file.getResource());
 	}
 
 	@GetMapping("/{id}/video")

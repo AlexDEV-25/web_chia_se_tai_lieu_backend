@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
@@ -159,18 +158,23 @@ public class DocumentService {
 	}
 
 	@PreAuthorize("hasAuthority('DOWNLOAD_FILE')")
-	public File getDownloadFile(String fileName) throws Exception {
-		if (fileName == null) {
-			throw new AppException("file is null", 1001, HttpStatus.BAD_REQUEST);
+	public FileResponse downloadById(Long id) throws IOException {
+
+		Document doc = documentRepository.findById(id)
+				.orElseThrow(() -> new AppException("Document không tồn tại", 1001, HttpStatus.NOT_FOUND));
+
+		String storedFileName = doc.getFileUrl();
+		File file = new File(documentStorage + File.separator + storedFileName);
+
+		if (!file.exists()) {
+			throw new AppException("File không tồn tại trong hệ thống", 1001, HttpStatus.NOT_FOUND);
 		}
-		File fileToDownload = new File(documentStorage + File.separator + fileName);
-		if (!Objects.equals(fileToDownload.getParent(), documentStorage)) {
-			throw new AppException("Unsupported filename!", 1001, HttpStatus.BAD_REQUEST);
-		}
-		if (!fileToDownload.exists()) {
-			throw new AppException("No file named: " + fileName, 1001, HttpStatus.BAD_REQUEST);
-		}
-		return fileToDownload;
+
+		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+		String downloadName = doc.getTitle() + ".pdf";
+
+		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, downloadName);
 	}
 
 	@PreAuthorize("hasAuthority('GET_MY_DOCUMENT')")
@@ -224,7 +228,7 @@ public class DocumentService {
 
 		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
-		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF);
+		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, doc.getTitle());
 	}
 
 	private String handlefile(MultipartFile fileToSave) throws IOException {
