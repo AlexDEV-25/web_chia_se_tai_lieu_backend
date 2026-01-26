@@ -35,6 +35,9 @@ import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.share.FileManager;
 import com.example.app.share.GetUserByToken;
+import com.example.app.share.NotificationType;
+import com.example.app.share.SendNotification;
+import com.example.app.share.Status;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +50,7 @@ public class DocumentService {
 	private final DocumentMapper documentMapper;
 	private final GetUserByToken getUserByToken;
 	private final FileManager fileStorage;
+	private final SendNotification sendNotification;
 
 	@Value("${app.storage-directory-document}")
 	private String documentStorage;
@@ -106,6 +110,12 @@ public class DocumentService {
 		try {
 			Document doc = documentRepository.findById(id)
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+			User admin = getUserByToken.get();
+			Long NotificationId = sendNotification.saveNotification("Tài liệu \" " + doc.getTitle() + "\" đã bị xóa",
+					NotificationType.ERROR);
+			if (sendNotification.saveUserNotification(admin.getId(), doc.getUser().getId(), NotificationId) == false) {
+				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
 			fileStorage.deleteFile(documentStorage + File.separator + doc.getFileUrl());
 			fileStorage.deleteFile(thumbnailStorage + File.separator + doc.getThumbnailUrl());
 			documentRepository.deleteById(id);
@@ -118,15 +128,43 @@ public class DocumentService {
 	public DocumentResponse hide(Long id, HideRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+		User admin = getUserByToken.get();
+		if (dto.isHide() != entity.isHide() && dto.isHide() == true) {
+			Long NotificationId = sendNotification.saveNotification(
+					"Tài liệu \" " + entity.getTitle() + "\" tạm thời đã bị ẩn", NotificationType.WARNING);
+			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
+					NotificationId) == false) {
+				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
+		}
 		entity.setHide(dto.isHide());
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
+	@Transactional
 	public DocumentResponse update(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		User admin = getUserByToken.get();
+		if (dto.getStatus() != entity.getStatus() && dto.getStatus() == Status.PUBLISHED) {
+			Long NotificationId = sendNotification.saveNotification(
+					"Tài liệu \" " + entity.getTitle() + "\" của bạn đã được duyệt", NotificationType.INFO);
+			System.out.println(NotificationId);
+			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
+					NotificationId) == false) {
+				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
+		}
+		if (dto.isHide() != entity.isHide() && dto.isHide() == true) {
+			Long NotificationId = sendNotification.saveNotification(
+					"Tài liệu \" " + entity.getTitle() + "\" tạm thời đã bị ẩn", NotificationType.WARNING);
+			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
+					NotificationId) == false) {
+				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
+		}
 		documentMapper.updateDocument(entity, dto);
 		entity.setUpdatedAt(LocalDateTime.now());
 		Document saved = documentRepository.save(entity);
@@ -272,4 +310,5 @@ public class DocumentService {
 			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
+
 }
