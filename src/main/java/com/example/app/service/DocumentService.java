@@ -31,8 +31,10 @@ import com.example.app.mapper.DocumentMapper;
 import com.example.app.model.Category;
 import com.example.app.model.Document;
 import com.example.app.model.User;
+import com.example.app.model.UserFollow;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.DocumentRepository;
+import com.example.app.repository.UserFollowRepository;
 import com.example.app.share.FileManager;
 import com.example.app.share.GetUserByToken;
 import com.example.app.share.NotificationType;
@@ -47,6 +49,7 @@ import lombok.RequiredArgsConstructor;
 public class DocumentService {
 	private final DocumentRepository documentRepository;
 	private final CategoryRepository categoryRepository;
+	private final UserFollowRepository userFollowRepository;
 	private final DocumentMapper documentMapper;
 	private final GetUserByToken getUserByToken;
 	private final FileManager fileStorage;
@@ -108,17 +111,27 @@ public class DocumentService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
 		try {
-			Document doc = documentRepository.findById(id)
+			Document entity = documentRepository.findById(id)
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+			fileStorage.deleteFile(documentStorage + File.separator + entity.getFileUrl());
+			fileStorage.deleteFile(thumbnailStorage + File.separator + entity.getThumbnailUrl());
+			documentRepository.deleteById(id);
+
 			User admin = getUserByToken.get();
-			Long NotificationId = sendNotification.saveNotification("Tài liệu \" " + doc.getTitle() + "\" đã bị xóa",
+			Long NotificationId = sendNotification.saveNotification("Tài liệu \" " + entity.getTitle() + "\" đã bị xóa",
 					NotificationType.ERROR);
-			if (sendNotification.saveUserNotification(admin.getId(), doc.getUser().getId(), NotificationId) == false) {
+			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
+					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
-			fileStorage.deleteFile(documentStorage + File.separator + doc.getFileUrl());
-			fileStorage.deleteFile(thumbnailStorage + File.separator + doc.getThumbnailUrl());
-			documentRepository.deleteById(id);
+
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			for (UserFollow uf : ListFollower) {
+				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
+						NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
 		} catch (EmptyResultDataAccessException e) {
 			throw new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
@@ -128,6 +141,9 @@ public class DocumentService {
 	public DocumentResponse hide(Long id, HideRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+		entity.setHide(dto.isHide());
+		Document saved = documentRepository.save(entity);
+
 		User admin = getUserByToken.get();
 		if (dto.isHide() != entity.isHide() && dto.isHide() == true) {
 			Long NotificationId = sendNotification.saveNotification(
@@ -136,9 +152,14 @@ public class DocumentService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			for (UserFollow uf : ListFollower) {
+				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
+						NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
 		}
-		entity.setHide(dto.isHide());
-		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}
 
@@ -147,14 +168,24 @@ public class DocumentService {
 	public DocumentResponse update(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		documentMapper.updateDocument(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
+		Document saved = documentRepository.save(entity);
+
 		User admin = getUserByToken.get();
 		if (dto.getStatus() != entity.getStatus() && dto.getStatus() == Status.PUBLISHED) {
 			Long NotificationId = sendNotification.saveNotification(
 					"Tài liệu \" " + entity.getTitle() + "\" của bạn đã được duyệt", NotificationType.INFO);
-			System.out.println(NotificationId);
 			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			for (UserFollow uf : ListFollower) {
+				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
+						NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
 			}
 		}
 		if (dto.isHide() != entity.isHide() && dto.isHide() == true) {
@@ -164,10 +195,14 @@ public class DocumentService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			for (UserFollow uf : ListFollower) {
+				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
+						NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
 		}
-		documentMapper.updateDocument(entity, dto);
-		entity.setUpdatedAt(LocalDateTime.now());
-		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
 	}
 
@@ -283,7 +318,6 @@ public class DocumentService {
 				String output = documentStorage + File.separator + result;
 
 				fileStorage.convertToPDF(input, output);
-				System.out.println(fileStorage.deleteFile(input));
 
 				fileUrl = result;
 			}

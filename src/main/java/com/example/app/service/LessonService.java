@@ -32,10 +32,15 @@ import com.example.app.mapper.LessonMapper;
 import com.example.app.model.Category;
 import com.example.app.model.Lesson;
 import com.example.app.model.User;
+import com.example.app.model.UserFollow;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.LessonRepository;
+import com.example.app.repository.UserFollowRepository;
 import com.example.app.share.FileManager;
 import com.example.app.share.GetUserByToken;
+import com.example.app.share.NotificationType;
+import com.example.app.share.SendNotification;
+import com.example.app.share.Status;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -45,9 +50,11 @@ import lombok.RequiredArgsConstructor;
 public class LessonService {
 	private final LessonRepository lessonRepository;
 	private final CategoryRepository categoryRepository;
+	private final UserFollowRepository userFollowRepository;
 	private final LessonMapper lessonMapper;
 	private final GetUserByToken getUserByToken;
 	private final FileManager fileStorage;
+	private final SendNotification sendNotification;
 
 	@Value("${app.storage-directory-document}")
 	private String documentStorage;
@@ -104,7 +111,23 @@ public class LessonService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
 		try {
+			Lesson entity = lessonRepository.findById(id)
+					.orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));
 			lessonRepository.deleteById(id);
+			User admin = getUserByToken.get();
+			Long NotificationId = sendNotification
+					.saveNotification("Bài giảng \" " + entity.getTitle() + "\" đã bị xóa", NotificationType.ERROR);
+			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
+					NotificationId) == false) {
+				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			for (UserFollow uf : ListFollower) {
+				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
+						NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
 		} catch (EmptyResultDataAccessException e) {
 			throw new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
@@ -115,6 +138,23 @@ public class LessonService {
 		Lesson entity = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));
 		entity.setHide(dto.isHide());
 		Lesson saved = lessonRepository.save(entity);
+
+		User admin = getUserByToken.get();
+		if (dto.isHide() != entity.isHide() && dto.isHide() == true) {
+			Long NotificationId = sendNotification.saveNotification(
+					"Bài giảng \" " + entity.getTitle() + "\" tạm thời đã bị ẩn", NotificationType.WARNING);
+			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
+					NotificationId) == false) {
+				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			for (UserFollow uf : ListFollower) {
+				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
+						NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
+		}
 		return lessonMapper.lessonToResponse(saved);
 	}
 
@@ -125,6 +165,38 @@ public class LessonService {
 		lessonMapper.updateLesson(entity, dto);
 		entity.setUpdatedAt(LocalDateTime.now());
 		Lesson saved = lessonRepository.save(entity);
+
+		User admin = getUserByToken.get();
+		if (dto.getStatus() != entity.getStatus() && dto.getStatus() == Status.PUBLISHED) {
+			Long NotificationId = sendNotification.saveNotification(
+					"Tài liệu \" " + entity.getTitle() + "\" của bạn đã được duyệt", NotificationType.INFO);
+			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
+					NotificationId) == false) {
+				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			for (UserFollow uf : ListFollower) {
+				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
+						NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
+		}
+		if (dto.isHide() != entity.isHide() && dto.isHide() == true) {
+			Long NotificationId = sendNotification.saveNotification(
+					"Tài liệu \" " + entity.getTitle() + "\" tạm thời đã bị ẩn", NotificationType.WARNING);
+			if (sendNotification.saveUserNotification(admin.getId(), entity.getUser().getId(),
+					NotificationId) == false) {
+				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+			}
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			for (UserFollow uf : ListFollower) {
+				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
+						NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
+		}
 		return lessonMapper.lessonToResponse(saved);
 	}
 
@@ -304,7 +376,6 @@ public class LessonService {
 				String output = documentStorage + File.separator + result;
 
 				fileStorage.convertToPDF(input, output);
-				System.out.println(fileStorage.deleteFile(input));
 
 				fileUrl = result;
 			}

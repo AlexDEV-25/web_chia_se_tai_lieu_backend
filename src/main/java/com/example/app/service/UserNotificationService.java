@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.example.app.dto.request.UserNotificationRequest;
 import com.example.app.dto.response.UserNotificationResponse;
 import com.example.app.mapper.UserNotificationMapper;
 import com.example.app.model.UserNotification;
@@ -20,13 +19,13 @@ public class UserNotificationService {
 	private final UserNotificationRepository userNotificationRepository;
 	private final UserNotificationMapper userNotificationMapper;
 
-	@PreAuthorize("hasAuthority('CREATE_USER_NOTIFICATION')")
-	public UserNotificationResponse save(UserNotificationRequest request) {
-		UserNotification userNotification = userNotificationMapper.requestToUserNotification(request);
-		UserNotification saved = userNotificationRepository.save(userNotification);
-		UserNotificationResponse response = userNotificationMapper.userNotificationToResponse(saved);
-		return response;
-	}
+//	@PreAuthorize("hasAuthority('CREATE_USER_NOTIFICATION')")
+//	public UserNotificationResponse save(UserNotificationRequest request) {
+//		UserNotification userNotification = userNotificationMapper.requestToUserNotification(request);
+//		UserNotification saved = userNotificationRepository.save(userNotification);
+//		UserNotificationResponse response = userNotificationMapper.userNotificationToResponse(saved);
+//		return response;
+//	}
 
 	@PreAuthorize("hasAuthority('GET_ALL_USER_NOTIFICATION')")
 	public List<UserNotificationResponse> getByReceiver(Long receiverId) {
@@ -48,7 +47,7 @@ public class UserNotificationService {
 		return response;
 	}
 
-	@PreAuthorize("hasRole('READ_NOTIFICATION')")
+	@PreAuthorize("hasAuthority('READ_NOTIFICATION')")
 	public UserNotificationResponse read(Long id) {
 		UserNotification entity = userNotificationRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo"));

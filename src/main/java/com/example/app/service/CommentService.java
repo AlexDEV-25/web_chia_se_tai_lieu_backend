@@ -26,6 +26,8 @@ import com.example.app.repository.CommentRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.repository.UserRepository;
+import com.example.app.share.NotificationType;
+import com.example.app.share.SendNotification;
 import com.example.app.share.Type;
 
 import lombok.AllArgsConstructor;
@@ -38,6 +40,7 @@ public class CommentService {
 	private final LessonRepository lessonRepository;
 	private final UserRepository userRepository;
 	private final CommentMapper commentMapper;
+	private final SendNotification sendNotification;
 
 	public List<CommentTreeResponse> getDocumentCommentTree(Long docId) {
 		List<Comment> comments = commentRepository.findByDocumentId(docId);
@@ -99,13 +102,14 @@ public class CommentService {
 	@PreAuthorize("hasAuthority('POST_LESSON_COMMENT')")
 	public CommentResponse saveCommentDocument(CommentRequest dto) {
 		Comment comment = commentMapper.commentRequestToComment(dto);
-		Document doc = documentRepository.findById(dto.getContentId())
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-
 		User user = userRepository.findById(dto.getUserId())
 				.orElseThrow(() -> new AppException("username không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		comment.setDocument(doc);
 		comment.setUser(user);
+
+		Document doc = documentRepository.findById(dto.getContentId())
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		comment.setDocument(doc);
+
 		comment.setCreatedAt(LocalDateTime.now());
 		if (comment.getIdParent() == 0) {
 			comment.setLevel(0L);
@@ -116,6 +120,22 @@ public class CommentService {
 		}
 		Comment saved = commentRepository.save(comment);
 		CommentResponse response = commentMapper.commentToCommentDocumentResponse(saved);
+
+		if (dto.getIdParent() != 0) {
+			Comment cmt = commentRepository.findById(dto.getIdParent())
+					.orElseThrow(() -> new AppException("comment không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			User receiver = cmt.getUser();
+			if (receiver != null && user != null && !receiver.getId().equals(user.getId())) {
+				Long NotificationId = sendNotification.saveNotification(
+						"người dùng \" " + user.getUsername() + "\" đã trở lời bình luận của bạn",
+						NotificationType.INFO);
+
+				if (sendNotification.saveUserNotification(user.getId(), receiver.getId(), NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
+
+		}
 		return response;
 	}
 
@@ -139,6 +159,22 @@ public class CommentService {
 		}
 		Comment saved = commentRepository.save(comment);
 		CommentResponse response = commentMapper.commentToCommentLessonResponse(saved);
+
+		if (dto.getIdParent() != 0) {
+			Comment cmt = commentRepository.findById(dto.getIdParent())
+					.orElseThrow(() -> new AppException("comment không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			User receiver = cmt.getUser();
+			if (receiver != null && user != null && !receiver.getId().equals(user.getId())) {
+				Long NotificationId = sendNotification.saveNotification(
+						"người dùng \" " + user.getUsername() + "\" đã trở lời bình luận của bạn",
+						NotificationType.INFO);
+
+				if (sendNotification.saveUserNotification(user.getId(), receiver.getId(), NotificationId) == false) {
+					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				}
+			}
+
+		}
 		return response;
 	}
 
