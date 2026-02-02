@@ -21,6 +21,7 @@ public interface UserMapper {
 	@Mapping(target = "comments", ignore = true)
 	@Mapping(target = "ratings", ignore = true)
 	@Mapping(target = "favorites", ignore = true)
+	@Mapping(target = "reports", ignore = true)
 	@Mapping(target = "roles", ignore = true)
 	User requestToUser(UserRequest request);
 
@@ -40,6 +41,7 @@ public interface UserMapper {
 	@Mapping(target = "comments", ignore = true)
 	@Mapping(target = "ratings", ignore = true)
 	@Mapping(target = "favorites", ignore = true)
+	@Mapping(target = "reports", ignore = true)
 	@Mapping(target = "roles", ignore = true)
 	void updateUser(@MappingTarget User user, UserRequest request);
 }

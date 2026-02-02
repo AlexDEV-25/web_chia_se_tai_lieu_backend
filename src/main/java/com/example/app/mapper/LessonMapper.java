@@ -22,6 +22,7 @@ public interface LessonMapper {
 	@Mapping(target = "category", ignore = true)
 	@Mapping(target = "comments", ignore = true)
 	@Mapping(target = "favorites", ignore = true)
+	@Mapping(target = "reports", ignore = true)
 	@Mapping(target = "ratings", ignore = true)
 	Lesson requestToLesson(LessonRequest request);
 
@@ -43,6 +44,7 @@ public interface LessonMapper {
 	@Mapping(target = "category", ignore = true)
 	@Mapping(target = "comments", ignore = true)
 	@Mapping(target = "favorites", ignore = true)
+	@Mapping(target = "reports", ignore = true)
 	@Mapping(target = "ratings", ignore = true)
 	void updateLesson(@MappingTarget Lesson entity, LessonRequest request);
 }

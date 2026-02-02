@@ -89,4 +89,8 @@ public class Document {
 	@OneToMany(mappedBy = "document", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
 	@JsonManagedReference
 	private List<Favorite> favorites;
+
+	@OneToMany(mappedBy = "document", fetch = FetchType.LAZY, cascade = { CascadeType.ALL })
+	@JsonManagedReference
+	private List<Report> reports;
 }

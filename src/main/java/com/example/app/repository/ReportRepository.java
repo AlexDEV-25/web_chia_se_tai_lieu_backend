@@ -1,17 +1,19 @@
 package com.example.app.repository;
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import com.example.app.model.Document;
-import com.example.app.model.Favorite;
 import com.example.app.model.Lesson;
+import com.example.app.model.Report;
 import com.example.app.model.User;
 
-public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
+@Repository
+public interface ReportRepository extends JpaRepository<Report, Long> {
 
-	List<Favorite> findByUserId(Long userId);
+	void deleteByDocumentId(Long documentId);
+
+	void deleteByLessonId(Long lessonId);
 
 	boolean existsByUserAndDocument(User user, Document document);
 

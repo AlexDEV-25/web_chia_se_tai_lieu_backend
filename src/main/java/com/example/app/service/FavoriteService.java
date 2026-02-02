@@ -49,7 +49,7 @@ public class FavoriteService {
 		if (favoriteRepository.existsByUserAndDocument(user, doc)) {
 			throw new AppException("đã có trong kho Favorite", 1001, HttpStatus.BAD_REQUEST);
 		}
-		favorite.setCreatedAt(LocalDateTime.now());
+		favorite.setCreatedAt(LocalDateTime.now()); 
 		favorite.setDocument(doc);
 		favorite.setUser(user);
 		favorite.setType(dto.getType());
@@ -73,6 +73,7 @@ public class FavoriteService {
 		favorite.setCreatedAt(LocalDateTime.now());
 		favorite.setLesson(lesson);
 		favorite.setUser(user);
+		favorite.setType(dto.getType());
 		Favorite saved = favoriteRepository.save(favorite);
 		FavoriteResponse response = favoriteMapper.favoriteDocumentToResponse(saved);
 		return response;
