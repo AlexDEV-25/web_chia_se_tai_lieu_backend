@@ -29,18 +29,18 @@ public class UserNotificationController {
 //		return apiResponse;
 //	}
 
-	@GetMapping("/receiver/{receiverId}")
-	public APIResponse<UserNotificationResponse> getByReceiver(@PathVariable Long receiverId) {
-		List<UserNotificationResponse> response = userNotificationService.getByReceiver(receiverId);
+	@GetMapping("/receiver")
+	public APIResponse<UserNotificationResponse> getByReceiver() {
+		List<UserNotificationResponse> response = userNotificationService.getByReceiver();
 		APIResponse<UserNotificationResponse> apiResponse = new APIResponse<UserNotificationResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	@GetMapping("/unread/{receiverId}")
-	public APIResponse<UserNotificationResponse> getByReceiverIdAndReadFalse(@PathVariable Long receiverId) {
-		List<UserNotificationResponse> response = userNotificationService.getByReceiverIdAndReadFalse(receiverId);
+	@GetMapping("/receiver/unread")
+	public APIResponse<UserNotificationResponse> getByReceiverIdAndReadFalse() {
+		List<UserNotificationResponse> response = userNotificationService.getByReceiverIdAndReadFalse();
 		APIResponse<UserNotificationResponse> apiResponse = new APIResponse<UserNotificationResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
@@ -48,7 +48,7 @@ public class UserNotificationController {
 	}
 
 	@PutMapping("read/{id}")
-	public APIResponse<UserNotificationResponse> hide(@PathVariable Long id) {
+	public APIResponse<UserNotificationResponse> read(@PathVariable Long id) {
 		UserNotificationResponse response = userNotificationService.read(id);
 		APIResponse<UserNotificationResponse> apiResponse = new APIResponse<UserNotificationResponse>();
 		apiResponse.setResult(response);

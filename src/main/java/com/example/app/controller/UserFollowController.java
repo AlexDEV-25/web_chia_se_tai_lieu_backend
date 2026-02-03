@@ -6,16 +6,13 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.app.dto.request.UserFollowRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.UserFollowResponse;
 import com.example.app.service.UserFollowService;
 
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,9 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 public class UserFollowController {
 	private final UserFollowService userFollowService;
 
-	@PostMapping
-	public APIResponse<UserFollowResponse> save(@RequestBody @Valid UserFollowRequest dto) {
-		UserFollowResponse response = userFollowService.save(dto);
+	@PostMapping("/{followingId}")
+	public APIResponse<UserFollowResponse> save(@PathVariable Long followingId) {
+		UserFollowResponse response = userFollowService.save(followingId);
 		APIResponse<UserFollowResponse> apiResponse = new APIResponse<UserFollowResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("save success");
@@ -43,9 +40,18 @@ public class UserFollowController {
 		return apiResponse;
 	}
 
-	@GetMapping
-	public APIResponse<UserFollowResponse> getAll() {
+	@GetMapping("/following")
+	public APIResponse<UserFollowResponse> getFollowing() {
 		List<UserFollowResponse> response = userFollowService.getFollowingByFollower();
+		APIResponse<UserFollowResponse> apiResponse = new APIResponse<UserFollowResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/follower")
+	public APIResponse<UserFollowResponse> getFollower() {
+		List<UserFollowResponse> response = userFollowService.getFollowerByFollowing();
 		APIResponse<UserFollowResponse> apiResponse = new APIResponse<UserFollowResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");

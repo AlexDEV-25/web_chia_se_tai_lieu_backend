@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.example.app.dto.request.UserFollowRequest;
 import com.example.app.dto.response.UserFollowResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.UserFollowMapper;
@@ -33,11 +32,10 @@ public class UserFollowService {
 	private final SendNotification sendNotification;
 
 	@PreAuthorize("hasAuthority('FOLLOW')")
-	public UserFollowResponse save(UserFollowRequest request) {
-		UserFollow userFollow = userFollowMapper.requestToUserFollow(request);
-		User follower = userRepository.findById(request.getFollowerId())
-				.orElseThrow(() -> new AppException("người gửi không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		User following = userRepository.findById(request.getFollowingId())
+	public UserFollowResponse save(Long request) {
+		UserFollow userFollow = new UserFollow();
+		User follower = getUserByToken.get();
+		User following = userRepository.findById(request)
 				.orElseThrow(() -> new AppException("người nhận không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		if (userFollowRepository.existsByFollowerAndFollowing(follower, following)) {
 			throw new AppException("đã kết bạn rồi", 1001, HttpStatus.BAD_REQUEST);
@@ -71,10 +69,21 @@ public class UserFollowService {
 		}
 	}
 
-	@PreAuthorize("hasAuthority('GET_LIST_FOLLOW')")
+	@PreAuthorize("hasAuthority('GET_LIST_FOLLOWING')")
 	public List<UserFollowResponse> getFollowingByFollower() {
 		User user = getUserByToken.get();
 		List<UserFollow> userFollows = userFollowRepository.findByFollowerId(user.getId());
+		List<UserFollowResponse> response = new ArrayList<UserFollowResponse>();
+		for (UserFollow u : userFollows) {
+			response.add(userFollowMapper.userFollowToResponse(u));
+		}
+		return response;
+	}
+
+	@PreAuthorize("hasAuthority('GET_LIST_FOLLOWER')")
+	public List<UserFollowResponse> getFollowerByFollowing() {
+		User user = getUserByToken.get();
+		List<UserFollow> userFollows = userFollowRepository.findByFollowingId(user.getId());
 		List<UserFollowResponse> response = new ArrayList<UserFollowResponse>();
 		for (UserFollow u : userFollows) {
 			response.add(userFollowMapper.userFollowToResponse(u));

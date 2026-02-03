@@ -8,8 +8,10 @@ import org.springframework.stereotype.Service;
 
 import com.example.app.dto.response.UserNotificationResponse;
 import com.example.app.mapper.UserNotificationMapper;
+import com.example.app.model.User;
 import com.example.app.model.UserNotification;
 import com.example.app.repository.UserNotificationRepository;
+import com.example.app.share.GetUserByToken;
 
 import lombok.AllArgsConstructor;
 
@@ -18,6 +20,7 @@ import lombok.AllArgsConstructor;
 public class UserNotificationService {
 	private final UserNotificationRepository userNotificationRepository;
 	private final UserNotificationMapper userNotificationMapper;
+	private final GetUserByToken getUserByToken;
 
 //	@PreAuthorize("hasAuthority('CREATE_USER_NOTIFICATION')")
 //	public UserNotificationResponse save(UserNotificationRequest request) {
@@ -28,8 +31,9 @@ public class UserNotificationService {
 //	}
 
 	@PreAuthorize("hasAuthority('GET_ALL_USER_NOTIFICATION')")
-	public List<UserNotificationResponse> getByReceiver(Long receiverId) {
-		List<UserNotification> userNotifications = userNotificationRepository.findByReceiverId(receiverId);
+	public List<UserNotificationResponse> getByReceiver() {
+		User receiver = getUserByToken.get();
+		List<UserNotification> userNotifications = userNotificationRepository.findByReceiverId(receiver.getId());
 		List<UserNotificationResponse> response = new ArrayList<UserNotificationResponse>();
 		for (UserNotification un : userNotifications) {
 			response.add(userNotificationMapper.userNotificationToResponse(un));
@@ -38,8 +42,10 @@ public class UserNotificationService {
 	}
 
 	@PreAuthorize("hasAuthority('GET_UNREAD_USER_NOTIFICATION')")
-	public List<UserNotificationResponse> getByReceiverIdAndReadFalse(Long receiverId) {
-		List<UserNotification> userNotifications = userNotificationRepository.findByReceiverIdAndReadFalse(receiverId);
+	public List<UserNotificationResponse> getByReceiverIdAndReadFalse() {
+		User receiver = getUserByToken.get();
+		List<UserNotification> userNotifications = userNotificationRepository
+				.findByReceiverIdAndReadFalse(receiver.getId());
 		List<UserNotificationResponse> response = new ArrayList<UserNotificationResponse>();
 		for (UserNotification un : userNotifications) {
 			response.add(userNotificationMapper.userNotificationToResponse(un));
