@@ -2,7 +2,6 @@ package com.example.app.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -46,11 +45,12 @@ public class ChatService {
 	}
 
 	private List<String> getAvailableCategories() {
-		List<Category> categories = categoryRepository.findAll();
-		return categories.stream()
-				.filter(cat -> !cat.isHide())
-				.map(Category::getName)
-				.collect(Collectors.toList());
+		List<String> categoryNames = new ArrayList<String>();
+		List<Category> categories = categoryRepository.findByHideFalse();
+		for (Category category : categories) {
+			categoryNames.add(category.getName());
+		}
+		return categoryNames;
 	}
 
 	private String buildSystemPrompt() {
@@ -78,8 +78,8 @@ public class ChatService {
 				   - Keep explanations concise but comprehensive
 
 				If someone asks about topics outside these categories, respond with:
-				"Xin lỗi, Tôi chỉ có thể trả lời các câu hỏi về: """ + categoriesList +
-				". Xin hãy hỏi về các chủ đề này.";
+				"Xin lỗi, Tôi chỉ có thể trả lời các câu hỏi về: """ + categoriesList
+				+ ". Xin hãy hỏi về các chủ đề này.";
 	}
 
 	@PreAuthorize("hasAuthority('CHAT_GEMINI')")
@@ -88,26 +88,18 @@ public class ChatService {
 		String systemPrompt = buildSystemPrompt();
 
 		if (file == null) {
-			return chatClient.prompt()
-					.system(systemPrompt)
-					.user(message)
-					.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId))
-					.call()
+			return chatClient.prompt().system(systemPrompt).user(message)
+					.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId)).call()
 					.content();
 		} else {
-			Media media = Media.builder()
-					.mimeType(MimeTypeUtils.parseMimeType(file.getContentType()))
-					.data(file.getResource())
-					.build();
+			Media media = Media.builder().mimeType(MimeTypeUtils.parseMimeType(file.getContentType()))
+					.data(file.getResource()).build();
 
 			ChatOptions chatOptions = ChatOptions.builder().temperature(0.5D).build();
 
-			return chatClient.prompt()
-					.options(chatOptions)
-					.system(systemPrompt)
+			return chatClient.prompt().options(chatOptions).system(systemPrompt)
 					.user(promptUserSpec -> promptUserSpec.media(media).text(message))
-					.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId))
-					.call()
+					.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId)).call()
 					.content();
 		}
 	}
