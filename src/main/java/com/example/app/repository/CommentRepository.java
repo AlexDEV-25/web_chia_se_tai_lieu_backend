@@ -9,9 +9,8 @@ import com.example.app.model.Comment;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
-	List<Comment> findByDocumentId(Long documentId);
+	List<Comment> findByDocumentIdAndHideFalse(Long documentId);
 
-	List<Comment> findByLessonId(Long lessonId);
+	List<Comment> findByLessonIdAndHideFalse(Long lessonId);
 
-	boolean existsById(Long id);
 }

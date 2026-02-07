@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.DocumentResponse;
+import com.example.app.dto.response.DocumentStatsResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.DocumentMapper;
@@ -61,8 +62,14 @@ public class DocumentService {
 	@Value("${app.storage-directory-image}")
 	private String thumbnailStorage;
 
-	public List<DocumentResponse> getAlldocuments() {
-		List<Document> documents = documentRepository.findAll();
+	public DocumentStatsResponse getStats() {
+		return documentRepository.getStats();
+	}
+
+	public List<DocumentResponse> search(String keyword, Long categoryId) {
+
+		List<Document> documents = documentRepository.search(keyword == null || keyword.isBlank() ? null : keyword,
+				categoryId);
 		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
 		for (Document d : documents) {
 			response.add(documentMapper.documentToResponse(d));
@@ -70,8 +77,17 @@ public class DocumentService {
 		return response;
 	}
 
-	public DocumentResponse findById(Long id) {
-		Document find = documentRepository.findById(id)
+	public List<DocumentResponse> getAllPublicDocuments() {
+		List<Document> documents = documentRepository.findByStatusAndHideFalse(Status.PUBLISHED);
+		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+		for (Document d : documents) {
+			response.add(documentMapper.documentToResponse(d));
+		}
+		return response;
+	}
+
+	public DocumentResponse findByIdPublicDocument(Long id) {
+		Document find = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		return documentMapper.documentToResponse(find);
 	}
@@ -90,8 +106,9 @@ public class DocumentService {
 		});
 	}
 
-	public List<DocumentResponse> getByUser(Long userId) {
-		List<Document> documents = documentRepository.findByUserId(userId);
+	public List<DocumentResponse> getByUser(Long documentId, Long userId) {
+		List<Document> documents = documentRepository.findByIdNotAndUserIdAndStatusAndHideFalse(documentId, userId,
+				Status.PUBLISHED);
 		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
 		for (Document d : documents) {
 			response.add(documentMapper.documentToResponse(d));
@@ -99,8 +116,32 @@ public class DocumentService {
 		return response;
 	}
 
-	public List<DocumentResponse> getByCategory(Long categoryId) {
-		List<Document> documents = documentRepository.findByCategoryId(categoryId);
+	public List<DocumentResponse> getByCategory(Long documentId, Long categoryId) {
+		List<Document> documents = documentRepository.findByIdNotAndCategoryIdAndStatusAndHideFalse(documentId,
+				categoryId, Status.PUBLISHED);
+		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+		for (Document d : documents) {
+			response.add(documentMapper.documentToResponse(d));
+		}
+		return response;
+	}
+
+	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
+		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+		return loadDocumentFile(doc);
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public DocumentResponse findById(Long id) {
+		Document find = documentRepository.findById(id)
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		return documentMapper.documentToResponse(find);
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<DocumentResponse> getAllDocuments() {
+		List<Document> documents = documentRepository.findAll();
 		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
 		for (Document d : documents) {
 			response.add(documentMapper.documentToResponse(d));
@@ -206,6 +247,13 @@ public class DocumentService {
 		return documentMapper.documentToResponse(saved);
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
+	public FileResponse loadDocumentFile(Long id) throws IOException {
+		Document doc = documentRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+		return loadDocumentFile(doc);
+	}
+
 	@PreAuthorize("hasAuthority('UPLOAD_FILE')")
 	@Transactional
 	public DocumentResponse uploadFile(MultipartFile fileToSave, DocumentRequest dto) throws IOException {
@@ -233,7 +281,7 @@ public class DocumentService {
 	@PreAuthorize("hasAuthority('DOWNLOAD_FILE')")
 	public FileResponse downloadById(Long id) throws IOException {
 
-		Document doc = documentRepository.findById(id)
+		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("Document không tồn tại", 1001, HttpStatus.NOT_FOUND));
 
 		String storedFileName = doc.getFileUrl();
@@ -267,6 +315,7 @@ public class DocumentService {
 		Document entity = documentRepository.findByIdAndUserId(id, user.getId())
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		documentMapper.updateDocument(entity, dto);
+		entity.setStatus(Status.PENDING);
 		entity.setUpdatedAt(LocalDateTime.now());
 		Document saved = documentRepository.save(entity);
 		return documentMapper.documentToResponse(saved);
@@ -286,10 +335,7 @@ public class DocumentService {
 		}
 	}
 
-	public FileResponse loadDocumentFile(Long id) throws IOException {
-
-		Document doc = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+	private FileResponse loadDocumentFile(Document doc) throws IOException {
 
 		String filePath = documentStorage + "\\" + doc.getFileUrl();
 

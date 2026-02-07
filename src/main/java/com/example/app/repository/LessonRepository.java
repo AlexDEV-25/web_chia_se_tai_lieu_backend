@@ -6,25 +6,40 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.dto.response.CategoryCountResponse;
 import com.example.app.dto.response.DailyCountResponse;
+import com.example.app.dto.response.LessonStatsResponse;
 import com.example.app.model.Lesson;
-
-import feign.Param;
+import com.example.app.share.Status;
 
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
-	List<Lesson> findByCategoryId(Long categoryId);
 
-	Lesson findByLessonUrl(String lessonUrl);
-
+	// lấy danh sách những bài giảng của chính mình
 	List<Lesson> findByUserId(Long userId);
 
+	// lấy danh sách những bài giảng cùng danh mục nhưng khác với bài giảng đang
+	// chọn không bị ẩn hay pending
+	List<Lesson> findByIdNotAndCategoryIdAndStatusAndHideFalse(Long lessonId, Long categoryId, Status status);
+
+	// lấy danh sách những bài giảng cùng tác giả nhưng khác với bài giảng đang chọn
+	// không bị ẩn hay pending
+	List<Lesson> findByIdNotAndUserIdAndStatusAndHideFalse(Long lessonId, Long userId, Status status);
+
+	// lấy bài giảng không bị ẩn hay pending
+	Optional<Lesson> findByIdAndStatusAndHideFalse(Long Id, Status status);
+
+	// lấy danh sách bài giảng không bị ẩn hay pending
+	List<Lesson> findByStatusAndHideFalse(Status status);
+
+	// lấy bài giảng của chính mình
 	Optional<Lesson> findByIdAndUserId(Long id, Long userId);
 
-	boolean existsById(Long id);
+	// lấy bài giảng không bị ẩn hay pending
+	List<Lesson> findByIdNotAndStatusAndHideFalse(Long lessonId, Status status);
 
 	@Query("""
 				SELECT new com.example.app.dto.response.DailyCountResponse(
@@ -53,4 +68,29 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 				GROUP BY c.id, c.name
 			""")
 	List<CategoryCountResponse> countLessonByCategory();
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.LessonStatsResponse(
+			        COUNT(l),
+			        COALESCE(SUM(l.viewsCount), 0)
+			    )
+			    FROM Lesson l
+			    WHERE l.hide = false
+			      AND l.status = 'PUBLISHED'
+			""")
+	LessonStatsResponse getStats();
+
+	@Query("""
+			    SELECT l
+			    FROM Lesson l
+			    WHERE l.hide = false
+			      AND l.status = 'PUBLISHED'
+			      AND (:categoryId IS NULL OR l.category.id = :categoryId)
+			      AND (
+			            :keyword IS NULL
+			            OR l.title LIKE CONCAT('%', :keyword, '%')
+			            OR l.description LIKE CONCAT('%', :keyword, '%')
+			      )
+			""")
+	List<Lesson> search(@Param("keyword") String keyword, @Param("categoryId") Long categoryId);
 }

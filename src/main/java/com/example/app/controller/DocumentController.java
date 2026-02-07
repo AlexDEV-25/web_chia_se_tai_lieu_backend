@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +23,7 @@ import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.DocumentResponse;
+import com.example.app.dto.response.DocumentStatsResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.service.DocumentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,7 +37,26 @@ import lombok.AllArgsConstructor;
 public class DocumentController {
 	private final DocumentService documentService;
 
-	@GetMapping("/{id}")
+	@GetMapping("/stats")
+	public APIResponse<DocumentStatsResponse> getStats() {
+		DocumentStatsResponse response = documentService.getStats();
+		APIResponse<DocumentStatsResponse> apiResponse = new APIResponse<DocumentStatsResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get by id success");
+		return apiResponse;
+	}
+
+	@GetMapping("/search")
+	public APIResponse<DocumentResponse> search(@RequestParam(required = false) String keyword,
+			@RequestParam(required = false) Long categoryId) {
+		List<DocumentResponse> response = documentService.search(keyword, categoryId);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/admin/{id}")
 	public APIResponse<DocumentResponse> getById(@PathVariable Long id) {
 		DocumentResponse response = documentService.findById(id);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
@@ -44,16 +65,34 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-	@GetMapping
+	@GetMapping("/{id}")
+	public APIResponse<DocumentResponse> getByIdPublicDocument(@PathVariable Long id) {
+		DocumentResponse response = documentService.findByIdPublicDocument(id);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get by id success");
+		return apiResponse;
+	}
+
+	@GetMapping("/admin")
 	public APIResponse<DocumentResponse> getAll() {
-		List<DocumentResponse> response = documentService.getAlldocuments();
+		List<DocumentResponse> response = documentService.getAllDocuments();
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	@DeleteMapping("/{id}")
+	@GetMapping
+	public APIResponse<DocumentResponse> getAllPublicDocuments() {
+		List<DocumentResponse> response = documentService.getAllPublicDocuments();
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@DeleteMapping("/admin/{id}")
 	public APIResponse<DocumentResponse> delete(@PathVariable Long id) {
 		documentService.delete(id);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
@@ -61,25 +100,25 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-	@GetMapping("/user/{userId}")
-	public APIResponse<DocumentResponse> getByUser(@PathVariable Long userId) {
-		List<DocumentResponse> response = documentService.getByUser(userId);
+	@GetMapping("/user")
+	public APIResponse<DocumentResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
+		List<DocumentResponse> response = documentService.getByUser(documentId, userId);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	@GetMapping("/category/{categoryId}")
-	public APIResponse<DocumentResponse> getByCategory(@PathVariable Long categoryId) {
-		List<DocumentResponse> response = documentService.getByCategory(categoryId);
+	@GetMapping("/category")
+	public APIResponse<DocumentResponse> getByCategory(@RequestParam Long documentId, @RequestParam Long categoryId) {
+		List<DocumentResponse> response = documentService.getByCategory(documentId, categoryId);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	@PutMapping("hide/{id}")
+	@PutMapping("/admin/hide/{id}")
 	public APIResponse<DocumentResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
 		DocumentResponse response = documentService.hide(id, dto);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
@@ -88,7 +127,7 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-	@PutMapping("/{id}")
+	@PutMapping("/admin/{id}")
 	public APIResponse<DocumentResponse> update(@PathVariable Long id, @RequestBody DocumentRequest dto) {
 		DocumentResponse response = documentService.update(id, dto);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
@@ -145,6 +184,15 @@ public class DocumentController {
 	}
 
 	@GetMapping("/{id}/file")
+	public ResponseEntity<Resource> loadPublicDocument(@PathVariable Long id) throws IOException {
+
+		FileResponse file = documentService.loadPublicDocumentFile(id);
+
+		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
+				.body(file.getResource());
+	}
+
+	@GetMapping("/admin/{id}/file")
 	public ResponseEntity<Resource> loadDocument(@PathVariable Long id) throws IOException {
 
 		FileResponse file = documentService.loadDocumentFile(id);

@@ -6,25 +6,40 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.dto.response.CategoryCountResponse;
 import com.example.app.dto.response.DailyCountResponse;
+import com.example.app.dto.response.DocumentStatsResponse;
 import com.example.app.model.Document;
-
-import feign.Param;
+import com.example.app.share.Status;
 
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Long> {
-	List<Document> findByCategoryId(Long categoryId);
 
-	Document findByFileUrl(String FileUrl);
-
+	// lấy danh sách tài liệu của chính mình
 	List<Document> findByUserId(Long userId);
 
+	// lấy danh sách những tài liệu cùng danh mục nhưng khác với tài liệu đang
+	// chọn không bị ẩn hay pending
+	List<Document> findByIdNotAndCategoryIdAndStatusAndHideFalse(Long docId, Long categoryId, Status status);
+
+	// lấy danh sách những tài liệu cùng tác giả nhưng khác với tài liệu đang
+	// chọn không bị ẩn hay pending
+	List<Document> findByIdNotAndUserIdAndStatusAndHideFalse(Long docId, Long userId, Status status);
+
+	// lấy tài liệu không bị ẩn hay pending
+	Optional<Document> findByIdAndStatusAndHideFalse(Long Id, Status status);
+
+	// lấy danh sách tài liệu không bị ẩn hay pending
+	List<Document> findByStatusAndHideFalse(Status status);
+
+	// lấy tài liệu của chính mình
 	Optional<Document> findByIdAndUserId(Long id, Long userId);
 
-	boolean existsById(Long id);
+	// lấy tài liệu không bị ẩn hay pending
+	List<Document> findByIdNotAndStatusAndHideFalse(Long docId, Status status);
 
 	@Query("""
 				SELECT new com.example.app.dto.response.DailyCountResponse(
@@ -53,4 +68,31 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 				GROUP BY c.id, c.name
 			""")
 	List<CategoryCountResponse> countDocumentByCategory();
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentStatsResponse(
+			        COUNT(d),
+			        COALESCE(SUM(d.downloadsCount), 0),
+			        COALESCE(SUM(d.viewsCount), 0)
+			    )
+			    FROM Document d
+			    WHERE d.hide = false
+			      AND d.status = 'PUBLISHED'
+			""")
+	DocumentStatsResponse getStats();
+
+	@Query("""
+			    SELECT d
+			    FROM Document d
+			    WHERE d.hide = false
+			      AND d.status = 'PUBLISHED'
+			      AND (:categoryId IS NULL OR d.category.id = :categoryId)
+			      AND (
+			            :keyword IS NULL
+			            OR d.title LIKE CONCAT('%', :keyword, '%')
+			            OR d.description LIKE CONCAT('%', :keyword, '%')
+			      )
+			""")
+	List<Document> search(@Param("keyword") String keyword, @Param("categoryId") Long categoryId);
+
 }

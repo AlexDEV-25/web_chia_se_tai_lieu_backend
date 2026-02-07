@@ -23,6 +23,16 @@ public class CategoryService {
 	private final CategoryRepository categoryRepository;
 	private final CategoryMapper categoryMapper;
 
+	public List<CategoryResponse> getAllPublicCategories() {
+		List<Category> categories = categoryRepository.findByHideFalse();
+		List<CategoryResponse> responses = new ArrayList<CategoryResponse>();
+		for (Category c : categories) {
+			responses.add(categoryMapper.categoryToResponse(c));
+		}
+		return responses;
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
 	public List<CategoryResponse> getAllCategories() {
 		List<Category> categories = categoryRepository.findAll();
 		List<CategoryResponse> responses = new ArrayList<CategoryResponse>();
@@ -65,12 +75,12 @@ public class CategoryService {
 		return categoryMapper.categoryToResponse(saved);
 	}
 
-//	@PreAuthorize("hasRole('ADMIN')")
-//	public void delete(Long id) {
-//		try {
-//			categoryRepository.deleteById(id);
-//		} catch (AppException e) {
-//			throw new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST);
-//		}
-//	}
+	@PreAuthorize("hasRole('ADMIN')")
+	public void delete(Long id) {
+		try {
+			categoryRepository.deleteById(id);
+		} catch (AppException e) {
+			throw new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
 }

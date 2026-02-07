@@ -27,6 +27,7 @@ import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.LessonResponse;
+import com.example.app.dto.response.LessonStatsResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.LessonMapper;
 import com.example.app.model.Category;
@@ -68,8 +69,23 @@ public class LessonService {
 	@Value("${app.storage-directory-subfile}")
 	private String subfileStorage;
 
-	public List<LessonResponse> getAllLessons() {
-		List<Lesson> lessons = lessonRepository.findAll();
+	public LessonStatsResponse getStats() {
+		return lessonRepository.getStats();
+	}
+
+	public List<LessonResponse> search(String keyword, Long categoryId) {
+
+		List<Lesson> lessons = lessonRepository.search(keyword == null || keyword.isBlank() ? null : keyword,
+				categoryId);
+		List<LessonResponse> response = new ArrayList<LessonResponse>();
+		for (Lesson l : lessons) {
+			response.add(lessonMapper.lessonToResponse(l));
+		}
+		return response;
+	}
+
+	public List<LessonResponse> getAllPublicLessons() {
+		List<Lesson> lessons = lessonRepository.findByStatusAndHideFalse(Status.PUBLISHED);
 		List<LessonResponse> response = new ArrayList<LessonResponse>();
 		for (Lesson d : lessons) {
 			response.add(lessonMapper.lessonToResponse(d));
@@ -77,8 +93,8 @@ public class LessonService {
 		return response;
 	}
 
-	public LessonResponse findById(Long id) {
-		Lesson find = lessonRepository.findById(id)
+	public LessonResponse findByIdPublicLesson(Long id) {
+		Lesson find = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		return lessonMapper.lessonToResponse(find);
 	}
@@ -90,8 +106,9 @@ public class LessonService {
 		});
 	}
 
-	public List<LessonResponse> getByUser(Long userId) {
-		List<Lesson> lessons = lessonRepository.findByUserId(userId);
+	public List<LessonResponse> getByUser(Long lessonId, Long userId) {
+		List<Lesson> lessons = lessonRepository.findByIdNotAndUserIdAndStatusAndHideFalse(lessonId, userId,
+				Status.PUBLISHED);
 		List<LessonResponse> response = new ArrayList<LessonResponse>();
 		for (Lesson d : lessons) {
 			response.add(lessonMapper.lessonToResponse(d));
@@ -99,11 +116,41 @@ public class LessonService {
 		return response;
 	}
 
-	public List<LessonResponse> getByCategory(Long categoryId) {
-		List<Lesson> lessons = lessonRepository.findByCategoryId(categoryId);
+	public List<LessonResponse> getByCategory(Long lessonId, Long categoryId) {
+		List<Lesson> lessons = lessonRepository.findByIdNotAndCategoryIdAndStatusAndHideFalse(lessonId, categoryId,
+				Status.PUBLISHED);
 		List<LessonResponse> response = new ArrayList<LessonResponse>();
 		for (Lesson d : lessons) {
 			response.add(lessonMapper.lessonToResponse(d));
+		}
+		return response;
+	}
+
+	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
+		Lesson doc = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+		return loadDocumentFile(doc);
+	}
+
+	public File loadPublicLessonFile(Long id) throws IOException {
+		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy bài giảng"));
+		return loadVideoFile(lesson);
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public LessonResponse findById(Long id) {
+		Lesson find = lessonRepository.findById(id)
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		return lessonMapper.lessonToResponse(find);
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<LessonResponse> getAllLessons() {
+		List<Lesson> lessons = lessonRepository.findAll();
+		List<LessonResponse> response = new ArrayList<LessonResponse>();
+		for (Lesson l : lessons) {
+			response.add(lessonMapper.lessonToResponse(l));
 		}
 		return response;
 	}
@@ -200,6 +247,19 @@ public class LessonService {
 		return lessonMapper.lessonToResponse(saved);
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
+	public File loadLessonFile(Long id) throws IOException {
+		Lesson lesson = lessonRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy bài giàng"));
+		return loadVideoFile(lesson);
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public FileResponse loadDocumentFile(Long id) throws IOException {
+		Lesson doc = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+		return loadDocumentFile(doc);
+	}
+
 	@PreAuthorize("hasAuthority('UPLOAD_LESSON')")
 	@Transactional
 	public LessonResponse uploadLesson(MultipartFile video, MultipartFile document, MultipartFile subFile,
@@ -238,7 +298,7 @@ public class LessonService {
 	@PreAuthorize("hasAuthority('DOWNLOAD_LESSON_DOCUMENT')")
 	public FileResponse downloadDocumentByLessonId(Long lessonId) throws IOException {
 
-		Lesson lesson = lessonRepository.findById(lessonId)
+		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
 
 		if (lesson.getDocumentUrl() == null) {
@@ -261,7 +321,7 @@ public class LessonService {
 	@PreAuthorize("hasAuthority('DOWNLOAD_LESSON_SUBFILE')")
 	public FileResponse downloadSubFileByLessonId(Long lessonId) throws IOException {
 
-		Lesson lesson = lessonRepository.findById(lessonId)
+		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
 
 		if (lesson.getSubFileUrl() == null) {
@@ -322,9 +382,7 @@ public class LessonService {
 		}
 	}
 
-	public File loadVideoFile(Long id) {
-
-		Lesson lesson = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));
+	private File loadVideoFile(Lesson lesson) {
 
 		File file = new File(videoStorage + File.separator + lesson.getLessonUrl());
 
@@ -335,9 +393,7 @@ public class LessonService {
 		return file;
 	}
 
-	public FileResponse loadDocumentFile(Long id) throws IOException {
-
-		Lesson doc = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+	private FileResponse loadDocumentFile(Lesson doc) throws IOException {
 
 		String filePath = documentStorage + File.separator + doc.getDocumentUrl();
 

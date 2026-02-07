@@ -43,14 +43,14 @@ public class CommentService {
 	private final SendNotification sendNotification;
 
 	public List<CommentTreeResponse> getDocumentCommentTree(Long docId) {
-		List<Comment> comments = commentRepository.findByDocumentId(docId);
+		List<Comment> comments = commentRepository.findByDocumentIdAndHideFalse(docId);
 		List<Comment> cleaned = filterAndSort(comments);
 		Map<Long, CommentTreeResponse> map = mapToTreeDto(cleaned, Type.DOCUMENT);
 		return buildTreeFromMap(map);
 	}
 
 	public List<CommentTreeResponse> getLessonCommentTree(Long lessonId) {
-		List<Comment> comments = commentRepository.findByLessonId(lessonId);
+		List<Comment> comments = commentRepository.findByLessonIdAndHideFalse(lessonId);
 		List<Comment> cleaned = filterAndSort(comments);
 		Map<Long, CommentTreeResponse> map = mapToTreeDto(cleaned, Type.LESSON);
 		return buildTreeFromMap(map);
@@ -102,54 +102,43 @@ public class CommentService {
 	@PreAuthorize("hasAuthority('POST_LESSON_COMMENT')")
 	public CommentResponse saveCommentDocument(CommentRequest dto) {
 		Comment comment = commentMapper.commentRequestToComment(dto);
+
 		User user = userRepository.findById(dto.getUserId())
 				.orElseThrow(() -> new AppException("username không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		comment.setUser(user);
-
 		Document doc = documentRepository.findById(dto.getContentId())
+
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+
 		comment.setDocument(doc);
-
+		comment.setUser(user);
 		comment.setCreatedAt(LocalDateTime.now());
-		if (comment.getIdParent() == 0) {
-			comment.setLevel(0L);
-		} else {
-			Comment find = commentRepository.findById(comment.getIdParent())
-					.orElseThrow(() -> new AppException("không tìm thấy comment", 1001, HttpStatus.BAD_REQUEST));
-			comment.setLevel(find.getLevel() + 1);
-		}
-		Comment saved = commentRepository.save(comment);
-		CommentResponse response = commentMapper.commentToCommentDocumentResponse(saved);
 
-		if (dto.getIdParent() != 0) {
-			Comment cmt = commentRepository.findById(dto.getIdParent())
-					.orElseThrow(() -> new AppException("comment không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-			User receiver = cmt.getUser();
-			if (receiver != null && user != null && !receiver.getId().equals(user.getId())) {
-				Long NotificationId = sendNotification.saveNotification(
-						"người dùng \" " + user.getUsername() + "\" đã trở lời bình luận của bạn",
-						NotificationType.INFO);
-
-				if (sendNotification.saveUserNotification(user.getId(), receiver.getId(), NotificationId) == false) {
-					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
-				}
-			}
-
-		}
+		CommentResponse response = saveComment(comment);
+		sendNotification(dto.getIdParent(), user);
 		return response;
 	}
 
 	@PreAuthorize("hasAuthority('POST_LESSON_COMMENT')")
 	public CommentResponse saveCommentLesson(CommentRequest dto) {
 		Comment comment = commentMapper.commentRequestToComment(dto);
+
 		Lesson lesson = lessonRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		User user = userRepository.findById(dto.getUserId())
 				.orElseThrow(() -> new AppException("username không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+
 		comment.setLesson(lesson);
 		comment.setUser(user);
 		comment.setCreatedAt(LocalDateTime.now());
+
+		CommentResponse response = saveComment(comment);
+		sendNotification(dto.getIdParent(), user);
+		return response;
+	}
+
+	private CommentResponse saveComment(Comment comment) {
+
 		if (comment.getIdParent() == 0) {
 			comment.setLevel(0L);
 		} else {
@@ -158,10 +147,13 @@ public class CommentService {
 			comment.setLevel(find.getLevel() + 1);
 		}
 		Comment saved = commentRepository.save(comment);
-		CommentResponse response = commentMapper.commentToCommentLessonResponse(saved);
 
-		if (dto.getIdParent() != 0) {
-			Comment cmt = commentRepository.findById(dto.getIdParent())
+		return commentMapper.commentToCommentLessonResponse(saved);
+	}
+
+	private void sendNotification(Long parentId, User user) {
+		if (parentId != 0) {
+			Comment cmt = commentRepository.findById(parentId)
 					.orElseThrow(() -> new AppException("comment không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 			User receiver = cmt.getUser();
 			if (receiver != null && user != null && !receiver.getId().equals(user.getId())) {
@@ -175,7 +167,6 @@ public class CommentService {
 			}
 
 		}
-		return response;
 	}
 
 	private List<Comment> filterAndSort(List<Comment> comments) {
