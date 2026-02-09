@@ -19,15 +19,15 @@ import com.example.app.share.Status;
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
 	// lấy danh sách những bài giảng của chính mình
-	List<Lesson> findByUserId(Long userId);
+	List<Lesson> findByUser_Id(Long userId);
 
 	// lấy danh sách những bài giảng cùng danh mục nhưng khác với bài giảng đang
 	// chọn không bị ẩn hay pending
-	List<Lesson> findByIdNotAndCategoryIdAndStatusAndHideFalse(Long lessonId, Long categoryId, Status status);
+	List<Lesson> findByIdNotAndCategory_IdAndStatusAndHideFalse(Long lessonId, Long categoryId, Status status);
 
 	// lấy danh sách những bài giảng cùng tác giả nhưng khác với bài giảng đang chọn
 	// không bị ẩn hay pending
-	List<Lesson> findByIdNotAndUserIdAndStatusAndHideFalse(Long lessonId, Long userId, Status status);
+	List<Lesson> findByIdNotAndUser_IdAndStatusAndHideFalse(Long lessonId, Long userId, Status status);
 
 	// lấy bài giảng không bị ẩn hay pending
 	Optional<Lesson> findByIdAndStatusAndHideFalse(Long Id, Status status);
@@ -36,7 +36,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	List<Lesson> findByStatusAndHideFalse(Status status);
 
 	// lấy bài giảng của chính mình
-	Optional<Lesson> findByIdAndUserId(Long id, Long userId);
+	Optional<Lesson> findByIdAndUser_Id(Long id, Long userId);
 
 	// lấy bài giảng không bị ẩn hay pending
 	List<Lesson> findByIdNotAndStatusAndHideFalse(Long lessonId, Status status);

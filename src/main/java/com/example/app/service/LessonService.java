@@ -107,7 +107,7 @@ public class LessonService {
 	}
 
 	public List<LessonResponse> getByUser(Long lessonId, Long userId) {
-		List<Lesson> lessons = lessonRepository.findByIdNotAndUserIdAndStatusAndHideFalse(lessonId, userId,
+		List<Lesson> lessons = lessonRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(lessonId, userId,
 				Status.PUBLISHED);
 		List<LessonResponse> response = new ArrayList<LessonResponse>();
 		for (Lesson d : lessons) {
@@ -117,7 +117,7 @@ public class LessonService {
 	}
 
 	public List<LessonResponse> getByCategory(Long lessonId, Long categoryId) {
-		List<Lesson> lessons = lessonRepository.findByIdNotAndCategoryIdAndStatusAndHideFalse(lessonId, categoryId,
+		List<Lesson> lessons = lessonRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(lessonId, categoryId,
 				Status.PUBLISHED);
 		List<LessonResponse> response = new ArrayList<LessonResponse>();
 		for (Lesson d : lessons) {
@@ -168,7 +168,7 @@ public class LessonService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
-			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowing_Id(entity.getUser().getId());
 			for (UserFollow uf : ListFollower) {
 				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
 						NotificationId) == false) {
@@ -194,7 +194,7 @@ public class LessonService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
-			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowing_Id(entity.getUser().getId());
 			for (UserFollow uf : ListFollower) {
 				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
 						NotificationId) == false) {
@@ -221,7 +221,7 @@ public class LessonService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
-			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowing_Id(entity.getUser().getId());
 			for (UserFollow uf : ListFollower) {
 				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
 						NotificationId) == false) {
@@ -236,7 +236,7 @@ public class LessonService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
-			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowing_Id(entity.getUser().getId());
 			for (UserFollow uf : ListFollower) {
 				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
 						NotificationId) == false) {
@@ -342,7 +342,7 @@ public class LessonService {
 	@PreAuthorize("hasAuthority('GET_MY_LESSON')")
 	public List<LessonResponse> getMyLesson() {
 		User user = getUserByToken.get();
-		List<Lesson> lessons = lessonRepository.findByUserId(user.getId());
+		List<Lesson> lessons = lessonRepository.findByUser_Id(user.getId());
 		List<LessonResponse> response = new ArrayList<LessonResponse>();
 		for (Lesson l : lessons) {
 			response.add(lessonMapper.lessonToResponse(l));
@@ -353,7 +353,7 @@ public class LessonService {
 	@PreAuthorize("hasAuthority('UPDATE_MY_LESSON')")
 	public LessonResponse updateMyDocument(Long id, LessonRequest dto) {
 		User user = getUserByToken.get();
-		Lesson entity = lessonRepository.findByIdAndUserId(id, user.getId())
+		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		lessonMapper.updateLesson(entity, dto);
 		entity.setUpdatedAt(LocalDateTime.now());
@@ -365,7 +365,7 @@ public class LessonService {
 	public void deleteMyLesson(Long id) {
 		try {
 			User user = getUserByToken.get();
-			Lesson doc = lessonRepository.findByIdAndUserId(id, user.getId())
+			Lesson doc = lessonRepository.findByIdAndUser_Id(id, user.getId())
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
 			fileStorage.deleteFile(videoStorage + File.separator + doc.getLessonUrl());
 			fileStorage.deleteFile(thumbnailStorage + File.separator + doc.getThumbnailUrl());

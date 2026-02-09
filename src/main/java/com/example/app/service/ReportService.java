@@ -18,7 +18,7 @@ import com.example.app.model.User;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.repository.ReportRepository;
-import com.example.app.repository.UserRepository;
+import com.example.app.share.GetUserByToken;
 
 import lombok.AllArgsConstructor;
 
@@ -26,10 +26,10 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class ReportService {
 	private final ReportRepository reportRepository;
-	private final UserRepository userRepository;
 	private final DocumentRepository documentRepository;
 	private final LessonRepository lessonRepository;
 	private final ReportMapper ReportMapper;
+	private final GetUserByToken getUserByToken;
 
 	@PreAuthorize("hasAuthority('REPORT_DOCUMENT')")
 	public ReportResponse documentReport(ReportRequest dto) {
@@ -37,8 +37,7 @@ public class ReportService {
 		Document doc = documentRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
-		User user = userRepository.findById(dto.getUserId())
-				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		User user = getUserByToken.get();
 
 		if (reportRepository.existsByUserAndDocument(user, doc)) {
 			throw new AppException("đã có trong kho Report", 1001, HttpStatus.BAD_REQUEST);
@@ -59,8 +58,7 @@ public class ReportService {
 		Lesson lesson = lessonRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
-		User user = userRepository.findById(dto.getUserId())
-				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		User user = getUserByToken.get();
 
 		if (reportRepository.existsByUserAndLesson(user, lesson)) {
 			throw new AppException("đã có trong kho Report", 1001, HttpStatus.BAD_REQUEST);
@@ -78,7 +76,7 @@ public class ReportService {
 	@PreAuthorize("hasAuthority('UNREPORT_DOCUMENT')")
 	public void unReportDocument(Long id) {
 		try {
-			reportRepository.deleteByDocumentId(id);
+			reportRepository.deleteByDocument_Id(id);
 		} catch (EmptyResultDataAccessException e) {
 			throw new AppException("Report không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
@@ -87,7 +85,7 @@ public class ReportService {
 	@PreAuthorize("hasAuthority('UNREPORT_LESSON')")
 	public void unReportLesson(Long id) {
 		try {
-			reportRepository.deleteByLessonId(id);
+			reportRepository.deleteByLesson_Id(id);
 		} catch (EmptyResultDataAccessException e) {
 			throw new AppException("Report không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}

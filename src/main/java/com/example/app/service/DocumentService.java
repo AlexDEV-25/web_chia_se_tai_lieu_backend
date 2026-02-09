@@ -107,7 +107,7 @@ public class DocumentService {
 	}
 
 	public List<DocumentResponse> getByUser(Long documentId, Long userId) {
-		List<Document> documents = documentRepository.findByIdNotAndUserIdAndStatusAndHideFalse(documentId, userId,
+		List<Document> documents = documentRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(documentId, userId,
 				Status.PUBLISHED);
 		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
 		for (Document d : documents) {
@@ -117,7 +117,7 @@ public class DocumentService {
 	}
 
 	public List<DocumentResponse> getByCategory(Long documentId, Long categoryId) {
-		List<Document> documents = documentRepository.findByIdNotAndCategoryIdAndStatusAndHideFalse(documentId,
+		List<Document> documents = documentRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(documentId,
 				categoryId, Status.PUBLISHED);
 		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
 		for (Document d : documents) {
@@ -166,7 +166,7 @@ public class DocumentService {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
 
-			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowing_Id(entity.getUser().getId());
 			for (UserFollow uf : ListFollower) {
 				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
 						NotificationId) == false) {
@@ -193,7 +193,7 @@ public class DocumentService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
-			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowing_Id(entity.getUser().getId());
 			for (UserFollow uf : ListFollower) {
 				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
 						NotificationId) == false) {
@@ -221,7 +221,7 @@ public class DocumentService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
-			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowing_Id(entity.getUser().getId());
 			for (UserFollow uf : ListFollower) {
 				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
 						NotificationId) == false) {
@@ -236,7 +236,7 @@ public class DocumentService {
 					NotificationId) == false) {
 				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
 			}
-			List<UserFollow> ListFollower = userFollowRepository.findByFollowingId(entity.getUser().getId());
+			List<UserFollow> ListFollower = userFollowRepository.findByFollowing_Id(entity.getUser().getId());
 			for (UserFollow uf : ListFollower) {
 				if (sendNotification.saveUserNotification(entity.getUser().getId(), uf.getFollower().getId(),
 						NotificationId) == false) {
@@ -301,7 +301,7 @@ public class DocumentService {
 	@PreAuthorize("hasAuthority('GET_MY_DOCUMENT')")
 	public List<DocumentResponse> getMyDocument() {
 		User user = getUserByToken.get();
-		List<Document> documents = documentRepository.findByUserId(user.getId());
+		List<Document> documents = documentRepository.findByUser_Id(user.getId());
 		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
 		for (Document d : documents) {
 			response.add(documentMapper.documentToResponse(d));
@@ -312,7 +312,7 @@ public class DocumentService {
 	@PreAuthorize("hasAuthority('UPDATE_MY_DOCUMENT')")
 	public DocumentResponse updateMyDocument(Long id, DocumentRequest dto) {
 		User user = getUserByToken.get();
-		Document entity = documentRepository.findByIdAndUserId(id, user.getId())
+		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		documentMapper.updateDocument(entity, dto);
 		entity.setStatus(Status.PENDING);
@@ -325,7 +325,7 @@ public class DocumentService {
 	public void deleteMyDocument(Long id) {
 		try {
 			User user = getUserByToken.get();
-			Document doc = documentRepository.findByIdAndUserId(id, user.getId())
+			Document doc = documentRepository.findByIdAndUser_Id(id, user.getId())
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
 			fileStorage.deleteFile(documentStorage + File.separator + doc.getFileUrl());
 			fileStorage.deleteFile(thumbnailStorage + File.separator + doc.getThumbnailUrl());

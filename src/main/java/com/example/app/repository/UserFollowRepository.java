@@ -12,7 +12,13 @@ import com.example.app.model.UserFollow;
 public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
 	boolean existsByFollowerAndFollowing(User Follow, User Following);
 
-	List<UserFollow> findByFollowerId(Long followerId);
+	List<UserFollow> findByFollower_Id(Long followerId);
 
-	List<UserFollow> findByFollowingId(Long followingId);
+	List<UserFollow> findByFollowing_Id(Long followingId);
+
+	// Đếm số người FOLLOW mình (follower)
+	long countByFollowing_Id(Long userId);
+
+	// Đếm số người mình FOLLOW (following)
+	long countByFollower_Id(Long userId);
 }

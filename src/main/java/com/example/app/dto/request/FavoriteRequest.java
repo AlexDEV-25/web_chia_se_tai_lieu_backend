@@ -12,9 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FavoriteRequest {
 
-	@NotNull(message = "userId không được để trống")
-	private Long userId;
-
 	@NotNull(message = "contentId không được để trống")
 	private Long contentId;
 

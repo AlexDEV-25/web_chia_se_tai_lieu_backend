@@ -20,7 +20,6 @@ import com.example.app.model.User;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.FavoriteRepository;
 import com.example.app.repository.LessonRepository;
-import com.example.app.repository.UserRepository;
 import com.example.app.share.GetUserByToken;
 import com.example.app.share.Status;
 
@@ -31,7 +30,6 @@ import lombok.AllArgsConstructor;
 public class FavoriteService {
 
 	private final FavoriteRepository favoriteRepository;
-	private final UserRepository userRepository;
 	private final DocumentRepository documentRepository;
 	private final LessonRepository lessonRepository;
 	private final FavoriteMapper favoriteMapper;
@@ -43,13 +41,12 @@ public class FavoriteService {
 		Document doc = documentRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
-		User user = userRepository.findById(dto.getUserId())
-				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		User user = getUserByToken.get();
 
 		if (favoriteRepository.existsByUserAndDocument(user, doc)) {
 			throw new AppException("đã có trong kho Favorite", 1001, HttpStatus.BAD_REQUEST);
 		}
-		favorite.setCreatedAt(LocalDateTime.now()); 
+		favorite.setCreatedAt(LocalDateTime.now());
 		favorite.setDocument(doc);
 		favorite.setUser(user);
 		favorite.setType(dto.getType());
@@ -64,8 +61,7 @@ public class FavoriteService {
 		Lesson lesson = lessonRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
-		User user = userRepository.findById(dto.getUserId())
-				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		User user = getUserByToken.get();
 
 		if (favoriteRepository.existsByUserAndLesson(user, lesson)) {
 			throw new AppException("đã có trong kho Favorite", 1001, HttpStatus.BAD_REQUEST);
@@ -82,7 +78,7 @@ public class FavoriteService {
 	@PreAuthorize("hasAuthority('GET_DOCUMENT_FAVORITE')")
 	public List<FavoriteResponse> getDocumentFavoritesByUser() {
 		User user = getUserByToken.get();
-		List<Favorite> favorites = favoriteRepository.findByUserId(user.getId());
+		List<Favorite> favorites = favoriteRepository.findByUser_Id(user.getId());
 		List<FavoriteResponse> response = new ArrayList<FavoriteResponse>();
 		for (Favorite f : favorites) {
 			if (f.getDocument() != null) {
@@ -101,7 +97,7 @@ public class FavoriteService {
 	@PreAuthorize("hasAuthority('GET_LESSON_FAVORITE')")
 	public List<FavoriteResponse> getLessonFavoritesByUser() {
 		User user = getUserByToken.get();
-		List<Favorite> favorites = favoriteRepository.findByUserId(user.getId());
+		List<Favorite> favorites = favoriteRepository.findByUser_Id(user.getId());
 		List<FavoriteResponse> response = new ArrayList<FavoriteResponse>();
 		for (Favorite f : favorites) {
 			if (f.getLesson() != null) {

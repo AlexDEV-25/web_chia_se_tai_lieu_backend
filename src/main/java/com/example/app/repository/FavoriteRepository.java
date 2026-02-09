@@ -11,7 +11,7 @@ import com.example.app.model.User;
 
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
-	List<Favorite> findByUserId(Long userId);
+	List<Favorite> findByUser_Id(Long userId);
 
 	boolean existsByUserAndDocument(User user, Document document);
 

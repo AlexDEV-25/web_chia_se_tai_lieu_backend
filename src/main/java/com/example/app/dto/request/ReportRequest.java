@@ -12,8 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReportRequest {
-	@NotNull(message = "userId không được để trống")
-	private Long userId;
 
 	@NotNull(message = "contentId không được để trống")
 	private Long contentId;

@@ -22,9 +22,6 @@ public class RatingRequest {
 	@NotNull(message = "contentId không được để trống")
 	private Long contentId;
 
-	@NotNull(message = "userId không được để trống")
-	private Long userId;
-
 	@NotNull(message = "Type không được null")
 	private Type type;
 }

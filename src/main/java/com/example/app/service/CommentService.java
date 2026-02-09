@@ -25,7 +25,7 @@ import com.example.app.model.User;
 import com.example.app.repository.CommentRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
-import com.example.app.repository.UserRepository;
+import com.example.app.share.GetUserByToken;
 import com.example.app.share.NotificationType;
 import com.example.app.share.SendNotification;
 import com.example.app.share.Type;
@@ -38,19 +38,19 @@ public class CommentService {
 	private final CommentRepository commentRepository;
 	private final DocumentRepository documentRepository;
 	private final LessonRepository lessonRepository;
-	private final UserRepository userRepository;
 	private final CommentMapper commentMapper;
+	private final GetUserByToken getUserByToken;
 	private final SendNotification sendNotification;
 
 	public List<CommentTreeResponse> getDocumentCommentTree(Long docId) {
-		List<Comment> comments = commentRepository.findByDocumentIdAndHideFalse(docId);
+		List<Comment> comments = commentRepository.findByDocument_IdAndHideFalse(docId);
 		List<Comment> cleaned = filterAndSort(comments);
 		Map<Long, CommentTreeResponse> map = mapToTreeDto(cleaned, Type.DOCUMENT);
 		return buildTreeFromMap(map);
 	}
 
 	public List<CommentTreeResponse> getLessonCommentTree(Long lessonId) {
-		List<Comment> comments = commentRepository.findByLessonIdAndHideFalse(lessonId);
+		List<Comment> comments = commentRepository.findByLesson_IdAndHideFalse(lessonId);
 		List<Comment> cleaned = filterAndSort(comments);
 		Map<Long, CommentTreeResponse> map = mapToTreeDto(cleaned, Type.LESSON);
 		return buildTreeFromMap(map);
@@ -103,8 +103,7 @@ public class CommentService {
 	public CommentResponse saveCommentDocument(CommentRequest dto) {
 		Comment comment = commentMapper.commentRequestToComment(dto);
 
-		User user = userRepository.findById(dto.getUserId())
-				.orElseThrow(() -> new AppException("username không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		User user = getUserByToken.get();
 		Document doc = documentRepository.findById(dto.getContentId())
 
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
@@ -122,11 +121,9 @@ public class CommentService {
 	public CommentResponse saveCommentLesson(CommentRequest dto) {
 		Comment comment = commentMapper.commentRequestToComment(dto);
 
+		User user = getUserByToken.get();
 		Lesson lesson = lessonRepository.findById(dto.getContentId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-
-		User user = userRepository.findById(dto.getUserId())
-				.orElseThrow(() -> new AppException("username không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		comment.setLesson(lesson);
 		comment.setUser(user);

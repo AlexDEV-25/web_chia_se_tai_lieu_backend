@@ -10,7 +10,7 @@ import com.example.app.model.UserNotification;
 @Repository
 public interface UserNotificationRepository extends JpaRepository<UserNotification, Long> {
 
-	List<UserNotification> findByReceiverIdAndReadFalse(Long receiverId);
+	List<UserNotification> findByReceiver_IdAndReadFalse(Long receiverId);
 
-	List<UserNotification> findByReceiverId(Long receiverId);
+	List<UserNotification> findByReceiver_Id(Long receiverId);
 }

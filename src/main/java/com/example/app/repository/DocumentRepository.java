@@ -19,15 +19,15 @@ import com.example.app.share.Status;
 public interface DocumentRepository extends JpaRepository<Document, Long> {
 
 	// lấy danh sách tài liệu của chính mình
-	List<Document> findByUserId(Long userId);
+	List<Document> findByUser_Id(Long userId);
 
 	// lấy danh sách những tài liệu cùng danh mục nhưng khác với tài liệu đang
 	// chọn không bị ẩn hay pending
-	List<Document> findByIdNotAndCategoryIdAndStatusAndHideFalse(Long docId, Long categoryId, Status status);
+	List<Document> findByIdNotAndCategory_IdAndStatusAndHideFalse(Long docId, Long categoryId, Status status);
 
 	// lấy danh sách những tài liệu cùng tác giả nhưng khác với tài liệu đang
 	// chọn không bị ẩn hay pending
-	List<Document> findByIdNotAndUserIdAndStatusAndHideFalse(Long docId, Long userId, Status status);
+	List<Document> findByIdNotAndUser_IdAndStatusAndHideFalse(Long docId, Long userId, Status status);
 
 	// lấy tài liệu không bị ẩn hay pending
 	Optional<Document> findByIdAndStatusAndHideFalse(Long Id, Status status);
@@ -36,7 +36,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	List<Document> findByStatusAndHideFalse(Status status);
 
 	// lấy tài liệu của chính mình
-	Optional<Document> findByIdAndUserId(Long id, Long userId);
+	Optional<Document> findByIdAndUser_Id(Long id, Long userId);
 
 	// lấy tài liệu không bị ẩn hay pending
 	List<Document> findByIdNotAndStatusAndHideFalse(Long docId, Status status);

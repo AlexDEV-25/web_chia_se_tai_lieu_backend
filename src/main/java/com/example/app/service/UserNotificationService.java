@@ -33,7 +33,7 @@ public class UserNotificationService {
 	@PreAuthorize("hasAuthority('GET_ALL_USER_NOTIFICATION')")
 	public List<UserNotificationResponse> getByReceiver() {
 		User receiver = getUserByToken.get();
-		List<UserNotification> userNotifications = userNotificationRepository.findByReceiverId(receiver.getId());
+		List<UserNotification> userNotifications = userNotificationRepository.findByReceiver_Id(receiver.getId());
 		List<UserNotificationResponse> response = new ArrayList<UserNotificationResponse>();
 		for (UserNotification un : userNotifications) {
 			response.add(userNotificationMapper.userNotificationToResponse(un));
@@ -45,7 +45,7 @@ public class UserNotificationService {
 	public List<UserNotificationResponse> getByReceiverIdAndReadFalse() {
 		User receiver = getUserByToken.get();
 		List<UserNotification> userNotifications = userNotificationRepository
-				.findByReceiverIdAndReadFalse(receiver.getId());
+				.findByReceiver_IdAndReadFalse(receiver.getId());
 		List<UserNotificationResponse> response = new ArrayList<UserNotificationResponse>();
 		for (UserNotification un : userNotifications) {
 			response.add(userNotificationMapper.userNotificationToResponse(un));

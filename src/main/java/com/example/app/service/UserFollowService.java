@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.dto.response.FollowCountResponse;
 import com.example.app.dto.response.UserFollowResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.UserFollowMapper;
@@ -72,7 +73,7 @@ public class UserFollowService {
 	@PreAuthorize("hasAuthority('GET_LIST_FOLLOWING')")
 	public List<UserFollowResponse> getFollowingByFollower() {
 		User user = getUserByToken.get();
-		List<UserFollow> userFollows = userFollowRepository.findByFollowerId(user.getId());
+		List<UserFollow> userFollows = userFollowRepository.findByFollower_Id(user.getId());
 		List<UserFollowResponse> response = new ArrayList<UserFollowResponse>();
 		for (UserFollow u : userFollows) {
 			response.add(userFollowMapper.userFollowToResponse(u));
@@ -83,11 +84,27 @@ public class UserFollowService {
 	@PreAuthorize("hasAuthority('GET_LIST_FOLLOWER')")
 	public List<UserFollowResponse> getFollowerByFollowing() {
 		User user = getUserByToken.get();
-		List<UserFollow> userFollows = userFollowRepository.findByFollowingId(user.getId());
+		List<UserFollow> userFollows = userFollowRepository.findByFollowing_Id(user.getId());
 		List<UserFollowResponse> response = new ArrayList<UserFollowResponse>();
 		for (UserFollow u : userFollows) {
 			response.add(userFollowMapper.userFollowToResponse(u));
 		}
+		return response;
+	}
+
+	@PreAuthorize("hasAuthority('GET_MY_FOLLOW_COUNT')")
+	public FollowCountResponse getMyFollowCount() {
+		User user = getUserByToken.get();
+		Long follower = userFollowRepository.countByFollowing_Id(user.getId());
+		Long following = userFollowRepository.countByFollower_Id(user.getId());
+		FollowCountResponse response = new FollowCountResponse(follower, following);
+		return response;
+	}
+
+	public FollowCountResponse getFollowCount(Long UserId) {
+		Long follower = userFollowRepository.countByFollowing_Id(UserId);
+		Long following = userFollowRepository.countByFollower_Id(UserId);
+		FollowCountResponse response = new FollowCountResponse(follower, following);
 		return response;
 	}
 }

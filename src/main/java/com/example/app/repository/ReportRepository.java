@@ -11,9 +11,9 @@ import com.example.app.model.User;
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
 
-	void deleteByDocumentId(Long documentId);
+	void deleteByDocument_Id(Long documentId);
 
-	void deleteByLessonId(Long lessonId);
+	void deleteByLesson_Id(Long lessonId);
 
 	boolean existsByUserAndDocument(User user, Document document);
 
