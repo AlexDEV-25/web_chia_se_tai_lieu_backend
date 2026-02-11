@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.APIResponse;
+import com.example.app.dto.response.UserBioResponse;
 import com.example.app.dto.response.UserResponse;
 import com.example.app.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +46,15 @@ public class UserController {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("hide success");
+		return apiResponse;
+	}
+
+	@GetMapping("/info/{id}")
+	public APIResponse<UserBioResponse> getInfo(@PathVariable Long id) {
+		UserBioResponse response = userService.getUserInfo(id);
+		APIResponse<UserBioResponse> apiResponse = new APIResponse<UserBioResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get my info success");
 		return apiResponse;
 	}
 

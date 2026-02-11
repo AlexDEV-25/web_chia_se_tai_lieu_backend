@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.example.app.dto.request.UserRequest;
+import com.example.app.dto.response.UserBioResponse;
 import com.example.app.dto.response.UserResponse;
 import com.example.app.model.User;
 
@@ -26,6 +27,8 @@ public interface UserMapper {
 	User requestToUser(UserRequest request);
 
 	UserResponse userToResponse(User entity);
+
+	UserBioResponse userToUserBioResponse(User entity);
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "avatarUrl", ignore = true)

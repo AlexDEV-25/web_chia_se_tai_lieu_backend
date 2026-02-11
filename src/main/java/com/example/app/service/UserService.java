@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.UserRequest;
+import com.example.app.dto.response.UserBioResponse;
 import com.example.app.dto.response.UserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.UserMapper;
@@ -154,5 +155,11 @@ public class UserService {
 
 	public boolean checkUsernameExists(String username) {
 		return userRepository.existsByUsername(username);
+	}
+
+	public UserBioResponse getUserInfo(Long id) {
+		User find = userRepository.findByIdAndHideFalse(id)
+				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		return userMapper.userToUserBioResponse(find);
 	}
 }

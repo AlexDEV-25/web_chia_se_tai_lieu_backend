@@ -29,6 +29,9 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	// không bị ẩn hay pending
 	List<Lesson> findByIdNotAndUser_IdAndStatusAndHideFalse(Long lessonId, Long userId, Status status);
 
+	// lấy danh sách những bài giảng cùng tác giả không bị ẩn hay pending
+	List<Lesson> findByUser_IdAndStatusAndHideFalse(Long userId, Status status);
+
 	// lấy bài giảng không bị ẩn hay pending
 	Optional<Lesson> findByIdAndStatusAndHideFalse(Long Id, Status status);
 

@@ -100,6 +100,15 @@ public class DocumentController {
 		return apiResponse;
 	}
 
+	@GetMapping("/user/{userId}")
+	public APIResponse<DocumentResponse> getAllDocumentsByUser(@PathVariable Long userId) {
+		List<DocumentResponse> response = documentService.getAllDocumentsByUser(userId);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
 	@GetMapping("/user")
 	public APIResponse<DocumentResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
 		List<DocumentResponse> response = documentService.getByUser(documentId, userId);

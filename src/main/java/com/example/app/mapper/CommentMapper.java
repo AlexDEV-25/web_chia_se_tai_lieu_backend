@@ -23,6 +23,12 @@ public interface CommentMapper {
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "user.username", target = "username")
 	@Mapping(source = "user.avatarUrl", target = "userAvatar")
+	@Mapping(target = "contentId", ignore = true)
+	CommentResponse commentToCommentResponse(Comment entity);
+
+	@Mapping(source = "user.id", target = "userId")
+	@Mapping(source = "user.username", target = "username")
+	@Mapping(source = "user.avatarUrl", target = "userAvatar")
 	@Mapping(source = "document.id", target = "contentId")
 	CommentResponse commentToCommentDocumentResponse(Comment entity);
 

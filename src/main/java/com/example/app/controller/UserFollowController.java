@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.response.APIResponse;
+import com.example.app.dto.response.FollowCountResponse;
 import com.example.app.dto.response.UserFollowResponse;
 import com.example.app.service.UserFollowService;
 
@@ -54,6 +55,24 @@ public class UserFollowController {
 		List<UserFollowResponse> response = userFollowService.getFollowerByFollowing();
 		APIResponse<UserFollowResponse> apiResponse = new APIResponse<UserFollowResponse>();
 		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/my-follow-count")
+	public APIResponse<FollowCountResponse> getMyFollowCount() {
+		FollowCountResponse response = userFollowService.getMyFollowCount();
+		APIResponse<FollowCountResponse> apiResponse = new APIResponse<FollowCountResponse>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/follow-count/{userId}")
+	public APIResponse<FollowCountResponse> getFollowCount(@PathVariable Long userId) {
+		FollowCountResponse response = userFollowService.getFollowCount(userId);
+		APIResponse<FollowCountResponse> apiResponse = new APIResponse<FollowCountResponse>();
+		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}

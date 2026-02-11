@@ -1,5 +1,6 @@
 package com.example.app.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.content.Media;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -19,9 +21,13 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.response.ChatHistoryResponse;
+import com.example.app.dto.response.CommentResponse;
 import com.example.app.exception.AppException;
+import com.example.app.mapper.CommentMapper;
 import com.example.app.model.Category;
+import com.example.app.model.Comment;
 import com.example.app.repository.CategoryRepository;
+import com.example.app.repository.CommentRepository;
 import com.example.app.share.GetUserByToken;
 
 @Service
@@ -31,12 +37,17 @@ public class ChatService {
 	private final JdbcChatMemoryRepository jdbcChatMemoryRepository;
 	private final GetUserByToken getUserByToken;
 	private final CategoryRepository categoryRepository;
+	private final CommentRepository commentRepository;
+	private final CommentMapper commentMapper;
 
 	public ChatService(ChatClient.Builder builder, JdbcChatMemoryRepository jdbcChatMemoryRepository,
-			GetUserByToken getUserByToken, CategoryRepository categoryRepository) {
+			GetUserByToken getUserByToken, CategoryRepository categoryRepository, CommentRepository commentRepository,
+			CommentMapper commentMapper) {
 		this.jdbcChatMemoryRepository = jdbcChatMemoryRepository;
 		this.getUserByToken = getUserByToken;
 		this.categoryRepository = categoryRepository;
+		this.commentRepository = commentRepository;
+		this.commentMapper = commentMapper;
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().chatMemoryRepository(jdbcChatMemoryRepository)
 				.maxMessages(30).build();
 
@@ -118,4 +129,111 @@ public class ChatService {
 		}
 		return history;
 	}
+
+	private List<CommentResponse> getCommentsLast7Days() {
+		List<CommentResponse> commentsResponseLast7Days = new ArrayList<CommentResponse>();
+		LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+		List<Comment> commentsLast7Days = commentRepository.findCommentsLast7Days(sevenDaysAgo);
+		for (Comment comment : commentsLast7Days) {
+			commentsResponseLast7Days.add(commentMapper.commentToCommentResponse(comment));
+		}
+		return commentsResponseLast7Days;
+	}
+
+	private String fiterUnsuitableCommentPrompt(List<CommentResponse> comments) {
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("""
+				You are a strict content moderation AI.
+
+				Your task:
+				From the list of comments below, return ONLY the comments that are inappropriate.
+
+				A comment is inappropriate if:
+				- It contains vulgar language
+				- It is offensive, toxic, insulting, aggressive
+				- It violates academic environment standards
+
+				Important Rules:
+				- Return ONLY valid JSON
+				- Do NOT explain anything
+				- Do NOT add extra fields
+				- The response MUST be a JSON array
+				- Each object must match exactly this structure:
+
+				[
+				  {
+				    "id": number,
+				    "content": "string",
+				    "createdAt": "string",
+				    "idParent": number,
+				    "updatedAt": "string",
+				    "userId": number
+				    "username": "string"
+				    "userAvatar": "string"
+				    "contentId": number,
+				    "level": number,
+				    "hide": boolean,
+				    "type": "string",
+				  }
+				]
+
+				Here is the list of comments:
+				""");
+
+		for (CommentResponse c : comments) {
+			sb.append("""
+
+					ID: %d
+					Content: %s
+					""".formatted(c.getId(), c.getContent()));
+		}
+
+		return sb.toString();
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<CommentResponse> filterCommnent() {
+
+		List<CommentResponse> comments = getCommentsLast7Days();
+
+		if (comments.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		String prompt = fiterUnsuitableCommentPrompt(comments);
+
+		return chatClient.prompt().system("You are a content moderation assistant. Only return JSON.").user(prompt)
+				.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, "ADMIN")).call()
+				.entity(new ParameterizedTypeReference<List<CommentResponse>>() {
+				});
+	}
+
+	private String checkTypeQuestionPrompt() {
+
+		return """
+				Classify the following question into ONE of these types:
+				- QA
+				- STUDY_PLAN
+				- COMPARISON
+
+				Definitions:
+				- QA: Asking for information, explanation, definition, or how something works.
+				- STUDY_PLAN: Asking for a learning plan, roadmap, schedule, or step-by-step study guidance.
+				- COMPARISON: Asking to compare two or more things, including pros and cons.
+
+				Question:
+				"{question}"
+
+				Return ONLY one value: QA, STUDY_PLAN, or COMPARISON.
+				""";
+	}
+
+	public String test(String message) {
+		String systemPrompt = checkTypeQuestionPrompt();
+		return chatClient.prompt().system(systemPrompt).user(message).call().content();
+
+	}
+
 }

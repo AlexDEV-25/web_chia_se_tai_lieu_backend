@@ -116,6 +116,15 @@ public class DocumentService {
 		return response;
 	}
 
+	public List<DocumentResponse> getAllDocumentsByUser(Long userId) {
+		List<Document> documents = documentRepository.findByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
+		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+		for (Document d : documents) {
+			response.add(documentMapper.documentToResponse(d));
+		}
+		return response;
+	}
+
 	public List<DocumentResponse> getByCategory(Long documentId, Long categoryId) {
 		List<Document> documents = documentRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(documentId,
 				categoryId, Status.PUBLISHED);

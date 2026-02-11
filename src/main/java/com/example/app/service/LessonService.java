@@ -110,8 +110,17 @@ public class LessonService {
 		List<Lesson> lessons = lessonRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(lessonId, userId,
 				Status.PUBLISHED);
 		List<LessonResponse> response = new ArrayList<LessonResponse>();
-		for (Lesson d : lessons) {
-			response.add(lessonMapper.lessonToResponse(d));
+		for (Lesson l : lessons) {
+			response.add(lessonMapper.lessonToResponse(l));
+		}
+		return response;
+	}
+
+	public List<LessonResponse> getAlLessonsByUser(Long userId) {
+		List<Lesson> lessons = lessonRepository.findByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
+		List<LessonResponse> response = new ArrayList<LessonResponse>();
+		for (Lesson l : lessons) {
+			response.add(lessonMapper.lessonToResponse(l));
 		}
 		return response;
 	}

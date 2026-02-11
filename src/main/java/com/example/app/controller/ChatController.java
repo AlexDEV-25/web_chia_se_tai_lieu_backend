@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.ChatHistoryResponse;
+import com.example.app.dto.response.CommentResponse;
 import com.example.app.service.ChatService;
 
 import lombok.AllArgsConstructor;
@@ -28,6 +29,24 @@ public class ChatController {
 		String response = chatService.chat(file, request);
 		APIResponse<String> apiResponse = new APIResponse<String>();
 		apiResponse.setResult(response);
+		apiResponse.setMessage("chat success");
+		return apiResponse;
+	}
+
+	@PostMapping("/test")
+	APIResponse<String> test(@RequestParam("message") String request) {
+		String response = chatService.test(request);
+		APIResponse<String> apiResponse = new APIResponse<String>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("chat success");
+		return apiResponse;
+	}
+
+	@GetMapping("/admin/filter-comment")
+	APIResponse<CommentResponse> filterCommnent() {
+		List<CommentResponse> response = chatService.filterCommnent();
+		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
+		apiResponse.setResultList(response);
 		apiResponse.setMessage("chat success");
 		return apiResponse;
 	}

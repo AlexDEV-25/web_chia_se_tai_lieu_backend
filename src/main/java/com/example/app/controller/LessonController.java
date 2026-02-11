@@ -116,6 +116,15 @@ public class LessonController {
 		return apiResponse;
 	}
 
+	@GetMapping("/user/{userId}")
+	public APIResponse<LessonResponse> getAlLessonsByUser(@PathVariable Long userId) {
+		List<LessonResponse> response = lessonService.getAlLessonsByUser(userId);
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
 	@GetMapping("/category")
 	public APIResponse<LessonResponse> getByCategory(@RequestParam Long lessonId, @RequestParam Long categoryId) {
 		List<LessonResponse> response = lessonService.getByCategory(lessonId, categoryId);

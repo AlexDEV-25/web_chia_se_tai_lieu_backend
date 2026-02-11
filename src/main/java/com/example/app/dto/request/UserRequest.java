@@ -27,6 +27,8 @@ public class UserRequest {
 	@Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", message = "Mật khẩu phải có chữ hoa, chữ thường, số và ký tự đặc biệt")
 	private String password;
 
+	private String bio;
+
 	private boolean verified;
 
 	private List<String> roles;

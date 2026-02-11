@@ -29,6 +29,9 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	// chọn không bị ẩn hay pending
 	List<Document> findByIdNotAndUser_IdAndStatusAndHideFalse(Long docId, Long userId, Status status);
 
+	// lấy danh sách những tài liệu cùng tác giả không bị ẩn hay pending
+	List<Document> findByUser_IdAndStatusAndHideFalse(Long userId, Status status);
+
 	// lấy tài liệu không bị ẩn hay pending
 	Optional<Document> findByIdAndStatusAndHideFalse(Long Id, Status status);
 
