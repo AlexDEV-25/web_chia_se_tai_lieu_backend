@@ -22,6 +22,7 @@ public interface UserNotificationMapper {
 	@Mapping(source = "receiver.username", target = "receiverName")
 	@Mapping(source = "notification.id", target = "notificationId")
 	@Mapping(source = "notification.content", target = "notificationContent")
+	@Mapping(source = "notification.link", target = "notificationLink")
 	@Mapping(source = "notification.type", target = "notificationType")
 	UserNotificationResponse userNotificationToResponse(UserNotification entity);
 }

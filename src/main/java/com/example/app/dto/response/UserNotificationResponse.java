@@ -19,6 +19,7 @@ public class UserNotificationResponse {
 	private String receiverName;
 	private Long notificationId;
 	private String notificationContent;
+	private String notificationLink;
 	private NotificationType notificationType;
 	private boolean read;
 	private LocalDateTime createdAt;

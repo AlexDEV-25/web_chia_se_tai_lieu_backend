@@ -18,7 +18,6 @@ import com.example.app.model.UserFollow;
 import com.example.app.repository.UserFollowRepository;
 import com.example.app.repository.UserRepository;
 import com.example.app.share.GetUserByToken;
-import com.example.app.share.NotificationType;
 import com.example.app.share.SendNotification;
 
 import lombok.AllArgsConstructor;
@@ -50,13 +49,7 @@ public class UserFollowService {
 		UserFollow saved = userFollowRepository.save(userFollow);
 		UserFollowResponse response = userFollowMapper.userFollowToResponse(saved);
 		if (response != null) {
-
-			Long NotificationId = sendNotification.saveNotification(
-					"người dùng \" " + follower.getUsername() + "\" đã theo dõi bạn", NotificationType.INFO);
-
-			if (sendNotification.saveUserNotification(follower.getId(), following.getId(), NotificationId) == false) {
-				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
-			}
+			sendNotification.sendNotificationFollow(follower, following);
 		}
 		return response;
 	}

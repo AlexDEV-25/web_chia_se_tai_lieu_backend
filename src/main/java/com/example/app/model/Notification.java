@@ -28,7 +28,11 @@ public class Notification {
 	@Column(name = "content", nullable = false)
 	private String content;
 
+	@Column(name = "link")
+	private String link;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "type", nullable = false)
 	private NotificationType type;
+
 }

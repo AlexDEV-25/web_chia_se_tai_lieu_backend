@@ -55,4 +55,12 @@ public class UserNotificationController {
 		apiResponse.setMessage("change success");
 		return apiResponse;
 	}
+
+	@PutMapping("read-all/{id}")
+	public APIResponse<Void> readAll(@PathVariable Long id) {
+		userNotificationService.readAll(id);
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
+		apiResponse.setMessage("read all success");
+		return apiResponse;
+	}
 }

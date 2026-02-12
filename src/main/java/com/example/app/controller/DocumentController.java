@@ -202,9 +202,9 @@ public class DocumentController {
 	}
 
 	@GetMapping("/admin/{id}/file")
-	public ResponseEntity<Resource> loadDocument(@PathVariable Long id) throws IOException {
+	public ResponseEntity<Resource> loadAnyDocumentFile(@PathVariable Long id) throws IOException {
 
-		FileResponse file = documentService.loadDocumentFile(id);
+		FileResponse file = documentService.loadAnyDocumentFile(id);
 
 		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
 				.body(file.getResource());

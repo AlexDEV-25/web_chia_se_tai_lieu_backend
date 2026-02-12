@@ -117,8 +117,8 @@ public class LessonController {
 	}
 
 	@GetMapping("/user/{userId}")
-	public APIResponse<LessonResponse> getAlLessonsByUser(@PathVariable Long userId) {
-		List<LessonResponse> response = lessonService.getAlLessonsByUser(userId);
+	public APIResponse<LessonResponse> getAllLessonsByUser(@PathVariable Long userId) {
+		List<LessonResponse> response = lessonService.getAllLessonsByUser(userId);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
@@ -225,9 +225,9 @@ public class LessonController {
 	}
 
 	@GetMapping("/admin/{id}/document")
-	public ResponseEntity<Resource> loadDocument(@PathVariable Long id) throws IOException {
+	public ResponseEntity<Resource> loadAnyDocumentFile(@PathVariable Long id) throws IOException {
 
-		FileResponse file = lessonService.loadDocumentFile(id);
+		FileResponse file = lessonService.loadAnyDocumentFile(id);
 
 		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
 				.body(file.getResource());

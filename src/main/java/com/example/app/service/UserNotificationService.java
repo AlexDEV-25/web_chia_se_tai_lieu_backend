@@ -55,10 +55,20 @@ public class UserNotificationService {
 
 	@PreAuthorize("hasAuthority('READ_NOTIFICATION')")
 	public UserNotificationResponse read(Long id) {
-		UserNotification entity = userNotificationRepository.findById(id)
+		User receiver = getUserByToken.get();
+		UserNotification entity = userNotificationRepository.findByIdAndReceiver_IdAndReadFalse(id, receiver.getId())
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo"));
 		entity.setRead(true);
 		UserNotification saved = userNotificationRepository.save(entity);
 		return userNotificationMapper.userNotificationToResponse(saved);
+	}
+
+	@PreAuthorize("hasAuthority('READ_ALL_NOTIFICATION')")
+	public void readAll(Long id) {
+		List<UserNotification> entity = userNotificationRepository.findByReceiver_IdAndReadFalse(id);
+		for (UserNotification userNotification : entity) {
+			userNotification.setRead(true);
+			userNotificationRepository.save(userNotification);
+		}
 	}
 }

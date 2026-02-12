@@ -16,6 +16,8 @@ public class NotificationRequest {
 	@NotBlank(message = "content không được để trống")
 	private String content;
 
+	private String link;
+
 	@NotNull(message = "Type không được null")
 	private NotificationType type;
 }

@@ -26,7 +26,6 @@ import com.example.app.repository.CommentRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.share.GetUserByToken;
-import com.example.app.share.NotificationType;
 import com.example.app.share.SendNotification;
 import com.example.app.share.Type;
 
@@ -113,7 +112,7 @@ public class CommentService {
 		comment.setCreatedAt(LocalDateTime.now());
 
 		CommentResponse response = saveComment(comment);
-		sendNotification(dto.getIdParent(), user);
+		sendNotification.sendNotificationCommentReply(dto.getIdParent(), user);
 		return response;
 	}
 
@@ -130,7 +129,7 @@ public class CommentService {
 		comment.setCreatedAt(LocalDateTime.now());
 
 		CommentResponse response = saveComment(comment);
-		sendNotification(dto.getIdParent(), user);
+		sendNotification.sendNotificationCommentReply(dto.getIdParent(), user);
 		return response;
 	}
 
@@ -146,24 +145,6 @@ public class CommentService {
 		Comment saved = commentRepository.save(comment);
 
 		return commentMapper.commentToCommentLessonResponse(saved);
-	}
-
-	private void sendNotification(Long parentId, User user) {
-		if (parentId != 0) {
-			Comment cmt = commentRepository.findById(parentId)
-					.orElseThrow(() -> new AppException("comment không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-			User receiver = cmt.getUser();
-			if (receiver != null && user != null && !receiver.getId().equals(user.getId())) {
-				Long NotificationId = sendNotification.saveNotification(
-						"người dùng \" " + user.getUsername() + "\" đã trở lời bình luận của bạn",
-						NotificationType.INFO);
-
-				if (sendNotification.saveUserNotification(user.getId(), receiver.getId(), NotificationId) == false) {
-					throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
-				}
-			}
-
-		}
 	}
 
 	private List<Comment> filterAndSort(List<Comment> comments) {
