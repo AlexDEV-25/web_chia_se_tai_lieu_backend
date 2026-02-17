@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.APIResponse;
+import com.example.app.dto.response.DocumentFavoriteResponse;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.dto.response.DocumentStatsResponse;
 import com.example.app.dto.response.FileResponse;
@@ -47,10 +48,10 @@ public class DocumentController {
 	}
 
 	@GetMapping("/search")
-	public APIResponse<DocumentResponse> search(@RequestParam(required = false) String keyword,
+	public APIResponse<DocumentFavoriteResponse> search(@RequestParam(required = false) String keyword,
 			@RequestParam(required = false) Long categoryId) {
-		List<DocumentResponse> response = documentService.search(keyword, categoryId);
-		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		List<DocumentFavoriteResponse> response = documentService.search(keyword, categoryId);
+		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
@@ -74,18 +75,47 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-	@GetMapping("/admin")
-	public APIResponse<DocumentResponse> getAll() {
-		List<DocumentResponse> response = documentService.getAllDocuments();
-		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+	@GetMapping
+	public APIResponse<DocumentFavoriteResponse> getAllPublicDocuments() {
+		List<DocumentFavoriteResponse> response = documentService.getAllPublicDocumentsCheckFavorite();
+		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	@GetMapping
-	public APIResponse<DocumentResponse> getAllPublicDocuments() {
-		List<DocumentResponse> response = documentService.getAllPublicDocuments();
+	@GetMapping("/user")
+	public APIResponse<DocumentFavoriteResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
+		List<DocumentFavoriteResponse> response = documentService.getDocumentsByUserCheckFavorite(userId, documentId);
+		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/category")
+	public APIResponse<DocumentFavoriteResponse> getByCategory(@RequestParam Long categoryId,
+			@RequestParam Long documentId) {
+		List<DocumentFavoriteResponse> response = documentService.getDocumentsByCategoryCheckFavorite(categoryId,
+				documentId);
+		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/user/{userId}")
+	public APIResponse<DocumentFavoriteResponse> getAllDocumentsByUser(@PathVariable Long userId) {
+		List<DocumentFavoriteResponse> response = documentService.getAllDocumentsByUserheckFavorite(userId);
+		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/admin")
+	public APIResponse<DocumentResponse> getAll() {
+		List<DocumentResponse> response = documentService.getAllDocuments();
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
@@ -97,33 +127,6 @@ public class DocumentController {
 		documentService.delete(id);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setMessage("delete success");
-		return apiResponse;
-	}
-
-	@GetMapping("/user/{userId}")
-	public APIResponse<DocumentResponse> getAllDocumentsByUser(@PathVariable Long userId) {
-		List<DocumentResponse> response = documentService.getAllDocumentsByUser(userId);
-		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
-		return apiResponse;
-	}
-
-	@GetMapping("/user")
-	public APIResponse<DocumentResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
-		List<DocumentResponse> response = documentService.getByUser(documentId, userId);
-		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
-		return apiResponse;
-	}
-
-	@GetMapping("/category")
-	public APIResponse<DocumentResponse> getByCategory(@RequestParam Long documentId, @RequestParam Long categoryId) {
-		List<DocumentResponse> response = documentService.getByCategory(documentId, categoryId);
-		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
@@ -236,4 +239,40 @@ public class DocumentController {
 		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
+
+//	@GetMapping
+//	public APIResponse<DocumentResponse> getAllPublicDocuments() {
+//		List<DocumentResponse> response = documentService.getAllPublicDocuments();
+//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+//		apiResponse.setResultList(response);
+//		apiResponse.setMessage("get all success");
+//		return apiResponse;
+//	}
+//
+//	@GetMapping("/user")
+//	public APIResponse<DocumentResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
+//		List<DocumentResponse> response = documentService.getByUser(documentId, userId);
+//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+//		apiResponse.setResultList(response);
+//		apiResponse.setMessage("get all success");
+//		return apiResponse;
+//	}
+//
+//	@GetMapping("/category")
+//	public APIResponse<DocumentResponse> getByCategory(@RequestParam Long documentId, @RequestParam Long categoryId) {
+//		List<DocumentResponse> response = documentService.getByCategory(documentId, categoryId);
+//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+//		apiResponse.setResultList(response);
+//		apiResponse.setMessage("get all success");
+//		return apiResponse;
+//	}
+//	
+//	@GetMapping("/user/{userId}")
+//	public APIResponse<DocumentResponse> getAllDocumentsByUser(@PathVariable Long userId) {
+//		List<DocumentResponse> response = documentService.getAllDocumentsByUser(userId);
+//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+//		apiResponse.setResultList(response);
+//		apiResponse.setMessage("get all success");
+//		return apiResponse;
+//	}
 }

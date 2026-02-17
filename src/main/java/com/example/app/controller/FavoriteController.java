@@ -53,6 +53,22 @@ public class FavoriteController {
 		return apiResponse;
 	}
 
+	@DeleteMapping("document/{documentId}")
+	public APIResponse<Void> removeDocumentFavorite(@PathVariable Long documentId) {
+		favoriteService.removeDocumentFavorite(documentId);
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
+		apiResponse.setMessage("delete success");
+		return apiResponse;
+	}
+
+	@DeleteMapping("lesson/{lessonId}")
+	public APIResponse<Void> removeLessonFavorite(@PathVariable Long lessonId) {
+		favoriteService.removeLessonFavorite(lessonId);
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
+		apiResponse.setMessage("delete success");
+		return apiResponse;
+	}
+
 	@GetMapping("/document/user")
 	public APIResponse<FavoriteResponse> getDocumentFavoritesByUser() {
 		List<FavoriteResponse> response = favoriteService.getDocumentFavoritesByUser();
@@ -67,6 +83,24 @@ public class FavoriteController {
 		List<FavoriteResponse> response = favoriteService.getLessonFavoritesByUser();
 		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
 		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/document/user/check/{documentId}")
+	public APIResponse<Boolean> checkDocumentFavorite(Long documentId) {
+		Boolean response = favoriteService.checkDocumentFavorite(documentId);
+		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/lesson/user/check/{lessonId}")
+	public APIResponse<Boolean> checkLessonFavorite(Long lessonId) {
+		Boolean response = favoriteService.checkLessonFavorite(lessonId);
+		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
+		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}

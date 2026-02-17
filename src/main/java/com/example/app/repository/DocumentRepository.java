@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import com.example.app.dto.response.CategoryCountResponse;
 import com.example.app.dto.response.DailyCountResponse;
+import com.example.app.dto.response.DocumentFavoriteResponse;
 import com.example.app.dto.response.DocumentStatsResponse;
 import com.example.app.model.Document;
 import com.example.app.share.Status;
@@ -20,17 +21,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
 	// lấy danh sách tài liệu của chính mình
 	List<Document> findByUser_Id(Long userId);
-
-	// lấy danh sách những tài liệu cùng danh mục nhưng khác với tài liệu đang
-	// chọn không bị ẩn hay pending
-	List<Document> findByIdNotAndCategory_IdAndStatusAndHideFalse(Long docId, Long categoryId, Status status);
-
-	// lấy danh sách những tài liệu cùng tác giả nhưng khác với tài liệu đang
-	// chọn không bị ẩn hay pending
-	List<Document> findByIdNotAndUser_IdAndStatusAndHideFalse(Long docId, Long userId, Status status);
-
-	// lấy danh sách những tài liệu cùng tác giả không bị ẩn hay pending
-	List<Document> findByUser_IdAndStatusAndHideFalse(Long userId, Status status);
 
 	// lấy tài liệu không bị ẩn hay pending
 	Optional<Document> findByIdAndStatusAndHideFalse(Long Id, Status status);
@@ -85,7 +75,43 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	DocumentStatsResponse getStats();
 
 	@Query("""
-			    SELECT d
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        CASE WHEN f IS NOT NULL THEN true ELSE false END
+			    )
+			    FROM Document d
+			    LEFT JOIN d.favorites f
+			        ON f.user.id = :currentUserId
+			        AND f.type = com.example.app.share.Type.DOCUMENT
+			    WHERE d.hide = false
+			      AND d.status = com.example.app.share.Status.PUBLISHED
+			      AND (:categoryId IS NULL OR d.category.id = :categoryId)
+			      AND (
+			            :keyword IS NULL
+			            OR d.title LIKE CONCAT('%', :keyword, '%')
+			            OR d.description LIKE CONCAT('%', :keyword, '%')
+			      )
+			""")
+	List<DocumentFavoriteResponse> searchWithFavoriteStatus(@Param("keyword") String keyword,
+			@Param("categoryId") Long categoryId, @Param("currentUserId") Long currentUserId);
+
+	@Query("""
+			  SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        false
+			    )
 			    FROM Document d
 			    WHERE d.hide = false
 			      AND d.status = 'PUBLISHED'
@@ -96,6 +122,193 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			            OR d.description LIKE CONCAT('%', :keyword, '%')
 			      )
 			""")
-	List<Document> search(@Param("keyword") String keyword, @Param("categoryId") Long categoryId);
+	List<DocumentFavoriteResponse> searchWithWithoutFavorite(@Param("keyword") String keyword,
+			@Param("categoryId") Long categoryId);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
+			    )
+			    FROM Document d
+			    LEFT JOIN d.favorites f
+			        ON f.document.id = d.id
+			        AND f.user.id = :currentUserId
+			        AND f.type = com.example.app.share.Type.DOCUMENT
+			    WHERE d.user.id = :authorId
+			        AND d.id <> :currentDocumentId
+			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.hide = false
+			    ORDER BY d.createdAt DESC
+			""")
+	List<DocumentFavoriteResponse> findDocumentsByUserWithFavoriteStatus(@Param("authorId") Long authorId,
+			@Param("currentUserId") Long currentUserId, @Param("currentDocumentId") Long currentDocumentId);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        false
+			    )
+			    FROM Document d
+			    WHERE d.user.id = :authorId
+			        AND d.id <> :currentDocumentId
+			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.hide = false
+			    ORDER BY d.createdAt DESC
+			""")
+	List<DocumentFavoriteResponse> findDocumentsByUserWithoutFavorite(@Param("authorId") Long authorId,
+			@Param("currentDocumentId") Long currentDocumentId);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
+			    )
+			    FROM Document d
+			    LEFT JOIN d.favorites f
+			        ON f.document.id = d.id
+			        AND f.user.id = :currentUserId
+			        AND f.type = com.example.app.share.Type.DOCUMENT
+			    WHERE d.user.id = :authorId
+			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.hide = false
+			    ORDER BY d.createdAt DESC
+			""")
+	List<DocumentFavoriteResponse> findAllDocumentsByUserWithFavoriteStatus(@Param("authorId") Long authorId,
+			@Param("currentUserId") Long currentUserId);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        false
+			    )
+			    FROM Document d
+			    WHERE d.user.id = :authorId
+			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.hide = false
+			    ORDER BY d.createdAt DESC
+			""")
+	List<DocumentFavoriteResponse> findAllDocumentsByUserWithoutFavorite(@Param("authorId") Long authorId);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
+			    )
+			    FROM Document d
+			    LEFT JOIN d.favorites f
+			        ON f.document.id = d.id
+			        AND f.user.id = :currentUserId
+			        AND f.type = com.example.app.share.Type.DOCUMENT
+			    WHERE d.category.id = :categoryId
+			        AND d.id <> :currentDocumentId
+			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.hide = false
+			    ORDER BY d.createdAt DESC
+			""")
+	List<DocumentFavoriteResponse> findDocumentsByCategoryWithFavoriteStatus(@Param("categoryId") Long categoryId,
+			@Param("currentUserId") Long currentUserId, @Param("currentDocumentId") Long currentDocumentId);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        false
+			    )
+			    FROM Document d
+			    WHERE d.category.id = :categoryId
+			        AND d.id <> :currentDocumentId
+			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.hide = false
+			    ORDER BY d.createdAt DESC
+			""")
+	List<DocumentFavoriteResponse> findDocumentsByCategoryWithoutFavorite(@Param("categoryId") Long categoryId,
+			@Param("currentDocumentId") Long currentDocumentId);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
+			    )
+			    FROM Document d
+			    LEFT JOIN d.favorites f
+			        ON f.document.id = d.id
+			        AND f.user.id = :currentUserId
+			        AND f.type = com.example.app.share.Type.DOCUMENT
+			    WHERE d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.hide = false
+			    ORDER BY d.createdAt DESC
+			""")
+	List<DocumentFavoriteResponse> findAllWithFavoriteStatus(@Param("currentUserId") Long currentUserId);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			        d.id,
+			        d.title,
+			        d.description,
+			        d.thumbnailUrl,
+			        d.user.username,
+			        d.viewsCount,
+			        d.downloadsCount,
+			        false
+			    )
+			    FROM Document d
+			    WHERE d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.hide = false
+			    ORDER BY d.createdAt DESC
+			""")
+	List<DocumentFavoriteResponse> findAllWithoutFavorite();
+
+//	// lấy danh sách những tài liệu cùng danh mục nhưng khác với tài liệu đang
+//	// chọn không bị ẩn hay pending
+//	List<Document> findByIdNotAndCategory_IdAndStatusAndHideFalse(Long docId, Long categoryId, Status status);
+//
+//	// lấy danh sách những tài liệu cùng tác giả nhưng khác với tài liệu đang
+//	// chọn không bị ẩn hay pending
+//	List<Document> findByIdNotAndUser_IdAndStatusAndHideFalse(Long docId, Long userId, Status status);
+//
+//	// lấy danh sách những tài liệu cùng tác giả không bị ẩn hay pending
+//	List<Document> findByUser_IdAndStatusAndHideFalse(Long userId, Status status);
 
 }

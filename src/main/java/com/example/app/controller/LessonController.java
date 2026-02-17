@@ -30,6 +30,7 @@ import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.FileResponse;
+import com.example.app.dto.response.LessonFavoriteResponse;
 import com.example.app.dto.response.LessonResponse;
 import com.example.app.dto.response.LessonStatsResponse;
 import com.example.app.service.LessonService;
@@ -54,10 +55,10 @@ public class LessonController {
 	}
 
 	@GetMapping("/search")
-	public APIResponse<LessonResponse> search(@RequestParam(required = false) String keyword,
+	public APIResponse<LessonFavoriteResponse> search(@RequestParam(required = false) String keyword,
 			@RequestParam(required = false) Long categoryId) {
-		List<LessonResponse> response = lessonService.search(keyword, categoryId);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+		List<LessonFavoriteResponse> response = lessonService.search(keyword, categoryId);
+		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
@@ -108,27 +109,28 @@ public class LessonController {
 	}
 
 	@GetMapping("/user")
-	public APIResponse<LessonResponse> getByUser(@RequestParam Long lessonId, @RequestParam Long userId) {
-		List<LessonResponse> response = lessonService.getByUser(lessonId, userId);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+	public APIResponse<LessonFavoriteResponse> getByUser(@RequestParam Long lessonId, @RequestParam Long userId) {
+		List<LessonFavoriteResponse> response = lessonService.getLessonsByUserCheckFavorite(lessonId, userId);
+		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@GetMapping("/user/{userId}")
-	public APIResponse<LessonResponse> getAllLessonsByUser(@PathVariable Long userId) {
-		List<LessonResponse> response = lessonService.getAllLessonsByUser(userId);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+	public APIResponse<LessonFavoriteResponse> getAllLessonsByUser(@PathVariable Long userId) {
+		List<LessonFavoriteResponse> response = lessonService.getAllLessonsByUserheckFavorite(userId);
+		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@GetMapping("/category")
-	public APIResponse<LessonResponse> getByCategory(@RequestParam Long lessonId, @RequestParam Long categoryId) {
-		List<LessonResponse> response = lessonService.getByCategory(lessonId, categoryId);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+	public APIResponse<LessonFavoriteResponse> getByCategory(@RequestParam Long lessonId,
+			@RequestParam Long categoryId) {
+		List<LessonFavoriteResponse> response = lessonService.getLessonsByCategoryCheckFavorite(lessonId, categoryId);
+		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;

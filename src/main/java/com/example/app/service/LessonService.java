@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.FileResponse;
+import com.example.app.dto.response.LessonFavoriteResponse;
 import com.example.app.dto.response.LessonResponse;
 import com.example.app.dto.response.LessonStatsResponse;
 import com.example.app.exception.AppException;
@@ -70,17 +71,6 @@ public class LessonService {
 		return lessonRepository.getStats();
 	}
 
-	public List<LessonResponse> search(String keyword, Long categoryId) {
-
-		List<Lesson> lessons = lessonRepository.search(keyword == null || keyword.isBlank() ? null : keyword,
-				categoryId);
-		List<LessonResponse> response = new ArrayList<LessonResponse>();
-		for (Lesson l : lessons) {
-			response.add(lessonMapper.lessonToResponse(l));
-		}
-		return response;
-	}
-
 	public List<LessonResponse> getAllPublicLessons() {
 		List<Lesson> lessons = lessonRepository.findByStatusAndHideFalse(Status.PUBLISHED);
 		List<LessonResponse> response = new ArrayList<LessonResponse>();
@@ -101,35 +91,6 @@ public class LessonService {
 			entity.setViewsCount(entity.getViewsCount() + 1);
 			lessonRepository.save(entity);
 		});
-	}
-
-	public List<LessonResponse> getByUser(Long lessonId, Long userId) {
-		List<Lesson> lessons = lessonRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(lessonId, userId,
-				Status.PUBLISHED);
-		List<LessonResponse> response = new ArrayList<LessonResponse>();
-		for (Lesson l : lessons) {
-			response.add(lessonMapper.lessonToResponse(l));
-		}
-		return response;
-	}
-
-	public List<LessonResponse> getAllLessonsByUser(Long userId) {
-		List<Lesson> lessons = lessonRepository.findByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
-		List<LessonResponse> response = new ArrayList<LessonResponse>();
-		for (Lesson l : lessons) {
-			response.add(lessonMapper.lessonToResponse(l));
-		}
-		return response;
-	}
-
-	public List<LessonResponse> getByCategory(Long lessonId, Long categoryId) {
-		List<Lesson> lessons = lessonRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(lessonId, categoryId,
-				Status.PUBLISHED);
-		List<LessonResponse> response = new ArrayList<LessonResponse>();
-		for (Lesson d : lessons) {
-			response.add(lessonMapper.lessonToResponse(d));
-		}
-		return response;
 	}
 
 	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
@@ -298,6 +259,50 @@ public class LessonService {
 		return new FileResponse(resource, file.length(), MediaType.APPLICATION_OCTET_STREAM, lesson.getSubFileUrl());
 	}
 
+	public List<LessonFavoriteResponse> search(String keyword, Long categoryId) {
+
+		User user = getUserByToken.get();
+		if (user == null) {
+			return lessonRepository.searchWithWithoutFavorite(keyword, categoryId);
+		}
+		return lessonRepository.searchWithFavoriteStatus(keyword, categoryId, user.getId());
+	}
+
+	public List<LessonFavoriteResponse> getAllPublicLessonsCheckFavorite() {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return lessonRepository.findAllWithoutFavorite();
+		}
+		return lessonRepository.findAllWithFavoriteStatus(user.getId());
+
+	}
+
+	public List<LessonFavoriteResponse> getLessonsByUserCheckFavorite(Long authorId, Long currentLessonId) {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return lessonRepository.findLessonsByUserWithoutFavorite(authorId, currentLessonId);
+		}
+		return lessonRepository.findLessonsByUserWithFavoriteStatus(authorId, user.getId(), currentLessonId);
+
+	}
+
+	public List<LessonFavoriteResponse> getLessonsByCategoryCheckFavorite(Long categoryId, Long currentLessonId) {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return lessonRepository.findLessonsByCategoryWithoutFavorite(categoryId, currentLessonId);
+		}
+		return lessonRepository.findLessonsByCategoryWithFavoriteStatus(categoryId, user.getId(), currentLessonId);
+
+	}
+
+	public List<LessonFavoriteResponse> getAllLessonsByUserheckFavorite(Long authorId) {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return lessonRepository.findAllLessonsByUserWithoutFavorite(authorId);
+		}
+		return lessonRepository.findAllLessonsByUserWithFavoriteStatus(authorId, user.getId());
+	}
+
 	@PreAuthorize("hasAuthority('GET_MY_LESSON')")
 	public List<LessonResponse> getMyLesson() {
 		User user = getUserByToken.get();
@@ -458,4 +463,45 @@ public class LessonService {
 
 		return thumbnailUrl;
 	}
+
+//	public List<LessonResponse> getByUser(Long lessonId, Long userId) {
+//		List<Lesson> lessons = lessonRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(lessonId, userId,
+//				Status.PUBLISHED);
+//		List<LessonResponse> response = new ArrayList<LessonResponse>();
+//		for (Lesson l : lessons) {
+//			response.add(lessonMapper.lessonToResponse(l));
+//		}
+//		return response;
+//	}
+//
+//	public List<LessonResponse> getAllLessonsByUser(Long userId) {
+//		List<Lesson> lessons = lessonRepository.findByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
+//		List<LessonResponse> response = new ArrayList<LessonResponse>();
+//		for (Lesson l : lessons) {
+//			response.add(lessonMapper.lessonToResponse(l));
+//		}
+//		return response;
+//	}
+//
+//	public List<LessonResponse> getByCategory(Long lessonId, Long categoryId) {
+//		List<Lesson> lessons = lessonRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(lessonId, categoryId,
+//				Status.PUBLISHED);
+//		List<LessonResponse> response = new ArrayList<LessonResponse>();
+//		for (Lesson d : lessons) {
+//			response.add(lessonMapper.lessonToResponse(d));
+//		}
+//		return response;
+//	}
+//	
+//	public List<LessonResponse> search(String keyword, Long categoryId) {
+//
+//		List<Lesson> lessons = lessonRepository.search(keyword == null || keyword.isBlank() ? null : keyword,
+//				categoryId);
+//		List<LessonResponse> response = new ArrayList<LessonResponse>();
+//		for (Lesson l : lessons) {
+//			response.add(lessonMapper.lessonToResponse(l));
+//		}
+//		return response;
+//	}
+
 }

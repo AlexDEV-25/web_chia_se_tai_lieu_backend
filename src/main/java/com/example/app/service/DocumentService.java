@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.response.DocumentFavoriteResponse;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.dto.response.DocumentStatsResponse;
 import com.example.app.dto.response.FileResponse;
@@ -63,26 +64,6 @@ public class DocumentService {
 		return documentRepository.getStats();
 	}
 
-	public List<DocumentResponse> search(String keyword, Long categoryId) {
-
-		List<Document> documents = documentRepository.search(keyword == null || keyword.isBlank() ? null : keyword,
-				categoryId);
-		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-		for (Document d : documents) {
-			response.add(documentMapper.documentToResponse(d));
-		}
-		return response;
-	}
-
-	public List<DocumentResponse> getAllPublicDocuments() {
-		List<Document> documents = documentRepository.findByStatusAndHideFalse(Status.PUBLISHED);
-		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-		for (Document d : documents) {
-			response.add(documentMapper.documentToResponse(d));
-		}
-		return response;
-	}
-
 	public DocumentResponse findByIdPublicDocument(Long id) {
 		Document find = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
@@ -101,35 +82,6 @@ public class DocumentService {
 			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
 			documentRepository.save(entity);
 		});
-	}
-
-	public List<DocumentResponse> getByUser(Long documentId, Long userId) {
-		List<Document> documents = documentRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(documentId, userId,
-				Status.PUBLISHED);
-		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-		for (Document d : documents) {
-			response.add(documentMapper.documentToResponse(d));
-		}
-		return response;
-	}
-
-	public List<DocumentResponse> getAllDocumentsByUser(Long userId) {
-		List<Document> documents = documentRepository.findByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
-		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-		for (Document d : documents) {
-			response.add(documentMapper.documentToResponse(d));
-		}
-		return response;
-	}
-
-	public List<DocumentResponse> getByCategory(Long documentId, Long categoryId) {
-		List<Document> documents = documentRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(documentId,
-				categoryId, Status.PUBLISHED);
-		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-		for (Document d : documents) {
-			response.add(documentMapper.documentToResponse(d));
-		}
-		return response;
 	}
 
 	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
@@ -257,6 +209,54 @@ public class DocumentService {
 		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, downloadName);
 	}
 
+	public List<DocumentFavoriteResponse> search(String keyword, Long categoryId) {
+
+		User user = getUserByToken.get();
+		if (user == null) {
+			return documentRepository.searchWithWithoutFavorite(keyword, categoryId);
+		}
+
+		return documentRepository.searchWithFavoriteStatus(keyword, categoryId, user.getId());
+	}
+
+	public List<DocumentFavoriteResponse> getAllPublicDocumentsCheckFavorite() {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return documentRepository.findAllWithoutFavorite();
+		}
+		return documentRepository.findAllWithFavoriteStatus(user.getId());
+
+	}
+
+	public List<DocumentFavoriteResponse> getDocumentsByUserCheckFavorite(Long authorId, Long currentDocumentId) {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return documentRepository.findDocumentsByUserWithoutFavorite(authorId, currentDocumentId);
+		}
+		return documentRepository.findDocumentsByUserWithFavoriteStatus(authorId, user.getId(), currentDocumentId);
+
+	}
+
+	public List<DocumentFavoriteResponse> getDocumentsByCategoryCheckFavorite(Long categoryId, Long currentDocumentId) {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return documentRepository.findDocumentsByCategoryWithoutFavorite(categoryId, currentDocumentId);
+		}
+		return documentRepository.findDocumentsByCategoryWithFavoriteStatus(categoryId, user.getId(),
+				currentDocumentId);
+
+	}
+
+	public List<DocumentFavoriteResponse> getAllDocumentsByUserheckFavorite(Long authorId) {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return documentRepository.findAllDocumentsByUserWithoutFavorite(authorId);
+		}
+		return documentRepository.findAllDocumentsByUserWithFavoriteStatus(authorId, user.getId());
+	}
+
+	//
+
 	@PreAuthorize("hasAuthority('GET_MY_DOCUMENT')")
 	public List<DocumentResponse> getMyDocument() {
 		User user = getUserByToken.get();
@@ -353,5 +353,43 @@ public class DocumentService {
 			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
+
+//	public List<DocumentResponse> getAllPublicDocuments() {
+//		List<Document> documents = documentRepository.findByStatusAndHideFalse(Status.PUBLISHED);
+//		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+//		for (Document d : documents) {
+//			response.add(documentMapper.documentToResponse(d));
+//		}
+//		return response;
+//	}	
+
+//	public List<DocumentResponse> getByUser(Long documentId, Long userId) {
+//		List<Document> documents = documentRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(documentId, userId,
+//				Status.PUBLISHED);
+//		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+//		for (Document d : documents) {
+//			response.add(documentMapper.documentToResponse(d));
+//		}
+//		return response;
+//	}
+//
+//	public List<DocumentResponse> getByCategory(Long documentId, Long categoryId) {
+//		List<Document> documents = documentRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(documentId,
+//				categoryId, Status.PUBLISHED);
+//		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+//		for (Document d : documents) {
+//			response.add(documentMapper.documentToResponse(d));
+//		}
+//		return response;
+//	}
+//
+//	public List<DocumentResponse> getAllDocumentsByUser(Long userId) {
+//		List<Document> documents = documentRepository.findByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
+//		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+//		for (Document d : documents) {
+//			response.add(documentMapper.documentToResponse(d));
+//		}
+//		return response;
+//	}
 
 }

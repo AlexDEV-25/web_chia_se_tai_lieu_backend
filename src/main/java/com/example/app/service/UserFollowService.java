@@ -100,4 +100,13 @@ public class UserFollowService {
 		FollowCountResponse response = new FollowCountResponse(follower, following);
 		return response;
 	}
+
+	public boolean checkFollowed(Long UserId) {
+		User follower = getUserByToken.get();
+		User following = userRepository.findByIdAndHideFalse(UserId)
+				.orElseThrow(() -> new AppException("người nhận không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+
+		return userFollowRepository.existsByFollowerAndFollowing(follower, following);
+	}
+
 }

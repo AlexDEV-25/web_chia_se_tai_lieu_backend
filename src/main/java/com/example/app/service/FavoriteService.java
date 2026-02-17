@@ -43,9 +43,6 @@ public class FavoriteService {
 
 		User user = getUserByToken.get();
 
-		if (favoriteRepository.existsByUserAndDocument(user, doc)) {
-			throw new AppException("đã có trong kho Favorite", 1001, HttpStatus.BAD_REQUEST);
-		}
 		favorite.setCreatedAt(LocalDateTime.now());
 		favorite.setDocument(doc);
 		favorite.setUser(user);
@@ -63,9 +60,6 @@ public class FavoriteService {
 
 		User user = getUserByToken.get();
 
-		if (favoriteRepository.existsByUserAndLesson(user, lesson)) {
-			throw new AppException("đã có trong kho Favorite", 1001, HttpStatus.BAD_REQUEST);
-		}
 		favorite.setCreatedAt(LocalDateTime.now());
 		favorite.setLesson(lesson);
 		favorite.setUser(user);
@@ -119,5 +113,41 @@ public class FavoriteService {
 		} catch (EmptyResultDataAccessException e) {
 			throw new AppException("Favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
+	}
+
+	@PreAuthorize("hasAuthority('REMOVE_DOCUMENT_FAVORITE')")
+	public void removeDocumentFavorite(Long DocumentId) {
+		User user = getUserByToken.get();
+		try {
+			Favorite favorite = favoriteRepository.findByUser_IdAndDocument_Id(user.getId(), DocumentId)
+					.orElseThrow(() -> new AppException("favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			favoriteRepository.deleteById(favorite.getId());
+		} catch (EmptyResultDataAccessException e) {
+			throw new AppException("Favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@PreAuthorize("hasAuthority('REMOVE_LESSON_FAVORITE')")
+	public void removeLessonFavorite(Long LessonId) {
+		User user = getUserByToken.get();
+		try {
+			Favorite favorite = favoriteRepository.findByUser_IdAndLesson_Id(user.getId(), LessonId)
+					.orElseThrow(() -> new AppException("favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			favoriteRepository.deleteById(favorite.getId());
+		} catch (EmptyResultDataAccessException e) {
+			throw new AppException("Favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@PreAuthorize("hasAuthority('CHECK_DOCUMENT_FAVORITE')")
+	public boolean checkDocumentFavorite(Long documentId) {
+		User user = getUserByToken.get();
+		return favoriteRepository.existsByUser_IdAndDocument_Id(user.getId(), documentId);
+	}
+
+	@PreAuthorize("hasAuthority('CHECK_LESSON_FAVORITE')")
+	public boolean checkLessonFavorite(Long LessonId) {
+		User user = getUserByToken.get();
+		return favoriteRepository.existsByUser_IdAndLesson_Id(user.getId(), LessonId);
 	}
 }
