@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FollowCountResponse {
-	private Long Follower;
-	private Long Following;
+	private Long follower;
+	private Long following;
 }

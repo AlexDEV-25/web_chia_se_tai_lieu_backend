@@ -34,6 +34,12 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	// lấy tài liệu không bị ẩn hay pending
 	List<Document> findByIdNotAndStatusAndHideFalse(Long docId, Status status);
 
+	// lấy số tài liệu của 1 người đã được duyệt và không bị ẩn
+	long countByUser_IdAndStatusAndHideFalse(Long userId, Status status);
+
+	// lấy số tài liệu của chính mình đăng tải lên
+	long countByUser_Id(Long userId);
+
 	@Query("""
 				SELECT new com.example.app.dto.response.DailyCountResponse(
 			    CAST(FUNCTION('date', d.createdAt) AS java.time.LocalDate),
@@ -299,16 +305,5 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    ORDER BY d.createdAt DESC
 			""")
 	List<DocumentFavoriteResponse> findAllWithoutFavorite();
-
-//	// lấy danh sách những tài liệu cùng danh mục nhưng khác với tài liệu đang
-//	// chọn không bị ẩn hay pending
-//	List<Document> findByIdNotAndCategory_IdAndStatusAndHideFalse(Long docId, Long categoryId, Status status);
-//
-//	// lấy danh sách những tài liệu cùng tác giả nhưng khác với tài liệu đang
-//	// chọn không bị ẩn hay pending
-//	List<Document> findByIdNotAndUser_IdAndStatusAndHideFalse(Long docId, Long userId, Status status);
-//
-//	// lấy danh sách những tài liệu cùng tác giả không bị ẩn hay pending
-//	List<Document> findByUser_IdAndStatusAndHideFalse(Long userId, Status status);
 
 }

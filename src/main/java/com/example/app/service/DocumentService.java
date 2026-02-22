@@ -90,6 +90,10 @@ public class DocumentService {
 		return loadDocumentFile(doc);
 	}
 
+	public Long countDocumentOfUser(Long userId) {
+		return documentRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
+	}
+
 	@PreAuthorize("hasRole('ADMIN')")
 	public DocumentResponse findById(Long id) {
 		Document find = documentRepository.findById(id)
@@ -298,6 +302,12 @@ public class DocumentService {
 		}
 	}
 
+	@PreAuthorize("hasAuthority('COUNT_MY_DOCUMENT')")
+	public Long countMyDocument() {
+		User user = getUserByToken.get();
+		return documentRepository.countByUser_Id(user.getId());
+	}
+
 	private FileResponse loadDocumentFile(Document doc) throws IOException {
 
 		String filePath = documentStorage + "\\" + doc.getFileUrl();
@@ -353,43 +363,5 @@ public class DocumentService {
 			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
-
-//	public List<DocumentResponse> getAllPublicDocuments() {
-//		List<Document> documents = documentRepository.findByStatusAndHideFalse(Status.PUBLISHED);
-//		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-//		for (Document d : documents) {
-//			response.add(documentMapper.documentToResponse(d));
-//		}
-//		return response;
-//	}	
-
-//	public List<DocumentResponse> getByUser(Long documentId, Long userId) {
-//		List<Document> documents = documentRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(documentId, userId,
-//				Status.PUBLISHED);
-//		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-//		for (Document d : documents) {
-//			response.add(documentMapper.documentToResponse(d));
-//		}
-//		return response;
-//	}
-//
-//	public List<DocumentResponse> getByCategory(Long documentId, Long categoryId) {
-//		List<Document> documents = documentRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(documentId,
-//				categoryId, Status.PUBLISHED);
-//		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-//		for (Document d : documents) {
-//			response.add(documentMapper.documentToResponse(d));
-//		}
-//		return response;
-//	}
-//
-//	public List<DocumentResponse> getAllDocumentsByUser(Long userId) {
-//		List<Document> documents = documentRepository.findByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
-//		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-//		for (Document d : documents) {
-//			response.add(documentMapper.documentToResponse(d));
-//		}
-//		return response;
-//	}
 
 }

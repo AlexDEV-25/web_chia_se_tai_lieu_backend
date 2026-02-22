@@ -20,6 +20,7 @@ import com.example.app.repository.UserRepository;
 import com.example.app.share.GetUserByToken;
 import com.example.app.share.SendNotification;
 
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 
 @Service
@@ -55,9 +56,14 @@ public class UserFollowService {
 	}
 
 	@PreAuthorize("hasAuthority('UNFOLLOW')")
-	public void delete(Long id) {
+	@Transactional
+	public void delete(Long followingId) {
 		try {
-			userFollowRepository.deleteById(id);
+			User follower = getUserByToken.get();
+			User following = userRepository.findByIdAndHideFalse(followingId)
+					.orElseThrow(() -> new AppException("người nhận không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+
+			userFollowRepository.deleteByFollowerAndFollowing(follower, following);
 		} catch (EmptyResultDataAccessException e) {
 			throw new AppException("follow không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
@@ -94,19 +100,26 @@ public class UserFollowService {
 		return response;
 	}
 
-	public FollowCountResponse getFollowCount(Long UserId) {
-		Long follower = userFollowRepository.countByFollowing_Id(UserId);
-		Long following = userFollowRepository.countByFollower_Id(UserId);
+	public FollowCountResponse getFollowCount(Long userId) {
+		Long follower = userFollowRepository.countByFollowing_Id(userId);
+		Long following = userFollowRepository.countByFollower_Id(userId);
 		FollowCountResponse response = new FollowCountResponse(follower, following);
 		return response;
 	}
 
-	public boolean checkFollowed(Long UserId) {
+	@PreAuthorize("hasAuthority('CHECK_FOLLOWED')")
+	public boolean checkFollowed(Long userId) {
 		User follower = getUserByToken.get();
-		User following = userRepository.findByIdAndHideFalse(UserId)
+		User following = userRepository.findByIdAndHideFalse(userId)
 				.orElseThrow(() -> new AppException("người nhận không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
 		return userFollowRepository.existsByFollowerAndFollowing(follower, following);
+	}
+
+	@PreAuthorize("hasAuthority('CHECK_IS_ME')")
+	public boolean checkIsMe(Long userId) {
+		User follower = getUserByToken.get();
+		return follower.getId() == userId;
 	}
 
 }

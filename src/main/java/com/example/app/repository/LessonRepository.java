@@ -34,6 +34,12 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	// lấy bài giảng không bị ẩn hay pending
 	List<Lesson> findByIdNotAndStatusAndHideFalse(Long lessonId, Status status);
 
+	// lấy số bài giảng của 1 người đã được duyệt và không bị ẩn
+	long countByUser_IdAndStatusAndHideFalse(Long userId, Status status);
+
+	// lấy số bài giảng của chính mình đăng tải lên
+	long countByUser_Id(Long userId);
+
 	@Query("""
 				SELECT new com.example.app.dto.response.DailyCountResponse(
 			    CAST(FUNCTION('date', l.createdAt) AS java.time.LocalDate),

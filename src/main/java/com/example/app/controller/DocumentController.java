@@ -164,6 +164,15 @@ public class DocumentController {
 		return apiResponse;
 	}
 
+	@GetMapping("/count/{userId}")
+	public APIResponse<Long> countDocumentOfUser(@PathVariable Long userId) {
+		Long num = documentService.countDocumentOfUser(userId);
+		APIResponse<Long> apiResponse = new APIResponse<Long>();
+		apiResponse.setResult(num);
+		apiResponse.setMessage("increase success");
+		return apiResponse;
+	}
+
 	@PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public APIResponse<DocumentResponse> create(@RequestPart("file") MultipartFile file,
 			@RequestPart("data") String dataJson) {
@@ -240,39 +249,13 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-//	@GetMapping
-//	public APIResponse<DocumentResponse> getAllPublicDocuments() {
-//		List<DocumentResponse> response = documentService.getAllPublicDocuments();
-//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-//		apiResponse.setResultList(response);
-//		apiResponse.setMessage("get all success");
-//		return apiResponse;
-//	}
-//
-//	@GetMapping("/user")
-//	public APIResponse<DocumentResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
-//		List<DocumentResponse> response = documentService.getByUser(documentId, userId);
-//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-//		apiResponse.setResultList(response);
-//		apiResponse.setMessage("get all success");
-//		return apiResponse;
-//	}
-//
-//	@GetMapping("/category")
-//	public APIResponse<DocumentResponse> getByCategory(@RequestParam Long documentId, @RequestParam Long categoryId) {
-//		List<DocumentResponse> response = documentService.getByCategory(documentId, categoryId);
-//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-//		apiResponse.setResultList(response);
-//		apiResponse.setMessage("get all success");
-//		return apiResponse;
-//	}
-//	
-//	@GetMapping("/user/{userId}")
-//	public APIResponse<DocumentResponse> getAllDocumentsByUser(@PathVariable Long userId) {
-//		List<DocumentResponse> response = documentService.getAllDocumentsByUser(userId);
-//		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-//		apiResponse.setResultList(response);
-//		apiResponse.setMessage("get all success");
-//		return apiResponse;
-//	}
+	@GetMapping("/my-document/count")
+	public APIResponse<Long> CountMyDocument() {
+		Long response = documentService.countMyDocument();
+		APIResponse<Long> apiResponse = new APIResponse<Long>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
 }

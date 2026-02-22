@@ -33,9 +33,9 @@ public class UserFollowController {
 		return apiResponse;
 	}
 
-	@DeleteMapping("/{id}")
-	public APIResponse<Void> delete(@PathVariable Long id) {
-		userFollowService.delete(id);
+	@DeleteMapping("/{followingId}")
+	public APIResponse<Void> delete(@PathVariable Long followingId) {
+		userFollowService.delete(followingId);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
 		apiResponse.setMessage("unfollow success");
 		return apiResponse;
@@ -74,6 +74,22 @@ public class UserFollowController {
 		APIResponse<FollowCountResponse> apiResponse = new APIResponse<FollowCountResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/check/{userId}")
+	public APIResponse<Boolean> checkFollowed(@PathVariable Long userId) {
+		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
+		apiResponse.setMessage("check success");
+		apiResponse.setResult(userFollowService.checkFollowed(userId));
+		return apiResponse;
+	}
+
+	@GetMapping("/check-is-me/{userId}")
+	public APIResponse<Boolean> checkIsMe(@PathVariable Long userId) {
+		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
+		apiResponse.setMessage("check success");
+		apiResponse.setResult(userFollowService.checkIsMe(userId));
 		return apiResponse;
 	}
 

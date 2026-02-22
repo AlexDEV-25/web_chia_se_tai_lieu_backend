@@ -105,6 +105,10 @@ public class LessonService {
 		return loadVideoFile(lesson);
 	}
 
+	public Long countLessonOfUser(Long userId) {
+		return lessonRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
+	}
+
 	@PreAuthorize("hasRole('ADMIN')")
 	public LessonResponse findById(Long id) {
 		Lesson find = lessonRepository.findById(id)
@@ -353,6 +357,12 @@ public class LessonService {
 		}
 	}
 
+	@PreAuthorize("hasAuthority('COUNT_MY_LESSON')")
+	public Long countMyLesson() {
+		User user = getUserByToken.get();
+		return lessonRepository.countByUser_Id(user.getId());
+	}
+
 	private File loadVideoFile(Lesson lesson) {
 
 		File file = new File(videoStorage + File.separator + lesson.getLessonUrl());
@@ -463,45 +473,4 @@ public class LessonService {
 
 		return thumbnailUrl;
 	}
-
-//	public List<LessonResponse> getByUser(Long lessonId, Long userId) {
-//		List<Lesson> lessons = lessonRepository.findByIdNotAndUser_IdAndStatusAndHideFalse(lessonId, userId,
-//				Status.PUBLISHED);
-//		List<LessonResponse> response = new ArrayList<LessonResponse>();
-//		for (Lesson l : lessons) {
-//			response.add(lessonMapper.lessonToResponse(l));
-//		}
-//		return response;
-//	}
-//
-//	public List<LessonResponse> getAllLessonsByUser(Long userId) {
-//		List<Lesson> lessons = lessonRepository.findByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
-//		List<LessonResponse> response = new ArrayList<LessonResponse>();
-//		for (Lesson l : lessons) {
-//			response.add(lessonMapper.lessonToResponse(l));
-//		}
-//		return response;
-//	}
-//
-//	public List<LessonResponse> getByCategory(Long lessonId, Long categoryId) {
-//		List<Lesson> lessons = lessonRepository.findByIdNotAndCategory_IdAndStatusAndHideFalse(lessonId, categoryId,
-//				Status.PUBLISHED);
-//		List<LessonResponse> response = new ArrayList<LessonResponse>();
-//		for (Lesson d : lessons) {
-//			response.add(lessonMapper.lessonToResponse(d));
-//		}
-//		return response;
-//	}
-//	
-//	public List<LessonResponse> search(String keyword, Long categoryId) {
-//
-//		List<Lesson> lessons = lessonRepository.search(keyword == null || keyword.isBlank() ? null : keyword,
-//				categoryId);
-//		List<LessonResponse> response = new ArrayList<LessonResponse>();
-//		for (Lesson l : lessons) {
-//			response.add(lessonMapper.lessonToResponse(l));
-//		}
-//		return response;
-//	}
-
 }

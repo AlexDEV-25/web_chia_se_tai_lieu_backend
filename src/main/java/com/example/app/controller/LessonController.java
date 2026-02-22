@@ -162,6 +162,15 @@ public class LessonController {
 		return apiResponse;
 	}
 
+	@GetMapping("/count/{userId}")
+	public APIResponse<Long> countDocumentOfUser(@PathVariable Long userId) {
+		Long num = lessonService.countLessonOfUser(userId);
+		APIResponse<Long> apiResponse = new APIResponse<Long>();
+		apiResponse.setResult(num);
+		apiResponse.setMessage("increase success");
+		return apiResponse;
+	}
+
 	@PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public APIResponse<LessonResponse> create(@RequestPart("video") MultipartFile video,
 			@RequestPart(value = "document", required = false) MultipartFile document,
@@ -258,6 +267,15 @@ public class LessonController {
 		lessonService.deleteMyLesson(id);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setMessage("delete success");
+		return apiResponse;
+	}
+
+	@GetMapping("/my-lesson/count")
+	public APIResponse<Long> CountMyLesson() {
+		Long response = lessonService.countMyLesson();
+		APIResponse<Long> apiResponse = new APIResponse<Long>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
