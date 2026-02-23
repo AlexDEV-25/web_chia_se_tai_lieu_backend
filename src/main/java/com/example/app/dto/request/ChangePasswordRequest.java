@@ -2,6 +2,7 @@ package com.example.app.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,13 +12,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChangePasswordRequest {
 
-	@NotBlank(message = "email không được để trống")
-	@Email(message = "Email không đúng định dạng")
+	@Email(message = "Email không hợp lệ")
+	@Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$", message = "Email phải đúng định dạng ví dụ: example@gmail.com")
 	private String email;
 
 	@NotBlank(message = "forgotPasswordCode không được để trống")
 	private String forgotPasswordCode;
 
-	@NotBlank(message = "password không được để trống")
+	@NotBlank(message = "Mật khẩu không được để trống")
+	@Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", message = "Mật khẩu phải có chữ hoa, chữ thường, số và ký tự đặc biệt")
 	private String password;
 }
