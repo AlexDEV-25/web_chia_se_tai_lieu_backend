@@ -1,8 +1,9 @@
 package com.example.app.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class ReportService {
 	private final ReportRepository reportRepository;
 	private final DocumentRepository documentRepository;
 	private final LessonRepository lessonRepository;
-	private final ReportMapper ReportMapper;
+	private final ReportMapper reportMapper;
 	private final GetUserByToken getUserByToken;
 
 	@PreAuthorize("hasAuthority('REPORT_DOCUMENT')")
@@ -40,7 +41,7 @@ public class ReportService {
 		User user = getUserByToken.get();
 
 		if (reportRepository.existsByUserAndDocument(user, doc)) {
-			throw new AppException("đã có trong kho Report", 1001, HttpStatus.BAD_REQUEST);
+			throw new AppException("Bạn đã report rồi", 1001, HttpStatus.BAD_REQUEST);
 		}
 		report.setCreatedAt(LocalDateTime.now());
 		report.setDocument(doc);
@@ -48,7 +49,7 @@ public class ReportService {
 		report.setReason(dto.getReason());
 		report.setType(dto.getType());
 		Report saved = reportRepository.save(report);
-		ReportResponse response = ReportMapper.reportDocumentToResponse(saved);
+		ReportResponse response = reportMapper.reportDocumentToResponse(saved);
 		return response;
 	}
 
@@ -61,7 +62,7 @@ public class ReportService {
 		User user = getUserByToken.get();
 
 		if (reportRepository.existsByUserAndLesson(user, lesson)) {
-			throw new AppException("đã có trong kho Report", 1001, HttpStatus.BAD_REQUEST);
+			throw new AppException("Bạn đã report rồi", 1001, HttpStatus.BAD_REQUEST);
 		}
 		report.setCreatedAt(LocalDateTime.now());
 		report.setLesson(lesson);
@@ -69,25 +70,27 @@ public class ReportService {
 		report.setReason(dto.getReason());
 		report.setType(dto.getType());
 		Report saved = reportRepository.save(report);
-		ReportResponse response = ReportMapper.reportDocumentToResponse(saved);
+		ReportResponse response = reportMapper.reportDocumentToResponse(saved);
 		return response;
 	}
 
-	@PreAuthorize("hasAuthority('UNREPORT_DOCUMENT')")
-	public void unReportDocument(Long id) {
-		try {
-			reportRepository.deleteByDocument_Id(id);
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("Report không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<ReportResponse> findByDocumentId(Long documentId) {
+		List<Report> reports = reportRepository.findByDocument_Id(documentId);
+		List<ReportResponse> response = new ArrayList<ReportResponse>();
+		for (Report r : reports) {
+			response.add(reportMapper.reportDocumentToResponse(r));
 		}
+		return response;
 	}
 
-	@PreAuthorize("hasAuthority('UNREPORT_LESSON')")
-	public void unReportLesson(Long id) {
-		try {
-			reportRepository.deleteByLesson_Id(id);
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("Report không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<ReportResponse> findByLessonId(Long lessonId) {
+		List<Report> reports = reportRepository.findByLesson_Id(lessonId);
+		List<ReportResponse> response = new ArrayList<ReportResponse>();
+		for (Report r : reports) {
+			response.add(reportMapper.reportLessonToResponse(r));
 		}
+		return response;
 	}
 }

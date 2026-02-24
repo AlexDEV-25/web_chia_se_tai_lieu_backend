@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.dto.response.CategoryCountResponse;
+import com.example.app.dto.response.ContentRatingSummaryResponse;
+import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.DailyCountResponse;
 import com.example.app.dto.response.LessonFavoriteResponse;
 import com.example.app.dto.response.LessonStatsResponse;
@@ -295,15 +297,40 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			""")
 	List<LessonFavoriteResponse> findAllWithoutFavorite();
 
-//	// lấy danh sách những bài giảng cùng danh mục nhưng khác với bài giảng đang
-//	// chọn không bị ẩn hay pending
-//	List<Lesson> findByIdNotAndCategory_IdAndStatusAndHideFalse(Long lessonId, Long categoryId, Status status);
-//
-//	// lấy danh sách những bài giảng cùng tác giả nhưng khác với bài giảng đang chọn
-//	// không bị ẩn hay pending
-//	List<Lesson> findByIdNotAndUser_IdAndStatusAndHideFalse(Long lessonId, Long userId, Status status);
-//
-//	// lấy danh sách những bài giảng cùng tác giả không bị ẩn hay pending
-//	List<Lesson> findByUser_IdAndStatusAndHideFalse(Long userId, Status status);
+	@Query("""
+			    SELECT new com.example.app.dto.response.ContentRatingSummaryResponse(
+			     	l.id,
+			        l.title,
+			        COALESCE(AVG(r.rating), 0),
+			        COUNT(r),
+			        com.example.app.share.Type.LESSON
+			    )
+			    FROM Lesson l
+			    LEFT JOIN l.ratings r
+			        ON r.type = com.example.app.share.Type.LESSON
+			    WHERE l.status = com.example.app.share.Status.PUBLISHED
+			    GROUP BY l.id, l.title
+			    ORDER BY
+			     COALESCE(AVG(r.rating), 0) DESC,
+			     COUNT(r) DESC
+			""")
+	List<ContentRatingSummaryResponse> getAllLessonRatingSummary();
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.ContentReportSummaryResponse(
+			     	l.id,
+			        l.title,
+			        COUNT(r),
+			        com.example.app.share.Type.LESSON
+			    )
+			    FROM Lesson l
+			    LEFT JOIN l.reports r
+			        ON r.type = com.example.app.share.Type.LESSON
+			    WHERE l.status = com.example.app.share.Status.PUBLISHED
+			    GROUP BY l.id, l.title
+			    ORDER BY
+			     COUNT(r) DESC
+			""")
+	List<ContentReportSummaryResponse> getAllLessonReportSummary();
 
 }

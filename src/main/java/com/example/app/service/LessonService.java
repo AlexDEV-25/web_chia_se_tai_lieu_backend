@@ -25,6 +25,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
+import com.example.app.dto.response.ContentRatingSummaryResponse;
+import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.LessonFavoriteResponse;
 import com.example.app.dto.response.LessonResponse;
@@ -123,6 +125,18 @@ public class LessonService {
 		for (Lesson l : lessons) {
 			response.add(lessonMapper.lessonToResponse(l));
 		}
+		return response;
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<ContentRatingSummaryResponse> getAllLessonRatingSummary() {
+		List<ContentRatingSummaryResponse> response = lessonRepository.getAllLessonRatingSummary();
+		return response;
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<ContentReportSummaryResponse> getAllLessonReportSummary() {
+		List<ContentReportSummaryResponse> response = lessonRepository.getAllLessonReportSummary();
 		return response;
 	}
 

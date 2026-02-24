@@ -24,6 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.response.ContentRatingSummaryResponse;
+import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.DocumentFavoriteResponse;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.dto.response.DocumentStatsResponse;
@@ -108,6 +110,18 @@ public class DocumentService {
 		for (Document d : documents) {
 			response.add(documentMapper.documentToResponse(d));
 		}
+		return response;
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<ContentRatingSummaryResponse> getAllDocumentRatingSummary() {
+		List<ContentRatingSummaryResponse> response = documentRepository.getAllDocumentRatingSummary();
+		return response;
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<ContentReportSummaryResponse> getAllDocumentReportSummary() {
+		List<ContentReportSummaryResponse> response = documentRepository.getAllDocumentReportSummary();
 		return response;
 	}
 

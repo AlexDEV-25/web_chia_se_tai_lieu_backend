@@ -1,6 +1,8 @@
 package com.example.app.controller;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,19 +43,21 @@ public class ReportController {
 		return apiResponse;
 	}
 
-	@DeleteMapping("/document/{id}")
-	public APIResponse<Void> unReportDocument(@PathVariable Long id) {
-		reportService.unReportDocument(id);
-		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
+	@GetMapping("/document/{documentId}")
+	public APIResponse<ReportResponse> findByDocumentId(@PathVariable Long documentId) {
+		List<ReportResponse> response = reportService.findByDocumentId(documentId);
+		APIResponse<ReportResponse> apiResponse = new APIResponse<ReportResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	@DeleteMapping("/lesson/{id}")
-	public APIResponse<Void> unReportLesson(@PathVariable Long id) {
-		reportService.unReportLesson(id);
-		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
+	@GetMapping("/lesson/{lessonId}")
+	public APIResponse<ReportResponse> findByLessonId(@PathVariable Long lessonId) {
+		List<ReportResponse> response = reportService.findByLessonId(lessonId);
+		APIResponse<ReportResponse> apiResponse = new APIResponse<ReportResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 }

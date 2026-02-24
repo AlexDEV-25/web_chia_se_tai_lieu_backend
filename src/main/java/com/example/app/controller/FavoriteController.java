@@ -88,20 +88,20 @@ public class FavoriteController {
 	}
 
 	@GetMapping("/document/user/check/{documentId}")
-	public APIResponse<Boolean> checkDocumentFavorite(Long documentId) {
+	public APIResponse<Boolean> checkDocumentFavorite(@PathVariable Long documentId) {
 		Boolean response = favoriteService.checkDocumentFavorite(documentId);
 		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
 		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setMessage("check all success");
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson/user/check/{lessonId}")
-	public APIResponse<Boolean> checkLessonFavorite(Long lessonId) {
+	public APIResponse<Boolean> checkLessonFavorite(@PathVariable Long lessonId) {
 		Boolean response = favoriteService.checkLessonFavorite(lessonId);
 		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
 		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setMessage("check all success");
 		return apiResponse;
 	}
 

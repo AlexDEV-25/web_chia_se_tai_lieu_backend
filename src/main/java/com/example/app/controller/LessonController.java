@@ -29,6 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.APIResponse;
+import com.example.app.dto.response.ContentRatingSummaryResponse;
+import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.LessonFavoriteResponse;
 import com.example.app.dto.response.LessonResponse;
@@ -91,6 +93,24 @@ public class LessonController {
 		return apiResponse;
 	}
 
+	@GetMapping("/admin/rating")
+	public APIResponse<ContentRatingSummaryResponse> getAllLessonRatingSummary() {
+		List<ContentRatingSummaryResponse> response = lessonService.getAllLessonRatingSummary();
+		APIResponse<ContentRatingSummaryResponse> apiResponse = new APIResponse<ContentRatingSummaryResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/admin/report")
+	public APIResponse<ContentReportSummaryResponse> getAllLessonReportSummary() {
+		List<ContentReportSummaryResponse> response = lessonService.getAllLessonReportSummary();
+		APIResponse<ContentReportSummaryResponse> apiResponse = new APIResponse<ContentReportSummaryResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
 	@GetMapping
 	public APIResponse<LessonResponse> getAllPublicLesson() {
 		List<LessonResponse> response = lessonService.getAllPublicLessons();
@@ -127,9 +147,9 @@ public class LessonController {
 	}
 
 	@GetMapping("/category")
-	public APIResponse<LessonFavoriteResponse> getByCategory(@RequestParam Long lessonId,
-			@RequestParam Long categoryId) {
-		List<LessonFavoriteResponse> response = lessonService.getLessonsByCategoryCheckFavorite(lessonId, categoryId);
+	public APIResponse<LessonFavoriteResponse> getByCategory(@RequestParam Long categoryId,
+			@RequestParam Long lessonId) {
+		List<LessonFavoriteResponse> response = lessonService.getLessonsByCategoryCheckFavorite(categoryId, lessonId);
 		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");

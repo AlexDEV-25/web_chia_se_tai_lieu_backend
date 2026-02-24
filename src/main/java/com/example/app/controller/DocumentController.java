@@ -22,6 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.APIResponse;
+import com.example.app.dto.response.ContentRatingSummaryResponse;
+import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.DocumentFavoriteResponse;
 import com.example.app.dto.response.DocumentResponse;
 import com.example.app.dto.response.DocumentStatsResponse;
@@ -117,6 +119,24 @@ public class DocumentController {
 	public APIResponse<DocumentResponse> getAll() {
 		List<DocumentResponse> response = documentService.getAllDocuments();
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/admin/rating")
+	public APIResponse<ContentRatingSummaryResponse> getAllDocumentRatingSummary() {
+		List<ContentRatingSummaryResponse> response = documentService.getAllDocumentRatingSummary();
+		APIResponse<ContentRatingSummaryResponse> apiResponse = new APIResponse<ContentRatingSummaryResponse>();
+		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/admin/report")
+	public APIResponse<ContentReportSummaryResponse> getAllDocumentReportSummary() {
+		List<ContentReportSummaryResponse> response = documentService.getAllDocumentReportSummary();
+		APIResponse<ContentReportSummaryResponse> apiResponse = new APIResponse<ContentReportSummaryResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;

@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.app.dto.response.CategoryCountResponse;
+import com.example.app.dto.response.ContentRatingSummaryResponse;
+import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.DailyCountResponse;
 import com.example.app.dto.response.DocumentFavoriteResponse;
 import com.example.app.dto.response.DocumentStatsResponse;
@@ -305,5 +307,41 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    ORDER BY d.createdAt DESC
 			""")
 	List<DocumentFavoriteResponse> findAllWithoutFavorite();
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.ContentRatingSummaryResponse(
+			    	d.id,
+			        d.title,
+			        COALESCE(AVG(r.rating), 0),
+			        COUNT(r),
+			        com.example.app.share.Type.DOCUMENT
+			    )
+			    FROM Document d
+			    LEFT JOIN d.ratings r
+			        ON r.type = com.example.app.share.Type.DOCUMENT
+			    WHERE d.status = com.example.app.share.Status.PUBLISHED
+			    GROUP BY d.id, d.title
+			    ORDER BY
+			     COALESCE(AVG(r.rating), 0) DESC,
+			     COUNT(r) DESC
+			""")
+	List<ContentRatingSummaryResponse> getAllDocumentRatingSummary();
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.ContentReportSummaryResponse(
+			    	d.id,
+			        d.title,
+			        COUNT(r),
+			        com.example.app.share.Type.DOCUMENT
+			    )
+			    FROM Document d
+			    LEFT JOIN d.reports r
+			        ON r.type = com.example.app.share.Type.DOCUMENT
+			    WHERE d.status = com.example.app.share.Status.PUBLISHED
+			    GROUP BY d.id, d.title
+			    ORDER BY
+			     COUNT(r) DESC
+			""")
+	List<ContentReportSummaryResponse> getAllDocumentReportSummary();
 
 }

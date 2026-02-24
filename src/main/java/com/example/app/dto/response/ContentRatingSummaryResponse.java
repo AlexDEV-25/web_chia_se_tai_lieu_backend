@@ -9,12 +9,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReportResponse {
+public class ContentRatingSummaryResponse {
 	private Long id;
-	private Long userId;
-	private String username;
-	private String reason;
-	private Long contentId;
 	private String title;
+	private Double average;
+	private Long total;
 	private Type type;
 }
