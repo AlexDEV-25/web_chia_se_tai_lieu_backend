@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.ChatHistoryResponse;
 import com.example.app.dto.response.CommentResponse;
+import com.example.app.dto.response.ai.AiResponse;
 import com.example.app.service.ChatService;
 
 import lombok.AllArgsConstructor;
@@ -28,6 +29,16 @@ public class ChatController {
 			@RequestParam("message") String request) {
 		String response = chatService.chat(file, request);
 		APIResponse<String> apiResponse = new APIResponse<String>();
+		apiResponse.setResult(response);
+		apiResponse.setMessage("chat success");
+		return apiResponse;
+	}
+
+	@PostMapping(value = "/new", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	APIResponse<AiResponse> newChat(@RequestParam(value = "image", required = false) MultipartFile file,
+			@RequestParam("message") String request) {
+		AiResponse response = chatService.newChat(file, request);
+		APIResponse<AiResponse> apiResponse = new APIResponse<AiResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("chat success");
 		return apiResponse;

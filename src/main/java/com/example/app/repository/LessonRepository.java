@@ -15,6 +15,7 @@ import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.DailyCountResponse;
 import com.example.app.dto.response.LessonFavoriteResponse;
 import com.example.app.dto.response.LessonStatsResponse;
+import com.example.app.model.Category;
 import com.example.app.model.Lesson;
 import com.example.app.share.Status;
 
@@ -332,5 +333,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			     COUNT(r) DESC
 			""")
 	List<ContentReportSummaryResponse> getAllLessonReportSummary();
+
+	List<Lesson> findByCategoryAndStatusAndHideFalse(Category category, Status status);
 
 }

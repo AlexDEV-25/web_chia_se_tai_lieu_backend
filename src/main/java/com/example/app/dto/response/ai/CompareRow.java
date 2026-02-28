@@ -1,5 +1,7 @@
 package com.example.app.dto.response.ai;
 
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,7 +10,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CompareRow {
-	private String aspect; // Tiêu chí so sánh
-	private String valueA; // Giá trị của subjectA
-	private String valueB; // Giá trị của subjectB
+	private String aspect; // Tiêu chí
+
+	// key = subject name
+	// value = description
+	private Map<String, String> values;
 }

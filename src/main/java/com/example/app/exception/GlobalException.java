@@ -26,8 +26,7 @@ public class GlobalException {
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<APIResponse<String>> handlingMethodArgumentNotValidException(MethodArgumentNotValidException e) {
 		APIResponse<String> error = new APIResponse<String>();
-		String message = e.getBindingResult().getFieldErrors().get(0).getDefaultMessage(); // <-- lấy message trong
-																							// @NotBlank
+		String message = e.getBindingResult().getFieldErrors().get(0).getDefaultMessage();
 		error.setCode(9999);
 		error.setMessage(message);
 		return ResponseEntity.status(400).body(error);

@@ -3,6 +3,7 @@ package com.example.app.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -22,13 +23,20 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.response.ChatHistoryResponse;
 import com.example.app.dto.response.CommentResponse;
+import com.example.app.dto.response.ai.AiResponse;
+import com.example.app.dto.response.ai.AvailableValue;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.CommentMapper;
 import com.example.app.model.Category;
 import com.example.app.model.Comment;
+import com.example.app.model.Document;
+import com.example.app.model.Lesson;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.CommentRepository;
+import com.example.app.repository.DocumentRepository;
+import com.example.app.repository.LessonRepository;
 import com.example.app.share.GetUserByToken;
+import com.example.app.share.Status;
 
 @Service
 public class ChatService {
@@ -37,15 +45,19 @@ public class ChatService {
 	private final JdbcChatMemoryRepository jdbcChatMemoryRepository;
 	private final GetUserByToken getUserByToken;
 	private final CategoryRepository categoryRepository;
+	private final DocumentRepository documentRepository;
+	private final LessonRepository lessonRepository;
 	private final CommentRepository commentRepository;
 	private final CommentMapper commentMapper;
 
 	public ChatService(ChatClient.Builder builder, JdbcChatMemoryRepository jdbcChatMemoryRepository,
-			GetUserByToken getUserByToken, CategoryRepository categoryRepository, CommentRepository commentRepository,
-			CommentMapper commentMapper) {
+			GetUserByToken getUserByToken, CategoryRepository categoryRepository, DocumentRepository documentRepository,
+			LessonRepository lessonRepository, CommentRepository commentRepository, CommentMapper commentMapper) {
 		this.jdbcChatMemoryRepository = jdbcChatMemoryRepository;
 		this.getUserByToken = getUserByToken;
 		this.categoryRepository = categoryRepository;
+		this.documentRepository = documentRepository;
+		this.lessonRepository = lessonRepository;
 		this.commentRepository = commentRepository;
 		this.commentMapper = commentMapper;
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().chatMemoryRepository(jdbcChatMemoryRepository)
@@ -234,6 +246,234 @@ public class ChatService {
 		String systemPrompt = checkTypeQuestionPrompt();
 		return chatClient.prompt().system(systemPrompt).user(message).call().content();
 
+	}
+
+	private List<AvailableValue> getAvailableDocumentAndLessonByCategory() {
+		List<AvailableValue> availableValues = new ArrayList<AvailableValue>();
+
+		List<Category> categories = categoryRepository.findByHideFalse();
+
+		for (Category category : categories) {
+			AvailableValue availableValue = new AvailableValue();
+			availableValue.setCategoryName(category.getName());
+
+			List<Document> documents = documentRepository.findByCategoryAndStatusAndHideFalse(category,
+					Status.PUBLISHED);
+			List<String> documentNames = new ArrayList<String>();
+			for (Document document : documents) {
+				documentNames.add(document.getTitle());
+			}
+			availableValue.setDocumentNames(documentNames);
+
+			List<Lesson> lessons = lessonRepository.findByCategoryAndStatusAndHideFalse(category, Status.PUBLISHED);
+			List<String> lessonNames = new ArrayList<String>();
+			for (Lesson lesson : lessons) {
+				lessonNames.add(lesson.getTitle());
+			}
+			availableValue.setLessonNames(lessonNames);
+			availableValues.add(availableValue);
+
+		}
+		return availableValues;
+	}
+
+	private String newPrompt() {
+
+		List<AvailableValue> availableValues = getAvailableDocumentAndLessonByCategory();
+
+		if (availableValues == null || availableValues.isEmpty()) {
+			throw new AppException("Không có danh mục nào trong hệ thống", 5000, HttpStatus.BAD_REQUEST);
+		}
+
+		// Build category list
+		String categoriesList = availableValues.stream().map(AvailableValue::getCategoryName).distinct().sorted()
+				.collect(Collectors.joining(", "));
+
+		// Build documents & lessons list
+		StringBuilder documentsBuilder = new StringBuilder();
+		StringBuilder lessonsBuilder = new StringBuilder();
+
+		for (AvailableValue value : availableValues) {
+
+			String category = value.getCategoryName();
+
+			if (value.getDocumentNames() != null && !value.getDocumentNames().isEmpty()) {
+				documentsBuilder.append("Category: ").append(category).append("\n");
+				for (String doc : value.getDocumentNames()) {
+					documentsBuilder.append("- ").append(doc).append("\n");
+				}
+				documentsBuilder.append("\n");
+			}
+
+			if (value.getLessonNames() != null && !value.getLessonNames().isEmpty()) {
+				lessonsBuilder.append("Category: ").append(category).append("\n");
+				for (String lesson : value.getLessonNames()) {
+					lessonsBuilder.append("- ").append(lesson).append("\n");
+				}
+				lessonsBuilder.append("\n");
+			}
+		}
+
+		return """
+				You are ALEX.AI, an academic IT tutor integrated inside a learning platform.
+
+				--------------------------------------------------
+				SYSTEM CATEGORIES
+				--------------------------------------------------
+				""" + categoriesList + """
+
+				--------------------------------------------------
+				AVAILABLE SYSTEM CONTENT
+				--------------------------------------------------
+
+				Documents in the system:
+				""" + documentsBuilder + """
+
+				Lessons in the system:
+				""" + lessonsBuilder + """
+
+				--------------------------------------------------
+				BEHAVIOR RULES
+				--------------------------------------------------
+
+				1. You are allowed to answer ANY question related to Information Technology (IT).
+
+				2. If the user question matches or is closely related to the system documents or lessons:
+				   - Prioritize and align your answer with the system content.
+				   - Do NOT invent internal lessons or documents.
+
+				3. If the question is IT-related but not covered in the system content:
+				   - You may answer using general IT knowledge.
+				   - Do NOT imply that the content exists in the system.
+
+				4. If the question is NOT related to IT:
+				   - Set status to "OUT_OF_SCOPE".
+
+				5. Only set status to "ERROR" when:
+				   - The user requests specific internal lesson content that does not exist.
+				   - Or the request is technically invalid.
+
+				6. Do NOT generate URLs.
+				7. Do NOT generate IDs.
+				8. Do NOT include explanations outside the JSON.
+				9. Always return VALID JSON only.
+				10. All unused content fields must be null.
+
+				--------------------------------------------------
+				RESPONSE FORMAT (STRICT)
+				--------------------------------------------------
+
+				{
+				  "type": "QA | STUDY_PLAN | COMPARISON",
+				  "status": "SUCCESS | OUT_OF_SCOPE | ERROR",
+				  "conclusion": "string or null",
+
+				  "comparisonContent": {
+				    "subjects": ["string"],
+				    "rows": [
+				      {
+				        "aspect": "string",
+				        "values": {
+				          "subjectName": "string"
+				        }
+				      }
+				    ]
+				  },
+
+				  "qaContent": {
+				    "answer": "string",
+				    "sections": [
+				      {
+				        "title": "string",
+				        "contents": ["string"]
+				      }
+				    ],
+				    "followUpQuestions": ["string"]
+				  },
+
+				  "studyPlanContent": {
+				    "goal": "string",
+				    "totalDays": number,
+				    "schedule": [
+				      {
+				        "day": number,
+				        "topic": "string",
+				        "suggestedLessons": ["string"]
+				      }
+				    ]
+				  }
+				}
+
+				--------------------------------------------------
+				TYPE SELECTION RULES
+				--------------------------------------------------
+
+				- If the user asks a normal IT question → type = "QA"
+				- If the user asks to compare one or more concepts → type = "COMPARISON"
+				- If the user asks for a roadmap, learning plan, or schedule → type = "STUDY_PLAN"
+
+				--------------------------------------------------
+				COMPARISON RULES
+				--------------------------------------------------
+
+				- "subjects" must contain ALL compared items.
+				- Each row must contain values for ALL subjects.
+				- Provide at least 3 comparison aspects.
+				- If the user asks which option is better, provide the final recommendation inside "conclusion".
+				- When recommendation is requested, "conclusion" must NOT be null.
+
+				--------------------------------------------------
+				FIELD RULES
+				--------------------------------------------------
+
+				If type = QA:
+				- Fill qaContent
+				- Set comparisonContent = null
+				- Set studyPlanContent = null
+				- Set conclusion = null (unless user explicitly asks for recommendation)
+
+				If type = COMPARISON:
+				- Fill comparisonContent
+				- Set qaContent = null
+				- Set studyPlanContent = null
+				- Use conclusion if a final decision or recommendation is requested
+
+				If type = STUDY_PLAN:
+				- Fill studyPlanContent
+				- Set qaContent = null
+				- Set comparisonContent = null
+				- Set conclusion = null
+
+				For STUDY_PLAN:
+				- totalDays must match schedule length
+				- suggestedLessons must match EXACT lesson titles from the system list
+				- Do NOT invent lesson titles
+
+				--------------------------------------------------
+				FINAL INSTRUCTION
+				--------------------------------------------------
+
+				Return ONLY valid JSON.
+				Do not include markdown.
+				Do not include commentary.
+				Do not include backticks.
+				""";
+	}
+
+	public AiResponse newChat(MultipartFile file, String message) {
+		String systemPrompt = newPrompt();
+
+		if (file == null) {
+			return chatClient.prompt().system(systemPrompt).user(message).call().entity(AiResponse.class);
+		} else {
+			Media media = Media.builder().mimeType(MimeTypeUtils.parseMimeType(file.getContentType()))
+					.data(file.getResource()).build();
+
+			ChatOptions chatOptions = ChatOptions.builder().temperature(0.5D).build();
+
+			return chatClient.prompt().options(chatOptions).system(systemPrompt)
+					.user(promptUserSpec -> promptUserSpec.media(media).text(message)).call().entity(AiResponse.class);
+		}
 	}
 
 }

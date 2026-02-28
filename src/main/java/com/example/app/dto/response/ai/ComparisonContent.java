@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ComparisonContent {
-	private String subjectA;
-	private String subjectB;
+	private List<String> subjects;
 	private List<CompareRow> rows;
 }

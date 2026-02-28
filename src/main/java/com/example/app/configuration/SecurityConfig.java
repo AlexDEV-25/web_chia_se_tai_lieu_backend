@@ -36,7 +36,7 @@ public class SecurityConfig {
 			"/api/lessons/view/{id}",
 
 //			"/api/chats"
-			"/api/chats/test", };
+			"/api/chats/test", "/api/chats/new", };
 
 	private final String[] PUBLIC_ENDPOINTS_GET = {
 //			"/api/categories"

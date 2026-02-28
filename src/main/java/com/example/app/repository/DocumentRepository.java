@@ -15,6 +15,7 @@ import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.DailyCountResponse;
 import com.example.app.dto.response.DocumentFavoriteResponse;
 import com.example.app.dto.response.DocumentStatsResponse;
+import com.example.app.model.Category;
 import com.example.app.model.Document;
 import com.example.app.share.Status;
 
@@ -343,5 +344,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			     COUNT(r) DESC
 			""")
 	List<ContentReportSummaryResponse> getAllDocumentReportSummary();
+
+	List<Document> findByCategoryAndStatusAndHideFalse(Category category, Status status);
 
 }

@@ -7,8 +7,12 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AiResponse<T> {
-	private String type; // QA | STUDY_PLAN | SUMMARY | COMPARISON
+public class AiResponse {
+	private String type; // QA | STUDY_PLAN | COMPARISON
 	private String status; // SUCCESS | OUT_OF_SCOPE | ERROR
-	private T data;
+	private ComparisonContent comparisonContent;
+	private QaContent qaContent;
+	private StudyPlanContent studyPlanContent;
+	private String conclusion;
+
 }

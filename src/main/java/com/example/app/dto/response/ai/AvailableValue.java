@@ -1,6 +1,6 @@
 package com.example.app.dto.response.ai;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RawAiResponse {
-	private String type;
-	private String status;
-	private JsonNode data; // quan trọng
+public class AvailableValue {
+	private String categoryName;
+	private List<String> documentNames;
+	private List<String> lessonNames;
 }
