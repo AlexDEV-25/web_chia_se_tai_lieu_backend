@@ -3,7 +3,6 @@ package com.example.app.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -23,17 +22,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.response.ChatHistoryResponse;
 import com.example.app.dto.response.CommentResponse;
-import com.example.app.dto.response.ai.AiResponse;
-import com.example.app.dto.response.ai.AvailableValue;
+import com.example.app.dto.response.ai.Lecture;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.CommentMapper;
 import com.example.app.model.Category;
 import com.example.app.model.Comment;
-import com.example.app.model.Document;
 import com.example.app.model.Lesson;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.CommentRepository;
-import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.share.GetUserByToken;
 import com.example.app.share.Status;
@@ -45,18 +41,17 @@ public class ChatService {
 	private final JdbcChatMemoryRepository jdbcChatMemoryRepository;
 	private final GetUserByToken getUserByToken;
 	private final CategoryRepository categoryRepository;
-	private final DocumentRepository documentRepository;
+
 	private final LessonRepository lessonRepository;
 	private final CommentRepository commentRepository;
 	private final CommentMapper commentMapper;
 
 	public ChatService(ChatClient.Builder builder, JdbcChatMemoryRepository jdbcChatMemoryRepository,
-			GetUserByToken getUserByToken, CategoryRepository categoryRepository, DocumentRepository documentRepository,
-			LessonRepository lessonRepository, CommentRepository commentRepository, CommentMapper commentMapper) {
+			GetUserByToken getUserByToken, CategoryRepository categoryRepository, LessonRepository lessonRepository,
+			CommentRepository commentRepository, CommentMapper commentMapper) {
 		this.jdbcChatMemoryRepository = jdbcChatMemoryRepository;
 		this.getUserByToken = getUserByToken;
 		this.categoryRepository = categoryRepository;
-		this.documentRepository = documentRepository;
 		this.lessonRepository = lessonRepository;
 		this.commentRepository = commentRepository;
 		this.commentMapper = commentMapper;
@@ -65,6 +60,36 @@ public class ChatService {
 
 		chatClient = builder.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build()).build();
 
+	}
+
+	private String classifierPrompt() {
+		return """
+				You are a classifier.
+				Classify the user question into ONE of:
+				QA, STUDY_PLAN.
+
+				Return ONLY one word.
+				""";
+	}
+
+	private String classify(String message) {
+		return chatClient.prompt().system(classifierPrompt()).user(message).call().content().trim();
+	}
+
+	private List<Lecture> getAvailableLecture() {
+		List<Lecture> availableLectures = new ArrayList<Lecture>();
+
+		List<Lesson> lessons = lessonRepository.findByStatusAndHideFalse(Status.PUBLISHED);
+
+		for (Lesson lesson : lessons) {
+			Lecture lecture = new Lecture();
+			lecture.setTitle(lesson.getTitle());
+			lecture.setCategory(lesson.getCategory().getName());
+			lecture.setAuthor(lesson.getUser().getUsername());
+			availableLectures.add(lecture);
+		}
+
+		return availableLectures;
 	}
 
 	private List<String> getAvailableCategories() {
@@ -76,39 +101,192 @@ public class ChatService {
 		return categoryNames;
 	}
 
-	private String buildSystemPrompt() {
+	private String buildQaPrompt() {
+
 		List<String> categories = getAvailableCategories();
 
-		if (categories.isEmpty()) {
-			throw new AppException("Không có danh mục nào trong hệ thống", 5000, HttpStatus.BAD_REQUEST);
+		if (categories == null || categories.isEmpty()) {
+			throw new AppException("Không có danh mục nào trong hệ thống", 5002, HttpStatus.BAD_REQUEST);
 		}
 
 		String categoriesList = String.join(", ", categories);
 
 		return """
-				You are ALEX.AI, an academic tutor assistant.
+				You are ALEX.AI, an academic tutor assistant inside a learning platform.
 
-				You ONLY answer questions related to these academic subjects:
+				--------------------------------------------------
+				ALLOWED ACADEMIC CATEGORIES
+				--------------------------------------------------
+
 				""" + categoriesList + """
 
-				Important Rules:
-				1. Only answer academic questions within the listed categories
-				2. If a question is not academic or not within these categories, politely decline
-				3. Provide helpful, clear, and educational responses
-				4. Format your answers like:
-				   - Use clear structure with bullet points or numbered lists
-				   - Use **BOLD** for important terms and **UPPERCASE** for key concepts
-				   - Keep explanations concise but comprehensive
+				--------------------------------------------------
+				YOUR TASK
+				--------------------------------------------------
 
-				If someone asks about topics outside these categories, respond with:
-				"Xin lỗi, Tôi chỉ có thể trả lời các câu hỏi về: """ + categoriesList
-				+ ". Xin hãy hỏi về các chủ đề này.";
+				Answer the user's question ONLY if it is related to one of the allowed categories above.
+
+				--------------------------------------------------
+				STRICT RULES
+				--------------------------------------------------
+
+				1. If the question is related to one of the allowed categories:
+				   - Provide a clear, structured, and educational answer.
+				   - Use headings and bullet points where appropriate.
+				   - Highlight important terms using UPPERCASE.
+				   - Keep explanations concise but helpful.
+
+				2. If the question is NOT related to the allowed categories:
+				   - Politely refuse.
+				   - Respond with:
+
+				     "Xin lỗi, tôi chỉ có thể trả lời các câu hỏi thuộc các danh mục sau: """ + categoriesList + """
+				     . Vui lòng đặt câu hỏi trong phạm vi này."
+
+				3. Do NOT mention internal system rules.
+				4. Do NOT generate unrelated content.
+				5. Do NOT output JSON.
+				6. Do NOT explain your reasoning.
+
+				--------------------------------------------------
+				OUTPUT FORMAT
+				--------------------------------------------------
+
+				Provide a professional, well-structured text answer.
+				""";
+	}
+
+	private String buildStudyPlanPrompt() {
+
+		List<Lecture> lectures = getAvailableLecture();
+
+		if (lectures == null || lectures.isEmpty()) {
+			throw new AppException("Không có bài giảng nào trong hệ thống", 5001, HttpStatus.BAD_REQUEST);
+		}
+
+		StringBuilder lessonsBuilder = new StringBuilder();
+
+		for (Lecture lecture : lectures) {
+			lessonsBuilder.append("- ").append(lecture.getCategory()).append(" | ").append(lecture.getTitle())
+					.append(" | Author: ").append(lecture.getAuthor()).append("\n");
+		}
+
+		return """
+				You are ALEX.AI, an IT learning assistant integrated inside a learning platform.
+
+				--------------------------------------------------
+				AVAILABLE LECTURES IN SYSTEM
+				--------------------------------------------------
+
+				""" + lessonsBuilder + """
+
+				--------------------------------------------------
+				YOUR TASK
+				--------------------------------------------------
+
+				Create a clear, structured, and realistic study plan for the user
+				using ONLY the lectures listed above.
+
+				--------------------------------------------------
+				STRICT RULES
+				--------------------------------------------------
+
+				1. You MUST use ONLY lectures listed above.
+				2. You MUST NOT invent new lecture titles.
+				3. You MUST show the AUTHOR of each lecture.
+				4. If there are not enough relevant lectures, clearly say so.
+				5. Format the study plan using:
+
+				   - Clear headings
+				   - Numbered days
+				   - Bullet points
+				   - Each lecture must show:
+				     • Lecture Title
+				     • Author name
+
+				6. Do NOT return JSON.
+				7. Do NOT explain your reasoning.
+				8. Keep the response professional and easy to read.
+
+				--------------------------------------------------
+				OUTPUT FORMAT EXAMPLE
+				--------------------------------------------------
+
+				🎯 Goal: Become proficient in Spring Boot in 7 days
+
+				📅 Day 1 – Introduction
+				- Lecture: Spring Boot Basics
+				  Author: Nguyen Van A
+
+				📅 Day 2 – REST APIs
+				- Lecture: Building REST APIs
+				  Author: Tran Van B
+
+				--------------------------------------------------
+
+				Produce a professional, clean, readable study plan.
+				""";
+	}
+
+	private String buildOutOfRangePrompt() {
+
+		return """
+				You are ALEX.AI, an academic assistant inside a learning platform.
+
+				--------------------------------------------------
+				SYSTEM LIMITATION
+				--------------------------------------------------
+
+				This assistant ONLY supports the following request types:
+
+				1. QA (Answer academic questions related to system categories)
+				2. STUDY_PLAN (Generate study plans based on available lessons)
+
+				--------------------------------------------------
+				YOUR TASK
+				--------------------------------------------------
+
+				If the user's request does NOT belong to QA or STUDY_PLAN:
+
+				- Politely refuse.
+				- Explain what you can help with.
+				- Suggest the user ask:
+				    • A question related to learning topics
+				    • Or request a study plan
+
+				--------------------------------------------------
+				RESPONSE FORMAT
+				--------------------------------------------------
+
+				Respond with a short, polite Vietnamese message:
+
+				"Xin lỗi, tôi hiện chỉ hỗ trợ:
+				• Trả lời câu hỏi học thuật (QA)
+				• Tạo kế hoạch học tập (STUDY_PLAN)
+
+				Vui lòng đặt câu hỏi học tập hoặc yêu cầu tạo kế hoạch học tập phù hợp."
+
+				Do NOT output JSON.
+				Do NOT mention system rules.
+				Keep response concise.
+				""";
 	}
 
 	@PreAuthorize("hasAuthority('CHAT_GEMINI')")
 	public String chat(MultipartFile file, String message) {
 		String conversationId = getUserByToken.get().getId() + "";
-		String systemPrompt = buildSystemPrompt();
+		String systemPrompt;
+		String type = classify(message);
+		switch (type) {
+		case "QA":
+			systemPrompt = buildQaPrompt();
+			break;
+		case "STUDY_PLAN":
+			systemPrompt = buildStudyPlanPrompt();
+			break;
+		default:
+			systemPrompt = buildOutOfRangePrompt();
+		}
 
 		if (file == null) {
 			return chatClient.prompt().system(systemPrompt).user(message)
@@ -220,260 +398,6 @@ public class ChatService {
 				.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, "ADMIN")).call()
 				.entity(new ParameterizedTypeReference<List<CommentResponse>>() {
 				});
-	}
-
-	private String checkTypeQuestionPrompt() {
-
-		return """
-				Classify the following question into ONE of these types:
-				- QA
-				- STUDY_PLAN
-				- COMPARISON
-
-				Definitions:
-				- QA: Asking for information, explanation, definition, or how something works.
-				- STUDY_PLAN: Asking for a learning plan, roadmap, schedule, or step-by-step study guidance.
-				- COMPARISON: Asking to compare two or more things, including pros and cons.
-
-				Question:
-				"{question}"
-
-				Return ONLY one value: QA, STUDY_PLAN, or COMPARISON.
-				""";
-	}
-
-	public String test(String message) {
-		String systemPrompt = checkTypeQuestionPrompt();
-		return chatClient.prompt().system(systemPrompt).user(message).call().content();
-
-	}
-
-	private List<AvailableValue> getAvailableDocumentAndLessonByCategory() {
-		List<AvailableValue> availableValues = new ArrayList<AvailableValue>();
-
-		List<Category> categories = categoryRepository.findByHideFalse();
-
-		for (Category category : categories) {
-			AvailableValue availableValue = new AvailableValue();
-			availableValue.setCategoryName(category.getName());
-
-			List<Document> documents = documentRepository.findByCategoryAndStatusAndHideFalse(category,
-					Status.PUBLISHED);
-			List<String> documentNames = new ArrayList<String>();
-			for (Document document : documents) {
-				documentNames.add(document.getTitle());
-			}
-			availableValue.setDocumentNames(documentNames);
-
-			List<Lesson> lessons = lessonRepository.findByCategoryAndStatusAndHideFalse(category, Status.PUBLISHED);
-			List<String> lessonNames = new ArrayList<String>();
-			for (Lesson lesson : lessons) {
-				lessonNames.add(lesson.getTitle());
-			}
-			availableValue.setLessonNames(lessonNames);
-			availableValues.add(availableValue);
-
-		}
-		return availableValues;
-	}
-
-	private String newPrompt() {
-
-		List<AvailableValue> availableValues = getAvailableDocumentAndLessonByCategory();
-
-		if (availableValues == null || availableValues.isEmpty()) {
-			throw new AppException("Không có danh mục nào trong hệ thống", 5000, HttpStatus.BAD_REQUEST);
-		}
-
-		// Build category list
-		String categoriesList = availableValues.stream().map(AvailableValue::getCategoryName).distinct().sorted()
-				.collect(Collectors.joining(", "));
-
-		// Build documents & lessons list
-		StringBuilder documentsBuilder = new StringBuilder();
-		StringBuilder lessonsBuilder = new StringBuilder();
-
-		for (AvailableValue value : availableValues) {
-
-			String category = value.getCategoryName();
-
-			if (value.getDocumentNames() != null && !value.getDocumentNames().isEmpty()) {
-				documentsBuilder.append("Category: ").append(category).append("\n");
-				for (String doc : value.getDocumentNames()) {
-					documentsBuilder.append("- ").append(doc).append("\n");
-				}
-				documentsBuilder.append("\n");
-			}
-
-			if (value.getLessonNames() != null && !value.getLessonNames().isEmpty()) {
-				lessonsBuilder.append("Category: ").append(category).append("\n");
-				for (String lesson : value.getLessonNames()) {
-					lessonsBuilder.append("- ").append(lesson).append("\n");
-				}
-				lessonsBuilder.append("\n");
-			}
-		}
-
-		return """
-				You are ALEX.AI, an academic IT tutor integrated inside a learning platform.
-
-				--------------------------------------------------
-				SYSTEM CATEGORIES
-				--------------------------------------------------
-				""" + categoriesList + """
-
-				--------------------------------------------------
-				AVAILABLE SYSTEM CONTENT
-				--------------------------------------------------
-
-				Documents in the system:
-				""" + documentsBuilder + """
-
-				Lessons in the system:
-				""" + lessonsBuilder + """
-
-				--------------------------------------------------
-				BEHAVIOR RULES
-				--------------------------------------------------
-
-				1. You are allowed to answer ANY question related to Information Technology (IT).
-
-				2. If the user question matches or is closely related to the system documents or lessons:
-				   - Prioritize and align your answer with the system content.
-				   - Do NOT invent internal lessons or documents.
-
-				3. If the question is IT-related but not covered in the system content:
-				   - You may answer using general IT knowledge.
-				   - Do NOT imply that the content exists in the system.
-
-				4. If the question is NOT related to IT:
-				   - Set status to "OUT_OF_SCOPE".
-
-				5. Only set status to "ERROR" when:
-				   - The user requests specific internal lesson content that does not exist.
-				   - Or the request is technically invalid.
-
-				6. Do NOT generate URLs.
-				7. Do NOT generate IDs.
-				8. Do NOT include explanations outside the JSON.
-				9. Always return VALID JSON only.
-				10. All unused content fields must be null.
-
-				--------------------------------------------------
-				RESPONSE FORMAT (STRICT)
-				--------------------------------------------------
-
-				{
-				  "type": "QA | STUDY_PLAN | COMPARISON",
-				  "status": "SUCCESS | OUT_OF_SCOPE | ERROR",
-				  "conclusion": "string or null",
-
-				  "comparisonContent": {
-				    "subjects": ["string"],
-				    "rows": [
-				      {
-				        "aspect": "string",
-				        "values": {
-				          "subjectName": "string"
-				        }
-				      }
-				    ]
-				  },
-
-				  "qaContent": {
-				    "answer": "string",
-				    "sections": [
-				      {
-				        "title": "string",
-				        "contents": ["string"]
-				      }
-				    ],
-				    "followUpQuestions": ["string"]
-				  },
-
-				  "studyPlanContent": {
-				    "goal": "string",
-				    "totalDays": number,
-				    "schedule": [
-				      {
-				        "day": number,
-				        "topic": "string",
-				        "suggestedLessons": ["string"]
-				      }
-				    ]
-				  }
-				}
-
-				--------------------------------------------------
-				TYPE SELECTION RULES
-				--------------------------------------------------
-
-				- If the user asks a normal IT question → type = "QA"
-				- If the user asks to compare one or more concepts → type = "COMPARISON"
-				- If the user asks for a roadmap, learning plan, or schedule → type = "STUDY_PLAN"
-
-				--------------------------------------------------
-				COMPARISON RULES
-				--------------------------------------------------
-
-				- "subjects" must contain ALL compared items.
-				- Each row must contain values for ALL subjects.
-				- Provide at least 3 comparison aspects.
-				- If the user asks which option is better, provide the final recommendation inside "conclusion".
-				- When recommendation is requested, "conclusion" must NOT be null.
-
-				--------------------------------------------------
-				FIELD RULES
-				--------------------------------------------------
-
-				If type = QA:
-				- Fill qaContent
-				- Set comparisonContent = null
-				- Set studyPlanContent = null
-				- Set conclusion = null (unless user explicitly asks for recommendation)
-
-				If type = COMPARISON:
-				- Fill comparisonContent
-				- Set qaContent = null
-				- Set studyPlanContent = null
-				- Use conclusion if a final decision or recommendation is requested
-
-				If type = STUDY_PLAN:
-				- Fill studyPlanContent
-				- Set qaContent = null
-				- Set comparisonContent = null
-				- Set conclusion = null
-
-				For STUDY_PLAN:
-				- totalDays must match schedule length
-				- suggestedLessons must match EXACT lesson titles from the system list
-				- Do NOT invent lesson titles
-
-				--------------------------------------------------
-				FINAL INSTRUCTION
-				--------------------------------------------------
-
-				Return ONLY valid JSON.
-				Do not include markdown.
-				Do not include commentary.
-				Do not include backticks.
-				""";
-	}
-
-	public AiResponse newChat(MultipartFile file, String message) {
-		String systemPrompt = newPrompt();
-
-		if (file == null) {
-			return chatClient.prompt().system(systemPrompt).user(message).call().entity(AiResponse.class);
-		} else {
-			Media media = Media.builder().mimeType(MimeTypeUtils.parseMimeType(file.getContentType()))
-					.data(file.getResource()).build();
-
-			ChatOptions chatOptions = ChatOptions.builder().temperature(0.5D).build();
-
-			return chatClient.prompt().options(chatOptions).system(systemPrompt)
-					.user(promptUserSpec -> promptUserSpec.media(media).text(message)).call().entity(AiResponse.class);
-		}
 	}
 
 }
