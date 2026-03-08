@@ -22,15 +22,19 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.response.ChatHistoryResponse;
 import com.example.app.dto.response.CommentResponse;
+import com.example.app.dto.response.RatingSummaryResponse;
 import com.example.app.dto.response.ai.Lecture;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.CommentMapper;
 import com.example.app.model.Category;
 import com.example.app.model.Comment;
+import com.example.app.model.Document;
 import com.example.app.model.Lesson;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.CommentRepository;
+import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
+import com.example.app.repository.RatingRepository;
 import com.example.app.share.GetUserByToken;
 import com.example.app.share.Status;
 
@@ -41,19 +45,23 @@ public class ChatService {
 	private final JdbcChatMemoryRepository jdbcChatMemoryRepository;
 	private final GetUserByToken getUserByToken;
 	private final CategoryRepository categoryRepository;
-
+	private final RatingRepository ratingRepository;
+	private final DocumentRepository documentRepository;
 	private final LessonRepository lessonRepository;
 	private final CommentRepository commentRepository;
 	private final CommentMapper commentMapper;
 
 	public ChatService(ChatClient.Builder builder, JdbcChatMemoryRepository jdbcChatMemoryRepository,
 			GetUserByToken getUserByToken, CategoryRepository categoryRepository, LessonRepository lessonRepository,
-			CommentRepository commentRepository, CommentMapper commentMapper) {
+			CommentRepository commentRepository, RatingRepository ratingRepository,
+			DocumentRepository documentRepository, CommentMapper commentMapper) {
 		this.jdbcChatMemoryRepository = jdbcChatMemoryRepository;
 		this.getUserByToken = getUserByToken;
 		this.categoryRepository = categoryRepository;
 		this.lessonRepository = lessonRepository;
 		this.commentRepository = commentRepository;
+		this.ratingRepository = ratingRepository;
+		this.documentRepository = documentRepository;
 		this.commentMapper = commentMapper;
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().chatMemoryRepository(jdbcChatMemoryRepository)
 				.maxMessages(30).build();
@@ -65,8 +73,27 @@ public class ChatService {
 	private String classifierPrompt() {
 		return """
 				You are a classifier.
-				Classify the user question into ONE of:
-				QA, STUDY_PLAN.
+
+				Classify the user request into ONE of the following:
+
+				QA
+				LESSON_SEARCH
+				DOCUMENT_SEARCH
+				STUDY_PLAN
+
+				Definitions:
+
+				QA:
+				User asks for explanation of a concept.
+
+				LESSON_SEARCH:
+				User asks about video lectures or lessons.
+
+				DOCUMENT_SEARCH:
+				User asks about documents, materials, PDFs, or reading resources.
+
+				STUDY_PLAN:
+				User asks to create a learning plan or schedule.
 
 				Return ONLY one word.
 				""";
@@ -83,9 +110,33 @@ public class ChatService {
 
 		for (Lesson lesson : lessons) {
 			Lecture lecture = new Lecture();
+			RatingSummaryResponse ratingSummaryResponse = ratingRepository.getRatingSummaryLesson(lesson.getId());
 			lecture.setTitle(lesson.getTitle());
 			lecture.setCategory(lesson.getCategory().getName());
 			lecture.setAuthor(lesson.getUser().getUsername());
+			lecture.setTotal(ratingSummaryResponse.getTotal());
+			lecture.setAverage(ratingSummaryResponse.getAverage());
+			lecture.setViewCount(lesson.getViewsCount());
+			availableLectures.add(lecture);
+		}
+
+		return availableLectures;
+	}
+
+	private List<Lecture> getAvailableLecture2() {
+		List<Lecture> availableLectures = new ArrayList<Lecture>();
+
+		List<Document> documents = documentRepository.findByStatusAndHideFalse(Status.PUBLISHED);
+
+		for (Document document : documents) {
+			Lecture lecture = new Lecture();
+			RatingSummaryResponse ratingSummaryResponse = ratingRepository.getRatingSummaryDocument(document.getId());
+			lecture.setTitle(document.getTitle());
+			lecture.setCategory(document.getCategory().getName());
+			lecture.setAuthor(document.getUser().getUsername());
+			lecture.setTotal(ratingSummaryResponse.getTotal());
+			lecture.setAverage(ratingSummaryResponse.getAverage());
+			lecture.setViewCount(document.getViewsCount());
 			availableLectures.add(lecture);
 		}
 
@@ -99,6 +150,126 @@ public class ChatService {
 			categoryNames.add(category.getName());
 		}
 		return categoryNames;
+	}
+
+	private String buildLessonSearchPrompt() {
+
+		List<Lecture> lectures = getAvailableLecture();
+
+		StringBuilder lessonsBuilder = new StringBuilder();
+
+		for (Lecture lecture : lectures) {
+			lessonsBuilder.append("- ").append(lecture.getCategory()).append(" | ").append(lecture.getTitle())
+					.append(" | Author: ").append(lecture.getAuthor()).append(" | Rating: ")
+					.append(lecture.getAverage()).append(" | Ratings: ").append(lecture.getTotal()).append(" | Views: ")
+					.append(lecture.getViewCount()).append("\n");
+		}
+
+		return """
+				You are ALEX.AI inside a learning platform.
+
+				--------------------------------------------------
+				AVAILABLE VIDEO LESSONS
+				--------------------------------------------------
+
+				""" + lessonsBuilder + """
+
+				--------------------------------------------------
+				YOUR TASK
+				--------------------------------------------------
+
+				The user is asking about VIDEO LESSONS.
+
+				Recommend the most relevant lessons.
+
+				--------------------------------------------------
+				SELECTION CRITERIA
+				--------------------------------------------------
+
+				Prioritize lessons with:
+
+				• Higher rating
+				• More ratings
+				• More views
+
+				--------------------------------------------------
+
+				If relevant lessons exist:
+
+				📺 Recommended Lessons
+
+				- Title
+				- Author
+				- Rating
+				- Views
+
+				If none exist say:
+
+				"Hiện tại hệ thống chưa có bài giảng phù hợp."
+
+				Do NOT invent lessons.
+				Do NOT output JSON.
+				""";
+	}
+
+	private String buildDocumentSearchPrompt() {
+
+		List<Lecture> documents = getAvailableLecture2();
+
+		StringBuilder docsBuilder = new StringBuilder();
+
+		for (Lecture lecture : documents) {
+			docsBuilder.append("- ").append(lecture.getCategory()).append(" | ").append(lecture.getTitle())
+					.append(" | Author: ").append(lecture.getAuthor()).append(" | Rating: ")
+					.append(lecture.getAverage()).append(" | Ratings: ").append(lecture.getTotal()).append(" | Views: ")
+					.append(lecture.getViewCount()).append("\n");
+		}
+
+		return """
+				You are ALEX.AI inside a learning platform.
+
+				--------------------------------------------------
+				AVAILABLE DOCUMENTS
+				--------------------------------------------------
+
+				""" + docsBuilder + """
+
+				--------------------------------------------------
+				YOUR TASK
+				--------------------------------------------------
+
+				The user is asking about DOCUMENTS or learning materials.
+
+				Recommend the most relevant documents.
+
+				--------------------------------------------------
+				SELECTION CRITERIA
+				--------------------------------------------------
+
+				Prioritize documents with:
+
+				• Higher rating
+				• More ratings
+				• More views
+
+				--------------------------------------------------
+
+				If relevant documents exist:
+
+				📄 Recommended Documents
+
+				- Title
+				- Author
+				- Rating
+				- Views
+
+				If none exist say:
+
+				"Hiện tại hệ thống chưa có tài liệu phù hợp."
+
+				Do NOT invent documents.
+				Do NOT output JSON.
+				""";
 	}
 
 	private String buildQaPrompt() {
@@ -168,17 +339,31 @@ public class ChatService {
 
 		for (Lecture lecture : lectures) {
 			lessonsBuilder.append("- ").append(lecture.getCategory()).append(" | ").append(lecture.getTitle())
-					.append(" | Author: ").append(lecture.getAuthor()).append("\n");
+					.append(" | Author: ").append(lecture.getAuthor()).append(" | Rating: ")
+					.append(lecture.getAverage()).append(" | Total Ratings: ").append(lecture.getTotal())
+					.append(" | Views: ").append(lecture.getViewCount()).append("\n");
 		}
 
 		return """
-				You are ALEX.AI, an IT learning assistant integrated inside a learning platform.
+				You are ALEX.AI, an intelligent IT learning assistant integrated inside a learning platform.
 
 				--------------------------------------------------
 				AVAILABLE LECTURES IN SYSTEM
 				--------------------------------------------------
 
 				""" + lessonsBuilder + """
+
+				--------------------------------------------------
+				LECTURE METRICS
+				--------------------------------------------------
+
+				Each lecture contains the following evaluation metrics:
+
+				• Rating → average user rating score
+				• Total Ratings → number of users who rated the lecture
+				• Views → number of times the lecture has been viewed
+
+				These metrics indicate lecture quality and popularity.
 
 				--------------------------------------------------
 				YOUR TASK
@@ -188,39 +373,68 @@ public class ChatService {
 				using ONLY the lectures listed above.
 
 				--------------------------------------------------
+				LECTURE SELECTION RULES
+				--------------------------------------------------
+
+				When selecting lectures for the study plan, you MUST prioritize:
+
+				1. Higher average rating
+				2. Larger number of total ratings
+				3. Higher view count
+
+				Lectures with better quality and popularity should be preferred.
+
+				If multiple lectures are similar, prioritize those with:
+				- higher rating
+				- more ratings
+				- more views.
+
+				--------------------------------------------------
 				STRICT RULES
 				--------------------------------------------------
 
 				1. You MUST use ONLY lectures listed above.
 				2. You MUST NOT invent new lecture titles.
 				3. You MUST show the AUTHOR of each lecture.
-				4. If there are not enough relevant lectures, clearly say so.
-				5. Format the study plan using:
-
-				   - Clear headings
-				   - Numbered days
-				   - Bullet points
-				   - Each lecture must show:
-				     • Lecture Title
-				     • Author name
-
+				4. You SHOULD prefer higher quality lectures based on rating and popularity.
+				5. If there are not enough relevant lectures, clearly say so.
 				6. Do NOT return JSON.
 				7. Do NOT explain your reasoning.
-				8. Keep the response professional and easy to read.
 
 				--------------------------------------------------
-				OUTPUT FORMAT EXAMPLE
+				OUTPUT FORMAT
 				--------------------------------------------------
 
-				🎯 Goal: Become proficient in Spring Boot in 7 days
+				Format the study plan using:
+
+				• Clear headings
+				• Numbered study days
+				• Bullet points
+
+				Each lecture must include:
+
+				- Lecture Title
+				- Author
+				- Rating
+				- Views
+
+				--------------------------------------------------
+				EXAMPLE
+				--------------------------------------------------
+
+				🎯 Goal: Learn Spring Boot in 7 days
 
 				📅 Day 1 – Introduction
 				- Lecture: Spring Boot Basics
 				  Author: Nguyen Van A
+				  Rating: 4.8
+				  Views: 12000
 
 				📅 Day 2 – REST APIs
 				- Lecture: Building REST APIs
 				  Author: Tran Van B
+				  Rating: 4.7
+				  Views: 9800
 
 				--------------------------------------------------
 
@@ -278,12 +492,23 @@ public class ChatService {
 		String systemPrompt;
 		String type = classify(message);
 		switch (type) {
+
 		case "QA":
 			systemPrompt = buildQaPrompt();
 			break;
+
 		case "STUDY_PLAN":
 			systemPrompt = buildStudyPlanPrompt();
 			break;
+
+		case "LESSON_SEARCH":
+			systemPrompt = buildLessonSearchPrompt();
+			break;
+
+		case "DOCUMENT_SEARCH":
+			systemPrompt = buildDocumentSearchPrompt();
+			break;
+
 		default:
 			systemPrompt = buildOutOfRangePrompt();
 		}

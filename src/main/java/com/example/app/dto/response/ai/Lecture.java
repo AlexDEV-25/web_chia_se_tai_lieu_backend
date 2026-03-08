@@ -11,4 +11,7 @@ public class Lecture {
 	private String title;
 	private String category;
 	private String author;
+	private Double average;
+	private Long total;
+	private Long viewCount;
 }
