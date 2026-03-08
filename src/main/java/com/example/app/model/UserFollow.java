@@ -27,11 +27,11 @@ public class UserFollow {
 	private Long id;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
-	@JoinColumn(name = "follower_id")
+	@JoinColumn(name = "follower_id", nullable = false)
 	private User follower;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
-	@JoinColumn(name = "following_id")
+	@JoinColumn(name = "following_id", nullable = false)
 	private User following;
 
 	private LocalDateTime createdAt;

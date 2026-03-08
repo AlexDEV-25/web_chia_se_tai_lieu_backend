@@ -11,6 +11,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class Category {
 	@Column(name = "name", nullable = false)
 	private String name;
 
+	@Lob
 	@Column(name = "description")
 	private String description;
 

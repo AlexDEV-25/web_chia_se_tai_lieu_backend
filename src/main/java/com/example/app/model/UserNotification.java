@@ -26,11 +26,11 @@ public class UserNotification {
 	private Long id;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
-	@JoinColumn(name = "sender_id")
+	@JoinColumn(name = "sender_id", nullable = false)
 	private User sender;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
-	@JoinColumn(name = "receiver_id")
+	@JoinColumn(name = "receiver_id", nullable = false)
 	private User receiver;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
