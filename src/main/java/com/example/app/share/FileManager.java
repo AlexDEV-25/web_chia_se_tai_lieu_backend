@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -54,29 +55,76 @@ public class FileManager {
 
 	public void convertToPDF(String input, String output) {
 		try {
-			ProcessBuilder pb = new ProcessBuilder(libreOfficePath, "--headless", "--convert-to", "pdf", "--outdir",
-					new File(output).getParent(), input);
+			if (libreOfficePath == null || libreOfficePath.isBlank()) {
+				throw new IllegalStateException("libreoffice.path is missing");
+			}
+			File officeExe = new File(libreOfficePath);
+			if (!officeExe.exists()) {
+				throw new IllegalStateException("LibreOffice executable not found: " + libreOfficePath);
+			}
+			File inputFile = new File(input);
+			if (!inputFile.exists()) {
+				throw new IllegalArgumentException("Input file not found: " + input);
+			}
 
+			File outputFile = new File(output);
+			File outDir = outputFile.getParentFile();
+			if (outDir == null) {
+				throw new IllegalArgumentException("Invalid output path: " + output);
+			}
+			Files.createDirectories(outDir.toPath());
+
+			ProcessBuilder pb = new ProcessBuilder(libreOfficePath, "--headless", "--nologo", "--nolockcheck",
+					"--norestore", "--convert-to", "pdf", "--outdir", outDir.getAbsolutePath(),
+					inputFile.getAbsolutePath());
+			pb.redirectErrorStream(true);
 			Process process = pb.start();
-			process.waitFor();
+
+			boolean finished = process.waitFor(120, TimeUnit.SECONDS);
+			String outputLog = new String(process.getInputStream().readAllBytes());
+			if (!finished) {
+				process.destroyForcibly();
+				throw new IllegalStateException("LibreOffice conversion timed out. Log: " + outputLog);
+			}
+
+			int exitCode = process.exitValue();
+			if (exitCode != 0) {
+				throw new IllegalStateException(
+						"LibreOffice conversion failed with exitCode=" + exitCode + ". Log: " + outputLog);
+			}
+
+			String baseName = inputFile.getName();
+			int dot = baseName.lastIndexOf('.');
+			if (dot != -1) {
+				baseName = baseName.substring(0, dot);
+			}
+			File generated = new File(outDir, baseName + ".pdf");
+			if (!generated.exists()) {
+				throw new IllegalStateException(
+						"Converted PDF not found at: " + generated.getAbsolutePath() + ". Log: " + outputLog);
+			}
+
+			if (!generated.getCanonicalPath().equals(outputFile.getCanonicalPath())) {
+				Files.move(generated.toPath(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw new RuntimeException("convertToPDF failed: " + e.getMessage(), e);
 		}
 	}
 
-//	public void convertFile(String file) {
-//	try {
-//		FileInputStream docFile = new FileInputStream(new File(file + ".docx"));
-//		XWPFDocument doc = new XWPFDocument(docFile);
-//		PdfOptions pdfOptions = PdfOptions.create();
-//		OutputStream out = new FileOutputStream(new File(file + ".pdf"));
-//		PdfConverter.getInstance().convert(doc, out, pdfOptions);
-//		doc.close();
-//		out.close();
-//		System.out.println("Done");
-//	} catch (Exception e) {
-//		System.out.println("lỗi rồi");
-//	}
-//}
+	// public void convertFile(String file) {
+	// try {
+	// FileInputStream docFile = new FileInputStream(new File(file + ".docx"));
+	// XWPFDocument doc = new XWPFDocument(docFile);
+	// PdfOptions pdfOptions = PdfOptions.create();
+	// OutputStream out = new FileOutputStream(new File(file + ".pdf"));
+	// PdfConverter.getInstance().convert(doc, out, pdfOptions);
+	// doc.close();
+	// out.close();
+	// System.out.println("Done");
+	// } catch (Exception e) {
+	// System.out.println("lỗi rồi");
+	// }
+	// }
 
 }
