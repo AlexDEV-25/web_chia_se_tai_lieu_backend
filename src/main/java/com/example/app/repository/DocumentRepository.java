@@ -9,12 +9,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.example.app.dto.response.CategoryCountResponse;
-import com.example.app.dto.response.ContentRatingSummaryResponse;
-import com.example.app.dto.response.ContentReportSummaryResponse;
-import com.example.app.dto.response.DailyCountResponse;
-import com.example.app.dto.response.DocumentFavoriteResponse;
-import com.example.app.dto.response.DocumentStatsResponse;
+import com.example.app.dto.response.document.DocumentFavoriteResponse;
+import com.example.app.dto.response.document.DocumentStatsResponse;
+import com.example.app.dto.response.statistic.CategoryCountResponse;
+import com.example.app.dto.response.statistic.DailyCountResponse;
 import com.example.app.model.Category;
 import com.example.app.model.Document;
 import com.example.app.share.Status;
@@ -44,7 +42,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	long countByUser_Id(Long userId);
 
 	@Query("""
-				SELECT new com.example.app.dto.response.DailyCountResponse(
+				SELECT new com.example.app.dto.response.statistic.DailyCountResponse(
 			    CAST(FUNCTION('date', d.createdAt) AS java.time.LocalDate),
 			    COUNT(d)
 			)
@@ -58,13 +56,13 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	List<DailyCountResponse> countDocumentByDay(@Param("fromDate") LocalDateTime fromDate);
 
 	@Query("""
-				SELECT new com.example.app.dto.response.CategoryCountResponse(
+				SELECT new com.example.app.dto.response.statistic.CategoryCountResponse(
 			    c.id,
 			    c.name,
 			    COUNT(d)
 			)
 				FROM Document d
-				JOIN d.category c
+				JOIN  d.category c
 				WHERE d.status = 'PUBLISHED'
 				AND (d.hide = false OR d.hide IS NULL)
 				GROUP BY c.id, c.name
@@ -72,7 +70,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	List<CategoryCountResponse> countDocumentByCategory();
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentStatsResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentStatsResponse(
 			        COUNT(d),
 			        COALESCE(SUM(d.downloadsCount), 0),
 			        COALESCE(SUM(d.viewsCount), 0)
@@ -84,7 +82,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	DocumentStatsResponse getStats();
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -95,8 +93,9 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN d.favorites f
-			        ON f.user.id = :currentUserId
+			    LEFT JOIN Favorite f
+			        ON  f.document.id = d.id
+			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.hide = false
 			      AND d.status = com.example.app.share.Status.PUBLISHED
@@ -111,7 +110,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			@Param("categoryId") Long categoryId, @Param("currentUserId") Long currentUserId);
 
 	@Query("""
-			  SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			  SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -135,7 +134,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			@Param("categoryId") Long categoryId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -146,8 +145,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN d.favorites f
-			        ON f.document.id = d.id
+			    LEFT JOIN Favorite f
+			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.user.id = :authorId
@@ -160,7 +159,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			@Param("currentUserId") Long currentUserId, @Param("currentDocumentId") Long currentDocumentId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -181,7 +180,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			@Param("currentDocumentId") Long currentDocumentId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -192,8 +191,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN d.favorites f
-			        ON f.document.id = d.id
+			     LEFT JOIN Favorite f
+			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.user.id = :authorId
@@ -205,7 +204,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			@Param("currentUserId") Long currentUserId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -224,7 +223,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	List<DocumentFavoriteResponse> findAllDocumentsByUserWithoutFavorite(@Param("authorId") Long authorId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -235,8 +234,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN d.favorites f
-			        ON f.document.id = d.id
+			    LEFT JOIN Favorite f
+			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.category.id = :categoryId
@@ -249,7 +248,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			@Param("currentUserId") Long currentUserId, @Param("currentDocumentId") Long currentDocumentId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -270,7 +269,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			@Param("currentDocumentId") Long currentDocumentId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -281,8 +280,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN d.favorites f
-			        ON f.document.id = d.id
+			    LEFT JOIN Favorite f
+			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.status = com.example.app.share.Status.PUBLISHED
@@ -292,7 +291,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	List<DocumentFavoriteResponse> findAllWithFavoriteStatus(@Param("currentUserId") Long currentUserId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -308,42 +307,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    ORDER BY d.createdAt DESC
 			""")
 	List<DocumentFavoriteResponse> findAllWithoutFavorite();
-
-	@Query("""
-			    SELECT new com.example.app.dto.response.ContentRatingSummaryResponse(
-			    	d.id,
-			        d.title,
-			        COALESCE(AVG(r.rating), 0),
-			        COUNT(r),
-			        com.example.app.share.Type.DOCUMENT
-			    )
-			    FROM Document d
-			    LEFT JOIN d.ratings r
-			        ON r.type = com.example.app.share.Type.DOCUMENT
-			    WHERE d.status = com.example.app.share.Status.PUBLISHED
-			    GROUP BY d.id, d.title
-			    ORDER BY
-			     COALESCE(AVG(r.rating), 0) DESC,
-			     COUNT(r) DESC
-			""")
-	List<ContentRatingSummaryResponse> getAllDocumentRatingSummary();
-
-	@Query("""
-			    SELECT new com.example.app.dto.response.ContentReportSummaryResponse(
-			    	d.id,
-			        d.title,
-			        COUNT(r),
-			        com.example.app.share.Type.DOCUMENT
-			    )
-			    FROM Document d
-			    LEFT JOIN d.reports r
-			        ON r.type = com.example.app.share.Type.DOCUMENT
-			    WHERE d.status = com.example.app.share.Status.PUBLISHED
-			    GROUP BY d.id, d.title
-			    ORDER BY
-			     COUNT(r) DESC
-			""")
-	List<ContentReportSummaryResponse> getAllDocumentReportSummary();
 
 	List<Document> findByCategoryAndStatusAndHideFalse(Category category, Status status);
 

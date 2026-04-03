@@ -20,10 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.app.dto.response.ChatHistoryResponse;
-import com.example.app.dto.response.CommentResponse;
-import com.example.app.dto.response.RatingSummaryResponse;
-import com.example.app.dto.response.ai.Lecture;
+import com.example.app.dto.response.ai.ChatHistoryResponse;
+import com.example.app.dto.response.ai.LectureResponse;
+import com.example.app.dto.response.comment.CommentResponse;
+import com.example.app.dto.response.rating.RatingSummaryResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.CommentMapper;
 import com.example.app.model.Category;
@@ -70,6 +70,82 @@ public class ChatService {
 
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<CommentResponse> filterCommnent() {
+
+		List<CommentResponse> comments = getCommentsLast7Days();
+
+		if (comments.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		String prompt = fiterUnsuitableCommentPrompt(comments);
+
+		return chatClient.prompt().system("You are a content moderation assistant. Only return JSON.").user(prompt)
+				.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, "ADMIN")).call()
+				.entity(new ParameterizedTypeReference<List<CommentResponse>>() {
+				});
+	}
+
+	@PreAuthorize("hasAuthority('CHAT_GEMINI')")
+	public String chat(MultipartFile file, String message) {
+		String conversationId = getUserByToken.get().getId() + "";
+		String systemPrompt;
+		String type = classify(message);
+		switch (type) {
+
+		case "QA":
+			systemPrompt = buildQaPrompt();
+			break;
+
+		case "STUDY_PLAN":
+			systemPrompt = buildStudyPlanPrompt();
+			break;
+
+		case "LESSON_SEARCH":
+			systemPrompt = buildLessonSearchPrompt();
+			break;
+
+		case "DOCUMENT_SEARCH":
+			systemPrompt = buildDocumentSearchPrompt();
+			break;
+
+		default:
+			systemPrompt = buildOutOfRangePrompt();
+		}
+
+		if (file == null) {
+			return chatClient.prompt().system(systemPrompt).user(message)
+					.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId)).call()
+					.content();
+		} else {
+			Media media = Media.builder().mimeType(MimeTypeUtils.parseMimeType(file.getContentType()))
+					.data(file.getResource()).build();
+
+			ChatOptions chatOptions = ChatOptions.builder().temperature(0.5D).build();
+
+			return chatClient.prompt().options(chatOptions).system(systemPrompt)
+					.user(promptUserSpec -> promptUserSpec.media(media).text(message))
+					.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId)).call()
+					.content();
+		}
+	}
+
+	@PreAuthorize("hasAuthority('HISTORY_CHAT_GEMINI')")
+	public List<ChatHistoryResponse> getChatHistory() {
+		String conversationId = getUserByToken.get().getId() + "";
+		List<Message> list = jdbcChatMemoryRepository.findByConversationId(conversationId);
+		List<ChatHistoryResponse> history = new ArrayList<ChatHistoryResponse>();
+		for (Message item : list) {
+			if (item.getMessageType() == MessageType.USER || item.getMessageType() == MessageType.ASSISTANT) {
+				ChatHistoryResponse chatHistoryResponse = new ChatHistoryResponse(item.getMessageType().name(),
+						item.getText());
+				history.add(chatHistoryResponse);
+			}
+		}
+		return history;
+	}
+
 	private String classifierPrompt() {
 		return """
 				You are a classifier.
@@ -103,13 +179,13 @@ public class ChatService {
 		return chatClient.prompt().system(classifierPrompt()).user(message).call().content().trim();
 	}
 
-	private List<Lecture> getAvailableLecture() {
-		List<Lecture> availableLectures = new ArrayList<Lecture>();
+	private List<LectureResponse> getAvailableLecture() {
+		List<LectureResponse> availableLectures = new ArrayList<LectureResponse>();
 
 		List<Lesson> lessons = lessonRepository.findByStatusAndHideFalse(Status.PUBLISHED);
 
 		for (Lesson lesson : lessons) {
-			Lecture lecture = new Lecture();
+			LectureResponse lecture = new LectureResponse();
 			RatingSummaryResponse ratingSummaryResponse = ratingRepository.getRatingSummaryLesson(lesson.getId());
 			lecture.setTitle(lesson.getTitle());
 			lecture.setCategory(lesson.getCategory().getName());
@@ -123,13 +199,13 @@ public class ChatService {
 		return availableLectures;
 	}
 
-	private List<Lecture> getAvailableLecture2() {
-		List<Lecture> availableLectures = new ArrayList<Lecture>();
+	private List<LectureResponse> getAvailableLecture2() {
+		List<LectureResponse> availableLectures = new ArrayList<LectureResponse>();
 
 		List<Document> documents = documentRepository.findByStatusAndHideFalse(Status.PUBLISHED);
 
 		for (Document document : documents) {
-			Lecture lecture = new Lecture();
+			LectureResponse lecture = new LectureResponse();
 			RatingSummaryResponse ratingSummaryResponse = ratingRepository.getRatingSummaryDocument(document.getId());
 			lecture.setTitle(document.getTitle());
 			lecture.setCategory(document.getCategory().getName());
@@ -154,11 +230,11 @@ public class ChatService {
 
 	private String buildLessonSearchPrompt() {
 
-		List<Lecture> lectures = getAvailableLecture();
+		List<LectureResponse> lectures = getAvailableLecture();
 
 		StringBuilder lessonsBuilder = new StringBuilder();
 
-		for (Lecture lecture : lectures) {
+		for (LectureResponse lecture : lectures) {
 			lessonsBuilder.append("- ").append(lecture.getCategory()).append(" | ").append(lecture.getTitle())
 					.append(" | Author: ").append(lecture.getAuthor()).append(" | Rating: ")
 					.append(lecture.getAverage()).append(" | Ratings: ").append(lecture.getTotal()).append(" | Views: ")
@@ -214,11 +290,11 @@ public class ChatService {
 
 	private String buildDocumentSearchPrompt() {
 
-		List<Lecture> documents = getAvailableLecture2();
+		List<LectureResponse> documents = getAvailableLecture2();
 
 		StringBuilder docsBuilder = new StringBuilder();
 
-		for (Lecture lecture : documents) {
+		for (LectureResponse lecture : documents) {
 			docsBuilder.append("- ").append(lecture.getCategory()).append(" | ").append(lecture.getTitle())
 					.append(" | Author: ").append(lecture.getAuthor()).append(" | Rating: ")
 					.append(lecture.getAverage()).append(" | Ratings: ").append(lecture.getTotal()).append(" | Views: ")
@@ -329,7 +405,7 @@ public class ChatService {
 
 	private String buildStudyPlanPrompt() {
 
-		List<Lecture> lectures = getAvailableLecture();
+		List<LectureResponse> lectures = getAvailableLecture();
 
 		if (lectures == null || lectures.isEmpty()) {
 			throw new AppException("Không có bài giảng nào trong hệ thống", 5001, HttpStatus.BAD_REQUEST);
@@ -337,7 +413,7 @@ public class ChatService {
 
 		StringBuilder lessonsBuilder = new StringBuilder();
 
-		for (Lecture lecture : lectures) {
+		for (LectureResponse lecture : lectures) {
 			lessonsBuilder.append("- ").append(lecture.getCategory()).append(" | ").append(lecture.getTitle())
 					.append(" | Author: ").append(lecture.getAuthor()).append(" | Rating: ")
 					.append(lecture.getAverage()).append(" | Total Ratings: ").append(lecture.getTotal())
@@ -486,65 +562,6 @@ public class ChatService {
 				""";
 	}
 
-	@PreAuthorize("hasAuthority('CHAT_GEMINI')")
-	public String chat(MultipartFile file, String message) {
-		String conversationId = getUserByToken.get().getId() + "";
-		String systemPrompt;
-		String type = classify(message);
-		switch (type) {
-
-		case "QA":
-			systemPrompt = buildQaPrompt();
-			break;
-
-		case "STUDY_PLAN":
-			systemPrompt = buildStudyPlanPrompt();
-			break;
-
-		case "LESSON_SEARCH":
-			systemPrompt = buildLessonSearchPrompt();
-			break;
-
-		case "DOCUMENT_SEARCH":
-			systemPrompt = buildDocumentSearchPrompt();
-			break;
-
-		default:
-			systemPrompt = buildOutOfRangePrompt();
-		}
-
-		if (file == null) {
-			return chatClient.prompt().system(systemPrompt).user(message)
-					.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId)).call()
-					.content();
-		} else {
-			Media media = Media.builder().mimeType(MimeTypeUtils.parseMimeType(file.getContentType()))
-					.data(file.getResource()).build();
-
-			ChatOptions chatOptions = ChatOptions.builder().temperature(0.5D).build();
-
-			return chatClient.prompt().options(chatOptions).system(systemPrompt)
-					.user(promptUserSpec -> promptUserSpec.media(media).text(message))
-					.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId)).call()
-					.content();
-		}
-	}
-
-	@PreAuthorize("hasAuthority('HISTORY_CHAT_GEMINI')")
-	public List<ChatHistoryResponse> getChatHistory() {
-		String conversationId = getUserByToken.get().getId() + "";
-		List<Message> list = jdbcChatMemoryRepository.findByConversationId(conversationId);
-		List<ChatHistoryResponse> history = new ArrayList<ChatHistoryResponse>();
-		for (Message item : list) {
-			if (item.getMessageType() == MessageType.USER || item.getMessageType() == MessageType.ASSISTANT) {
-				ChatHistoryResponse chatHistoryResponse = new ChatHistoryResponse(item.getMessageType().name(),
-						item.getText());
-				history.add(chatHistoryResponse);
-			}
-		}
-		return history;
-	}
-
 	private List<CommentResponse> getCommentsLast7Days() {
 		List<CommentResponse> commentsResponseLast7Days = new ArrayList<CommentResponse>();
 		LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
@@ -606,23 +623,6 @@ public class ChatService {
 		}
 
 		return sb.toString();
-	}
-
-	@PreAuthorize("hasRole('ADMIN')")
-	public List<CommentResponse> filterCommnent() {
-
-		List<CommentResponse> comments = getCommentsLast7Days();
-
-		if (comments.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		String prompt = fiterUnsuitableCommentPrompt(comments);
-
-		return chatClient.prompt().system("You are a content moderation assistant. Only return JSON.").user(prompt)
-				.advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, "ADMIN")).call()
-				.entity(new ParameterizedTypeReference<List<CommentResponse>>() {
-				});
 	}
 
 }

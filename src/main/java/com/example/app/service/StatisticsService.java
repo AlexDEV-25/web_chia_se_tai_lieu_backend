@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.example.app.dto.response.CategoryCountResponse;
-import com.example.app.dto.response.DailyCountResponse;
+import com.example.app.dto.response.statistic.CategoryCountResponse;
+import com.example.app.dto.response.statistic.DailyCountResponse;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.repository.UserRepository;

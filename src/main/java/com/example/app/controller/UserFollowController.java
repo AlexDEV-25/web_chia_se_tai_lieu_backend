@@ -10,17 +10,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.FollowCountResponse;
-import com.example.app.dto.response.UserFollowResponse;
+import com.example.app.dto.response.userfollow.FollowCountResponse;
+import com.example.app.dto.response.userfollow.UserFollowResponse;
 import com.example.app.service.UserFollowService;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/follows")
 @AllArgsConstructor
-@Slf4j
 public class UserFollowController {
 	private final UserFollowService userFollowService;
 

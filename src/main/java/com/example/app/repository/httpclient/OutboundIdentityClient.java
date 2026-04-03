@@ -5,7 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import com.example.app.dto.request.ExchangeTokenRequest;
-import com.example.app.dto.response.ExchangeTokenResponse;
+import com.example.app.dto.response.authentication.ExchangeTokenResponse;
 
 import feign.QueryMap;
 

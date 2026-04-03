@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.UserNotificationResponse;
+import com.example.app.dto.response.usernotificaion.UserNotificationResponse;
 import com.example.app.service.UserNotificationService;
 
 import lombok.AllArgsConstructor;

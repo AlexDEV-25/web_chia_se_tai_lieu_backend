@@ -9,7 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.RoleRequest;
-import com.example.app.dto.response.RoleResponse;
+import com.example.app.dto.response.role.RoleResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.RoleMapper;
 import com.example.app.model.Permission;

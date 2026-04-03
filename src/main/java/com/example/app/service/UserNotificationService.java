@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.example.app.dto.response.UserNotificationResponse;
+import com.example.app.dto.response.usernotificaion.UserNotificationResponse;
 import com.example.app.mapper.UserNotificationMapper;
 import com.example.app.model.User;
 import com.example.app.model.UserNotification;

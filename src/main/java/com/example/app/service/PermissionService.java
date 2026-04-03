@@ -9,7 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.PermissionRequest;
-import com.example.app.dto.response.PermissionResponse;
+import com.example.app.dto.response.permission.PermissionResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.PermissionMapper;
 import com.example.app.model.Permission;

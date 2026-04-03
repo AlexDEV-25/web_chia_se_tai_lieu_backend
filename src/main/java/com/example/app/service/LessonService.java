@@ -1,19 +1,12 @@
 package com.example.app.service;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-import javax.imageio.ImageIO;
-
-import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.Java2DFrameConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -25,12 +18,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
-import com.example.app.dto.response.ContentRatingSummaryResponse;
-import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.FileResponse;
-import com.example.app.dto.response.LessonFavoriteResponse;
-import com.example.app.dto.response.LessonResponse;
-import com.example.app.dto.response.LessonStatsResponse;
+import com.example.app.dto.response.lesson.LessonAdminResponse;
+import com.example.app.dto.response.lesson.LessonDetailResponse;
+import com.example.app.dto.response.lesson.LessonFavoriteResponse;
+import com.example.app.dto.response.lesson.LessonStatsResponse;
+import com.example.app.dto.response.lesson.LessonUserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.LessonMapper;
 import com.example.app.model.Category;
@@ -69,74 +62,20 @@ public class LessonService {
 	@Value("${app.storage-directory-subfile}")
 	private String subfileStorage;
 
-	public LessonStatsResponse getStats() {
-		return lessonRepository.getStats();
-	}
-
-	public List<LessonResponse> getAllPublicLessons() {
-		List<Lesson> lessons = lessonRepository.findByStatusAndHideFalse(Status.PUBLISHED);
-		List<LessonResponse> response = new ArrayList<LessonResponse>();
-		for (Lesson d : lessons) {
-			response.add(lessonMapper.lessonToResponse(d));
-		}
-		return response;
-	}
-
-	public LessonResponse findByIdPublicLesson(Long id) {
-		Lesson find = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		return lessonMapper.lessonToResponse(find);
-	}
-
-	public void increaseView(Long id) {
-		lessonRepository.findById(id).ifPresent(entity -> {
-			entity.setViewsCount(entity.getViewsCount() + 1);
-			lessonRepository.save(entity);
-		});
-	}
-
-	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
-		Lesson doc = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
-		return loadDocumentFile(doc);
-	}
-
-	public File loadPublicLessonFile(Long id) throws IOException {
-		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy bài giảng"));
-		return loadVideoFile(lesson);
-	}
-
-	public Long countLessonOfUser(Long userId) {
-		return lessonRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
-	}
-
 	@PreAuthorize("hasRole('ADMIN')")
-	public LessonResponse findById(Long id) {
+	public LessonDetailResponse findById(Long id) {
 		Lesson find = lessonRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		return lessonMapper.lessonToResponse(find);
+		return lessonMapper.lessonToLessonDetailResponse(find);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public List<LessonResponse> getAllLessons() {
+	public List<LessonAdminResponse> getAllLessons() {
 		List<Lesson> lessons = lessonRepository.findAll();
-		List<LessonResponse> response = new ArrayList<LessonResponse>();
+		List<LessonAdminResponse> response = new ArrayList<LessonAdminResponse>();
 		for (Lesson l : lessons) {
-			response.add(lessonMapper.lessonToResponse(l));
+			response.add(lessonMapper.lessonToLessonAdminResponse(l));
 		}
-		return response;
-	}
-
-	@PreAuthorize("hasRole('ADMIN')")
-	public List<ContentRatingSummaryResponse> getAllLessonRatingSummary() {
-		List<ContentRatingSummaryResponse> response = lessonRepository.getAllLessonRatingSummary();
-		return response;
-	}
-
-	@PreAuthorize("hasRole('ADMIN')")
-	public List<ContentReportSummaryResponse> getAllLessonReportSummary() {
-		List<ContentReportSummaryResponse> response = lessonRepository.getAllLessonReportSummary();
 		return response;
 	}
 
@@ -154,7 +93,7 @@ public class LessonService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public LessonResponse hide(Long id, HideRequest dto) {
+	public LessonDetailResponse hide(Long id, HideRequest dto) {
 		Lesson entity = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));
 		boolean tempHide = entity.isHide();
 		entity.setHide(dto.isHide());
@@ -163,11 +102,11 @@ public class LessonService {
 		User admin = getUserByToken.get();
 		sendNotification.sendNotificationHide(dto.isHide(), tempHide, entity.getTitle(), entity.getUser().getId(),
 				admin, Type.LESSON);
-		return lessonMapper.lessonToResponse(saved);
+		return lessonMapper.lessonToLessonDetailResponse(saved);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public LessonResponse update(Long id, LessonRequest dto) {
+	public LessonDetailResponse update(Long id, LessonRequest dto) {
 		Lesson entity = lessonRepository.findById(id)
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		boolean tempHide = entity.isHide();
@@ -182,7 +121,7 @@ public class LessonService {
 		sendNotification.sendNotificationPublished(dto.getStatus(), tempStatus, entity.getId(), entityTitle,
 				entity.getUser().getUsername(), entityUserId, admin, Type.LESSON);
 		sendNotification.sendNotificationHide(dto.isHide(), tempHide, entityTitle, entityUserId, admin, Type.LESSON);
-		return lessonMapper.lessonToResponse(saved);
+		return lessonMapper.lessonToLessonDetailResponse(saved);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
@@ -198,27 +137,83 @@ public class LessonService {
 		return loadDocumentFile(doc);
 	}
 
+	@PreAuthorize("hasAuthority('GET_MY_LESSON')")
+	public List<LessonUserResponse> getMyLesson() {
+		User user = getUserByToken.get();
+		List<Lesson> lessons = lessonRepository.findByUser_Id(user.getId());
+		List<LessonUserResponse> response = new ArrayList<LessonUserResponse>();
+		for (Lesson l : lessons) {
+			response.add(lessonMapper.lessonToLessonUserResponse(l));
+		}
+		return response;
+	}
+
+	@PreAuthorize("hasAuthority('UPDATE_MY_LESSON')")
+	public LessonUserResponse updateMyDocument(Long id, LessonRequest dto) {
+		User user = getUserByToken.get();
+		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
+				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		boolean tempHide = entity.isHide();
+		lessonMapper.updateLesson(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
+		Lesson saved = lessonRepository.save(entity);
+		sendNotification.sendNotificationMyHide(dto.isHide(), tempHide, entity.getTitle(), user.getId(),
+				user.getUsername(), Type.LESSON);
+		return lessonMapper.lessonToLessonUserResponse(saved);
+	}
+
+	@PreAuthorize("hasAuthority('DELETE_MY_LESSON')")
+	public void deleteMyLesson(Long id) {
+		try {
+			User user = getUserByToken.get();
+			Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
+					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+			fileStorage.deleteFile(videoStorage + File.separator + entity.getLessonUrl());
+			fileStorage.deleteFile(thumbnailStorage + File.separator + entity.getThumbnailUrl());
+
+			if (entity.getDocumentUrl() != null) {
+				fileStorage.deleteFile(documentStorage + File.separator + entity.getDocumentUrl());
+			}
+
+			if (entity.getSubFileUrl() != null) {
+				fileStorage.deleteFile(documentStorage + File.separator + entity.getSubFileUrl());
+			}
+
+			lessonRepository.deleteById(id);
+
+			sendNotification.sendNotificationMyDelete(entity.getTitle(), user.getId(), user.getUsername(), Type.LESSON);
+		} catch (EmptyResultDataAccessException e) {
+			throw new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@PreAuthorize("hasAuthority('COUNT_MY_LESSON')")
+	public Long countMyLesson() {
+		User user = getUserByToken.get();
+		return lessonRepository.countByUser_Id(user.getId());
+	}
+
 	@PreAuthorize("hasAuthority('UPLOAD_LESSON')")
 	@Transactional
-	public LessonResponse uploadLesson(MultipartFile video, MultipartFile document, MultipartFile subFile,
+	public LessonDetailResponse uploadLesson(MultipartFile video, MultipartFile document, MultipartFile subFile,
 			LessonRequest dto) throws IOException {
 		Lesson lesson = lessonMapper.requestToLesson(dto);
 		lesson.setCreatedAt(LocalDateTime.now());
 
-		String lessonUrl = handleVideo(video);
+		String lessonUrl = fileStorage.handleVideo(video);
 		lesson.setLessonUrl(lessonUrl);
 
 		if (document != null) {
-			String documentUrl = handlefile(document);
+			String documentUrl = fileStorage.handleFile(document);
 			lesson.setDocumentUrl(documentUrl);
 		}
 
 		if (subFile != null) {
-			String subFileUrl = handleSubFile(subFile);
+			String subFileUrl = fileStorage.handleSubFile(subFile);
 			lesson.setSubFileUrl(subFileUrl);
 		}
 
-		String thumbnailUrl = handleThumbnail(videoStorage + "\\" + lessonUrl);
+		String thumbnailUrl = fileStorage.handleVideoThumbnail(videoStorage + "\\" + lessonUrl);
 		lesson.setThumbnailUrl(thumbnailUrl);
 
 		Category category = dto.getCategoryId() != null ? categoryRepository.findById(dto.getCategoryId())
@@ -229,7 +224,7 @@ public class LessonService {
 		lesson.setUser(user);
 
 		Lesson saved = lessonRepository.save(lesson);
-		LessonResponse response = lessonMapper.lessonToResponse(saved);
+		LessonDetailResponse response = lessonMapper.lessonToLessonDetailResponse(saved);
 		return response;
 	}
 
@@ -292,7 +287,6 @@ public class LessonService {
 			return lessonRepository.findAllWithoutFavorite();
 		}
 		return lessonRepository.findAllWithFavoriteStatus(user.getId());
-
 	}
 
 	public List<LessonFavoriteResponse> getLessonsByUserCheckFavorite(Long authorId, Long currentLessonId) {
@@ -301,7 +295,6 @@ public class LessonService {
 			return lessonRepository.findLessonsByUserWithoutFavorite(authorId, currentLessonId);
 		}
 		return lessonRepository.findLessonsByUserWithFavoriteStatus(authorId, user.getId(), currentLessonId);
-
 	}
 
 	public List<LessonFavoriteResponse> getLessonsByCategoryCheckFavorite(Long categoryId, Long currentLessonId) {
@@ -310,10 +303,9 @@ public class LessonService {
 			return lessonRepository.findLessonsByCategoryWithoutFavorite(categoryId, currentLessonId);
 		}
 		return lessonRepository.findLessonsByCategoryWithFavoriteStatus(categoryId, user.getId(), currentLessonId);
-
 	}
 
-	public List<LessonFavoriteResponse> getAllLessonsByUserheckFavorite(Long authorId) {
+	public List<LessonFavoriteResponse> getAllLessonsByUserCheckFavorite(Long authorId) {
 		User user = getUserByToken.get();
 		if (user == null) {
 			return lessonRepository.findAllLessonsByUserWithoutFavorite(authorId);
@@ -321,60 +313,37 @@ public class LessonService {
 		return lessonRepository.findAllLessonsByUserWithFavoriteStatus(authorId, user.getId());
 	}
 
-	@PreAuthorize("hasAuthority('GET_MY_LESSON')")
-	public List<LessonResponse> getMyLesson() {
-		User user = getUserByToken.get();
-		List<Lesson> lessons = lessonRepository.findByUser_Id(user.getId());
-		List<LessonResponse> response = new ArrayList<LessonResponse>();
-		for (Lesson l : lessons) {
-			response.add(lessonMapper.lessonToResponse(l));
-		}
-		return response;
+	public LessonStatsResponse getStats() {
+		return lessonRepository.getStats();
 	}
 
-	@PreAuthorize("hasAuthority('UPDATE_MY_LESSON')")
-	public LessonResponse updateMyDocument(Long id, LessonRequest dto) {
-		User user = getUserByToken.get();
-		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
+	public LessonDetailResponse findByIdPublicLesson(Long id) {
+		Lesson find = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		boolean tempHide = entity.isHide();
-		lessonMapper.updateLesson(entity, dto);
-		entity.setUpdatedAt(LocalDateTime.now());
-		Lesson saved = lessonRepository.save(entity);
-		sendNotification.sendNotificationMyHide(dto.isHide(), tempHide, entity.getTitle(), user.getId(),
-				user.getUsername(), Type.LESSON);
-		return lessonMapper.lessonToResponse(saved);
+		return lessonMapper.lessonToLessonDetailResponse(find);
 	}
 
-	@PreAuthorize("hasAuthority('DELETE_MY_LESSON')")
-	public void deleteMyLesson(Long id) {
-		try {
-			User user = getUserByToken.get();
-			Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
-					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-			fileStorage.deleteFile(videoStorage + File.separator + entity.getLessonUrl());
-			fileStorage.deleteFile(thumbnailStorage + File.separator + entity.getThumbnailUrl());
-
-			if (entity.getDocumentUrl() != null) {
-				fileStorage.deleteFile(documentStorage + File.separator + entity.getDocumentUrl());
-			}
-
-			if (entity.getSubFileUrl() != null) {
-				fileStorage.deleteFile(documentStorage + File.separator + entity.getSubFileUrl());
-			}
-
-			lessonRepository.deleteById(id);
-
-			sendNotification.sendNotificationMyDelete(entity.getTitle(), user.getId(), user.getUsername(), Type.LESSON);
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST);
-		}
+	public void increaseView(Long id) {
+		lessonRepository.findById(id).ifPresent(entity -> {
+			entity.setViewsCount(entity.getViewsCount() + 1);
+			lessonRepository.save(entity);
+		});
 	}
 
-	@PreAuthorize("hasAuthority('COUNT_MY_LESSON')")
-	public Long countMyLesson() {
-		User user = getUserByToken.get();
-		return lessonRepository.countByUser_Id(user.getId());
+	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
+		Lesson doc = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+		return loadDocumentFile(doc);
+	}
+
+	public File loadPublicLessonFile(Long id) throws IOException {
+		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy bài giảng"));
+		return loadVideoFile(lesson);
+	}
+
+	public Long countLessonOfUser(Long userId) {
+		return lessonRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
 	}
 
 	private File loadVideoFile(Lesson lesson) {
@@ -403,88 +372,4 @@ public class LessonService {
 		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, doc.getTitle());
 	}
 
-	private String handleVideo(MultipartFile video) throws IOException {
-		String fileName = video.getOriginalFilename();
-		if (fileName.endsWith(".mp4")) {
-			String fileUrl = fileStorage.saveFile(video, videoStorage);
-			return fileUrl;
-		} else {
-			throw new AppException("video không hợp lệ", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
-
-	private String handlefile(MultipartFile document) throws IOException {
-		String fileName = document.getOriginalFilename();
-		if (fileName.endsWith(".pdf") || fileName.endsWith(".doc") || fileName.endsWith(".docx")
-				|| fileName.endsWith(".ppt") || fileName.endsWith(".pptx")) {
-
-			String fileUrl = fileStorage.saveFile(document, documentStorage);
-			if (!fileUrl.endsWith(".pdf")) {
-				int index = fileUrl.lastIndexOf(".");
-				String result = (index != -1) ? fileUrl.substring(0, index) + ".pdf" : fileUrl;
-
-				String input = documentStorage + File.separator + fileUrl;
-				String output = documentStorage + File.separator + result;
-
-				fileStorage.convertToPDF(input, output);
-
-				fileUrl = result;
-			}
-			return fileUrl;
-		} else {
-			throw new AppException("file không hợp lệ", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
-
-	private String handleSubFile(MultipartFile subFile) throws IOException {
-		String fileName = subFile.getOriginalFilename();
-		if (fileName.endsWith(".rar")) {
-			String fileUrl = fileStorage.saveFile(subFile, subfileStorage);
-			return fileUrl;
-		} else {
-			throw new AppException("file không hợp lệ", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
-
-	private String handleThumbnail(String input) {
-		FFmpegFrameGrabber grabber = null;
-
-		String thumbnailUrl = UUID.randomUUID().toString() + ".jpg";
-		String output = thumbnailStorage + File.separator + thumbnailUrl;
-
-		try {
-			grabber = new FFmpegFrameGrabber(input);
-			grabber.start();
-
-			Frame frame;
-			BufferedImage image = null;
-
-			// Bỏ qua frame audio, chỉ lấy frame hình
-			while ((frame = grabber.grab()) != null) {
-				if (frame.image != null) {
-					try (Java2DFrameConverter converter = new Java2DFrameConverter()) {
-						image = converter.convert(frame);
-					}
-					break;
-				}
-			}
-
-			if (image == null) {
-				throw new RuntimeException("Không lấy được frame hình từ video");
-			}
-
-			ImageIO.write(image, "jpg", new File(output));
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (grabber != null)
-					grabber.stop();
-			} catch (Exception ignored) {
-			}
-		}
-
-		return thumbnailUrl;
-	}
 }

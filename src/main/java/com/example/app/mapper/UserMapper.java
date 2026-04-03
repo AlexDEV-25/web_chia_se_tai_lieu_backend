@@ -4,9 +4,10 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import com.example.app.dto.request.ChangeUserInfoRequest;
 import com.example.app.dto.request.UserRequest;
-import com.example.app.dto.response.UserBioResponse;
-import com.example.app.dto.response.UserResponse;
+import com.example.app.dto.response.user.UserBioResponse;
+import com.example.app.dto.response.user.UserResponse;
 import com.example.app.model.User;
 
 @Mapper(componentModel = "spring")
@@ -15,16 +16,22 @@ public interface UserMapper {
 	@Mapping(target = "activationCode", ignore = true)
 	@Mapping(target = "forgotPasswordCode", ignore = true)
 	@Mapping(target = "avatarUrl", ignore = true)
-	@Mapping(target = "lessons", ignore = true)
-	@Mapping(target = "documents", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "reports", ignore = true)
 	@Mapping(target = "roles", ignore = true)
 	User requestToUser(UserRequest request);
+
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "activationCode", ignore = true)
+	@Mapping(target = "forgotPasswordCode", ignore = true)
+	@Mapping(target = "avatarUrl", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "updatedAt", ignore = true)
+	@Mapping(target = "roles", ignore = true)
+	@Mapping(target = "hide", ignore = true)
+	@Mapping(target = "password", ignore = true)
+	@Mapping(target = "verified", ignore = true)
+	User changeUserInfoRequestToUser(ChangeUserInfoRequest request);
 
 	UserResponse userToResponse(User entity);
 
@@ -39,12 +46,20 @@ public interface UserMapper {
 	@Mapping(target = "forgotPasswordCode", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
-	@Mapping(target = "lessons", ignore = true)
-	@Mapping(target = "documents", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "reports", ignore = true)
 	@Mapping(target = "roles", ignore = true)
 	void updateUser(@MappingTarget User user, UserRequest request);
+
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "avatarUrl", ignore = true)
+	@Mapping(target = "email", ignore = true)
+	@Mapping(target = "username", ignore = true)
+	@Mapping(target = "password", ignore = true)
+	@Mapping(target = "activationCode", ignore = true)
+	@Mapping(target = "forgotPasswordCode", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "updatedAt", ignore = true)
+	@Mapping(target = "roles", ignore = true)
+	@Mapping(target = "hide", ignore = true)
+	@Mapping(target = "verified", ignore = true)
+	void updateUserInfo(@MappingTarget User user, ChangeUserInfoRequest request);
 }

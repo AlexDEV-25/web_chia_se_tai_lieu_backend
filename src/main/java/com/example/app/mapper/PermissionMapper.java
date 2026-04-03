@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 
 import com.example.app.dto.request.PermissionRequest;
-import com.example.app.dto.response.PermissionResponse;
+import com.example.app.dto.response.permission.PermissionResponse;
 import com.example.app.model.Permission;
 
 @Mapper(componentModel = "spring")

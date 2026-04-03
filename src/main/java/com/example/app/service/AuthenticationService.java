@@ -17,14 +17,14 @@ import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.ActiveAccountRequest;
 import com.example.app.dto.request.AuthenticationRequest;
-import com.example.app.dto.request.ChangePasswordRequest;
 import com.example.app.dto.request.ExchangeTokenRequest;
+import com.example.app.dto.request.ForgotPasswordRequest;
 import com.example.app.dto.request.UserRequest;
-import com.example.app.dto.response.AuthenticationResponse;
-import com.example.app.dto.response.ExchangeTokenResponse;
-import com.example.app.dto.response.IntrospectResponse;
-import com.example.app.dto.response.OutboudUserResponse;
-import com.example.app.dto.response.UserResponse;
+import com.example.app.dto.response.authentication.AuthenticationResponse;
+import com.example.app.dto.response.authentication.ExchangeTokenResponse;
+import com.example.app.dto.response.authentication.IntrospectResponse;
+import com.example.app.dto.response.authentication.OutboudUserResponse;
+import com.example.app.dto.response.user.UserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.UserMapper;
 import com.example.app.model.Permission;
@@ -98,43 +98,6 @@ public class AuthenticationService {
 		return response;
 	}
 
-	private String generateToken(User user) {
-		JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-		JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()//
-				.subject(user.getUsername())//
-				.issuer("moimoi.com")//
-				.claim("scope", buildScope(user))//
-				.jwtID(UUID.randomUUID().toString())//
-				.issueTime(new Date())//
-				.expirationTime(Date.from(Instant.now().plus(EXPIRATION_TIME, ChronoUnit.SECONDS))).build();
-
-		Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-		JWSObject jwsObject = new JWSObject(header, payload);
-
-		try {
-			jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
-			String token = jwsObject.serialize();
-			return token;
-		} catch (KeyLengthException e) {
-			throw new AppException("secretKey phải >= 32B", 1001, HttpStatus.BAD_REQUEST);
-		} catch (JOSEException e) {
-			throw new AppException("JOSEException", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
-
-	private String buildScope(User user) {
-		StringJoiner stringJoiner = new StringJoiner(" ");
-		List<Role> roles = user.getRoles();
-		for (Role role : roles) {
-			stringJoiner.add("ROLE_" + role.getName());
-			List<Permission> permissions = role.getPermissions();
-			for (Permission permission : permissions) {
-				stringJoiner.add(permission.getName());
-			}
-		}
-		return stringJoiner.toString();
-	}
-
 	public AuthenticationResponse refreshToken(String oldToken) throws JOSEException, ParseException, AppException {
 		SignedJWT signToken = verifyToken(oldToken);
 
@@ -159,24 +122,6 @@ public class AuthenticationService {
 		IntrospectResponse response = new IntrospectResponse();
 		response.setValid(isValid);
 		return response;
-	}
-
-	private SignedJWT verifyToken(String token) throws JOSEException, ParseException, AppException {
-		JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-		SignedJWT signedJWT = SignedJWT.parse(token);
-
-		Date epx = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-		boolean verified = signedJWT.verify(verifier);
-
-		if (!epx.after(new Date())) {
-			throw new AppException("token đã hết hạn", 1001, HttpStatus.BAD_REQUEST);
-		}
-		if (!verified) {
-			throw new AppException("token không đúng", 1001, HttpStatus.BAD_REQUEST);
-		}
-
-		return signedJWT;
 	}
 
 	public UserResponse register(UserRequest request) {
@@ -233,7 +178,7 @@ public class AuthenticationService {
 		}
 	}
 
-	public UserResponse changePassword(ChangePasswordRequest request) {
+	public UserResponse changePassword(ForgotPasswordRequest request) {
 		User user = userRepository.findByEmail(request.getEmail());
 		if (user == null) {
 			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
@@ -249,10 +194,6 @@ public class AuthenticationService {
 		} else {
 			throw new AppException("mã không đúng", 1001, HttpStatus.BAD_REQUEST);
 		}
-	}
-
-	private String generateActivationCode() {
-		return UUID.randomUUID().toString();
 	}
 
 	public AuthenticationResponse loginWithGoogle(String code) {
@@ -292,6 +233,65 @@ public class AuthenticationService {
 			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
 		}
 		return response;
+	}
+
+	private SignedJWT verifyToken(String token) throws JOSEException, ParseException, AppException {
+		JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+		SignedJWT signedJWT = SignedJWT.parse(token);
+
+		Date epx = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+		boolean verified = signedJWT.verify(verifier);
+
+		if (!epx.after(new Date())) {
+			throw new AppException("token đã hết hạn", 1001, HttpStatus.BAD_REQUEST);
+		}
+		if (!verified) {
+			throw new AppException("token không đúng", 1001, HttpStatus.BAD_REQUEST);
+		}
+
+		return signedJWT;
+	}
+
+	private String generateToken(User user) {
+		JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
+		JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()//
+				.subject(user.getUsername())//
+				.issuer("moimoi.com")//
+				.claim("scope", buildScope(user))//
+				.jwtID(UUID.randomUUID().toString())//
+				.issueTime(new Date())//
+				.expirationTime(Date.from(Instant.now().plus(EXPIRATION_TIME, ChronoUnit.SECONDS))).build();
+
+		Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+		JWSObject jwsObject = new JWSObject(header, payload);
+
+		try {
+			jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+			String token = jwsObject.serialize();
+			return token;
+		} catch (KeyLengthException e) {
+			throw new AppException("secretKey phải >= 32B", 1001, HttpStatus.BAD_REQUEST);
+		} catch (JOSEException e) {
+			throw new AppException("JOSEException", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	private String buildScope(User user) {
+		StringJoiner stringJoiner = new StringJoiner(" ");
+		List<Role> roles = user.getRoles();
+		for (Role role : roles) {
+			stringJoiner.add("ROLE_" + role.getName());
+			List<Permission> permissions = role.getPermissions();
+			for (Permission permission : permissions) {
+				stringJoiner.add(permission.getName());
+			}
+		}
+		return stringJoiner.toString();
+	}
+
+	private String generateActivationCode() {
+		return UUID.randomUUID().toString();
 	}
 
 }

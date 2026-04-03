@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.request.FavoriteRequest;
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.FavoriteResponse;
+import com.example.app.dto.response.favorite.FavoriteResponse;
 import com.example.app.service.FavoriteService;
 
 import jakarta.validation.Valid;
@@ -27,18 +27,9 @@ public class FavoriteController {
 
 	private final FavoriteService favoriteService;
 
-	@PostMapping("/document")
-	public APIResponse<FavoriteResponse> addDocumentFavorite(@RequestBody @Valid FavoriteRequest dto) {
-		FavoriteResponse response = favoriteService.addDocumentFavorite(dto);
-		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
-		return apiResponse;
-	}
-
-	@PostMapping("/lesson")
-	public APIResponse<FavoriteResponse> addLessonFavorite(@RequestBody @Valid FavoriteRequest dto) {
-		FavoriteResponse response = favoriteService.addLessonFavorite(dto);
+	@PostMapping("/")
+	public APIResponse<FavoriteResponse> addFavorite(@RequestBody @Valid FavoriteRequest dto) {
+		FavoriteResponse response = favoriteService.addFavorite(dto);
 		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("save success");

@@ -1,7 +1,6 @@
 package com.example.app.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -9,8 +8,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.RatingRequest;
-import com.example.app.dto.response.RatingResponse;
-import com.example.app.dto.response.RatingSummaryResponse;
+import com.example.app.dto.response.rating.RatingAdminResponse;
+import com.example.app.dto.response.rating.RatingDetailAdminResponse;
+import com.example.app.dto.response.rating.RatingSummaryResponse;
+import com.example.app.dto.response.rating.RatingUserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.RatingMapper;
 import com.example.app.model.Document;
@@ -21,6 +22,7 @@ import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.repository.RatingRepository;
 import com.example.app.share.GetUserByToken;
+import com.example.app.share.Type;
 
 import lombok.AllArgsConstructor;
 
@@ -33,33 +35,27 @@ public class RatingService {
 	private final RatingMapper ratingMapper;
 	private final GetUserByToken getUserByToken;
 
-	public RatingSummaryResponse getRatingSummaryDocument(Long docId) {
-		RatingSummaryResponse response = ratingRepository.getRatingSummaryDocument(docId);
-		return response;
-	}
-
-	public RatingSummaryResponse getRatingSummaryLesson(Long lessonId) {
-		RatingSummaryResponse response = ratingRepository.getRatingSummaryLesson(lessonId);
+	@PreAuthorize("hasRole('ADMIN')")
+	public RatingDetailAdminResponse getByDocument(Long docId) {
+		RatingDetailAdminResponse response = ratingRepository.getRatingDetailByDocument(docId);
 		return response;
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public List<RatingResponse> getByDocument(Long docId) {
-		List<Rating> ratings = ratingRepository.findByDocument_Id(docId);
-		List<RatingResponse> response = new ArrayList<RatingResponse>();
-		for (Rating r : ratings) {
-			response.add(ratingMapper.ratingToRatingDocumentResponse(r));
-		}
+	public RatingDetailAdminResponse getByLesson(Long lessonId) {
+		RatingDetailAdminResponse response = ratingRepository.getRatingDetailByLesson(lessonId);
 		return response;
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public List<RatingResponse> getByLesson(Long LessonId) {
-		List<Rating> ratings = ratingRepository.findByLesson_Id(LessonId);
-		List<RatingResponse> response = new ArrayList<RatingResponse>();
-		for (Rating r : ratings) {
-			response.add(ratingMapper.ratingToRatingLessonResponse(r));
-		}
+	public List<RatingAdminResponse> getAllDocumentRatingSummary() {
+		List<RatingAdminResponse> response = ratingRepository.getAllDocumentRatingSummary();
+		return response;
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	public List<RatingAdminResponse> getAllLessonRatingSummary() {
+		List<RatingAdminResponse> response = ratingRepository.getAllLessonRatingSummary();
 		return response;
 	}
 
@@ -77,41 +73,35 @@ public class RatingService {
 		return response;
 	}
 
-	@PreAuthorize("hasAuthority('POST_DOCUMENT_RATING')")
-	public RatingResponse saveRatingDocument(RatingRequest dto) {
-		Rating rating = ratingMapper.ratingDocumentRequestToRating(dto);
-		Document doc = documentRepository.findById(dto.getContentId())
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+	@PreAuthorize("hasAuthority('POST_RATING')")
+	public RatingUserResponse saveRating(RatingRequest dto) {
+		Rating rating = ratingMapper.ratingRequestToRating(dto);
+		if (rating.getType() == Type.DOCUMENT) {
+			Document doc = documentRepository.findById(dto.getContentId())
+					.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			rating.setDocument(doc);
+		} else {
+			Lesson lesson = lessonRepository.findById(dto.getContentId())
+					.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			rating.setLesson(lesson);
+		}
+
+		rating.setCreatedAt(LocalDateTime.now());
 
 		User user = getUserByToken.get();
-
-		if (ratingRepository.existsByUserAndDocument(user, doc)) {
-			throw new AppException("đã đánh giá rồi", 1001, HttpStatus.BAD_REQUEST);
-		}
-		rating.setCreatedAt(LocalDateTime.now());
-		rating.setDocument(doc);
 		rating.setUser(user);
 		Rating saved = ratingRepository.save(rating);
-		RatingResponse response = ratingMapper.ratingToRatingDocumentResponse(saved);
+		RatingUserResponse response = ratingMapper.ratingToRatingResponse(saved);
 		return response;
 	}
 
-	@PreAuthorize("hasAuthority('POST_LESSON_RATING')")
-	public RatingResponse saveRatingLesson(RatingRequest dto) {
-		Rating rating = ratingMapper.ratingLessonRequestToRating(dto);
-		Lesson lesson = lessonRepository.findById(dto.getContentId())
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+	public RatingSummaryResponse getRatingSummaryDocument(Long docId) {
+		RatingSummaryResponse response = ratingRepository.getRatingSummaryDocument(docId);
+		return response;
+	}
 
-		User user = getUserByToken.get();
-
-		if (ratingRepository.existsByUserAndLesson(user, lesson)) {
-			throw new AppException("đã đánh giá rồi", 1001, HttpStatus.BAD_REQUEST);
-		}
-		rating.setCreatedAt(LocalDateTime.now());
-		rating.setLesson(lesson);
-		rating.setUser(user);
-		Rating saved = ratingRepository.save(rating);
-		RatingResponse response = ratingMapper.ratingToRatingLessonResponse(saved);
+	public RatingSummaryResponse getRatingSummaryLesson(Long lessonId) {
+		RatingSummaryResponse response = ratingRepository.getRatingSummaryLesson(lessonId);
 		return response;
 	}
 }

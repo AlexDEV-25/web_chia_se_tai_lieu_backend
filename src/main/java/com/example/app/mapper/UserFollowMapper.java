@@ -3,7 +3,7 @@ package com.example.app.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import com.example.app.dto.response.UserFollowResponse;
+import com.example.app.dto.response.userfollow.UserFollowResponse;
 import com.example.app.model.UserFollow;
 
 @Mapper(componentModel = "spring")

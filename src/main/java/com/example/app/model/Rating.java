@@ -3,7 +3,6 @@ package com.example.app.model;
 import java.time.LocalDateTime;
 
 import com.example.app.share.Type;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -46,17 +45,14 @@ public class Rating {
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JoinColumn(name = "document_id", nullable = true)
-	@JsonBackReference
 	private Document document;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JoinColumn(name = "lesson_id", nullable = true)
-	@JsonBackReference
 	private Lesson lesson;
 
 	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
 	@JoinColumn(name = "user_id", nullable = false)
-	@JsonBackReference
 	private User user;
 
 }

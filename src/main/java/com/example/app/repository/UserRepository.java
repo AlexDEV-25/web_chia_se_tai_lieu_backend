@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import com.example.app.dto.response.DailyCountResponse;
+import com.example.app.dto.response.statistic.DailyCountResponse;
 import com.example.app.model.User;
 
 import feign.Param;
@@ -30,7 +30,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	boolean existsByAvatarUrl(String avatarUrl);
 
 	@Query("""
-				SELECT new com.example.app.dto.response.DailyCountResponse(
+				SELECT new com.example.app.dto.response.statistic.DailyCountResponse(
 			    CAST(FUNCTION('date', u.createdAt) AS java.time.LocalDate),
 			    COUNT(u)
 			)

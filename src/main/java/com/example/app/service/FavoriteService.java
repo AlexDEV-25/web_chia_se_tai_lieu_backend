@@ -10,7 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.FavoriteRequest;
-import com.example.app.dto.response.FavoriteResponse;
+import com.example.app.dto.response.favorite.FavoriteResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.FavoriteMapper;
 import com.example.app.model.Document;
@@ -22,6 +22,7 @@ import com.example.app.repository.FavoriteRepository;
 import com.example.app.repository.LessonRepository;
 import com.example.app.share.GetUserByToken;
 import com.example.app.share.Status;
+import com.example.app.share.Type;
 
 import lombok.AllArgsConstructor;
 
@@ -35,35 +36,24 @@ public class FavoriteService {
 	private final FavoriteMapper favoriteMapper;
 	private final GetUserByToken getUserByToken;
 
-	@PreAuthorize("hasAuthority('ADD_DOCUMENT_FAVORITE')")
-	public FavoriteResponse addDocumentFavorite(FavoriteRequest dto) {
-		Favorite favorite = new Favorite();
-		Document doc = documentRepository.findById(dto.getContentId())
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+	@PreAuthorize("hasAuthority('ADD_FAVORITE')")
+	public FavoriteResponse addFavorite(FavoriteRequest dto) {
+		Favorite favorite = favoriteMapper.requestToFavorite(dto);
+
+		if (favorite.getType() == Type.DOCUMENT) {
+			Document doc = documentRepository.findById(dto.getContentId())
+					.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			favorite.setDocument(doc);
+		} else {
+			Lesson lesson = lessonRepository.findById(dto.getContentId())
+					.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			favorite.setLesson(lesson);
+		}
 
 		User user = getUserByToken.get();
 
 		favorite.setCreatedAt(LocalDateTime.now());
-		favorite.setDocument(doc);
 		favorite.setUser(user);
-		favorite.setType(dto.getType());
-		Favorite saved = favoriteRepository.save(favorite);
-		FavoriteResponse response = favoriteMapper.favoriteDocumentToResponse(saved);
-		return response;
-	}
-
-	@PreAuthorize("hasAuthority('ADD_LESSON_FAVORITE')")
-	public FavoriteResponse addLessonFavorite(FavoriteRequest dto) {
-		Favorite favorite = new Favorite();
-		Lesson lesson = lessonRepository.findById(dto.getContentId())
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-
-		User user = getUserByToken.get();
-
-		favorite.setCreatedAt(LocalDateTime.now());
-		favorite.setLesson(lesson);
-		favorite.setUser(user);
-		favorite.setType(dto.getType());
 		Favorite saved = favoriteRepository.save(favorite);
 		FavoriteResponse response = favoriteMapper.favoriteDocumentToResponse(saved);
 		return response;

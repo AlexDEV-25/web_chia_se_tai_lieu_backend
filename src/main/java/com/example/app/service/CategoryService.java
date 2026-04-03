@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.app.dto.request.CategoryRequest;
 import com.example.app.dto.request.HideRequest;
-import com.example.app.dto.response.CategoryResponse;
+import com.example.app.dto.response.category.CategoryResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.CategoryMapper;
 import com.example.app.model.Category;
@@ -22,15 +22,6 @@ import lombok.AllArgsConstructor;
 public class CategoryService {
 	private final CategoryRepository categoryRepository;
 	private final CategoryMapper categoryMapper;
-
-	public List<CategoryResponse> getAllPublicCategories() {
-		List<Category> categories = categoryRepository.findByHideFalse();
-		List<CategoryResponse> responses = new ArrayList<CategoryResponse>();
-		for (Category c : categories) {
-			responses.add(categoryMapper.categoryToResponse(c));
-		}
-		return responses;
-	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<CategoryResponse> getAllCategories() {
@@ -83,4 +74,14 @@ public class CategoryService {
 			throw new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
+
+	public List<CategoryResponse> getAllPublicCategories() {
+		List<Category> categories = categoryRepository.findByHideFalse();
+		List<CategoryResponse> responses = new ArrayList<CategoryResponse>();
+		for (Category c : categories) {
+			responses.add(categoryMapper.categoryToResponse(c));
+		}
+		return responses;
+	}
+
 }

@@ -5,8 +5,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.example.app.dto.request.CommentRequest;
-import com.example.app.dto.response.CommentResponse;
-import com.example.app.dto.response.CommentTreeResponse;
+import com.example.app.dto.response.comment.CommentResponse;
+import com.example.app.dto.response.comment.CommentTreeResponse;
 import com.example.app.model.Comment;
 
 @Mapper(componentModel = "spring")

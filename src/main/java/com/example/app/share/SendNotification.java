@@ -150,15 +150,18 @@ public class SendNotification {
 		sendToFollower(userId, NotificationFollowId);
 	}
 
-	// tạm thời để link null
 	public void sendNotificationCommentReply(Long parentId, User user) {
 		if (parentId != 0) {
 			Comment cmt = commentRepository.findById(parentId)
 					.orElseThrow(() -> new AppException("comment không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			String url = "";
+			url = (cmt.getType() == Type.DOCUMENT) ? "http://localhost:5173/document/" + cmt.getDocument().getId()
+					: "http://localhost:5173/lesson/" + cmt.getLesson().getId();
+
 			User receiver = cmt.getUser();
 			if (receiver != null && user != null && !receiver.getId().equals(user.getId())) {
 				Long NotificationId = saveNotification(
-						"người dùng \" " + user.getUsername() + "\" đã trở lời bình luận của bạn", null,
+						"người dùng \" " + user.getUsername() + "\" đã trở lời bình luận của bạn", url,
 						NotificationType.INFO);
 
 				if (saveUserNotification(user.getId(), receiver.getId(), NotificationId) == false) {
@@ -169,9 +172,11 @@ public class SendNotification {
 		}
 	}
 
-	// tạm thời để link null
 	public void sendNotificationFollow(User follower, User following) {
-		Long NotificationId = saveNotification("người dùng \" " + follower.getUsername() + "\" đã theo dõi bạn", null,
+
+		String url = "http://localhost:5173/profile/" + follower.getId();
+
+		Long NotificationId = saveNotification("người dùng \" " + follower.getUsername() + "\" đã theo dõi bạn", url,
 				NotificationType.INFO);
 
 		if (saveUserNotification(follower.getId(), following.getId(), NotificationId) == false) {

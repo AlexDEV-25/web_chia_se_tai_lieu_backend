@@ -1,13 +1,9 @@
 package com.example.app.controller;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -26,16 +22,16 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.ContentRatingSummaryResponse;
-import com.example.app.dto.response.ContentReportSummaryResponse;
 import com.example.app.dto.response.FileResponse;
-import com.example.app.dto.response.LessonFavoriteResponse;
-import com.example.app.dto.response.LessonResponse;
-import com.example.app.dto.response.LessonStatsResponse;
+import com.example.app.dto.response.lesson.LessonDetailResponse;
+import com.example.app.dto.response.lesson.LessonFavoriteResponse;
+import com.example.app.dto.response.lesson.LessonStatsResponse;
+import com.example.app.dto.response.lesson.LessonUserResponse;
+import com.example.app.exception.AppException;
 import com.example.app.service.LessonService;
+import com.example.app.share.FileManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.Valid;
@@ -46,6 +42,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class LessonController {
 	private final LessonService lessonService;
+	private final FileManager fileManager;
 
 	@GetMapping("/stats")
 	public APIResponse<LessonStatsResponse> getStats() {
@@ -66,65 +63,21 @@ public class LessonController {
 		return apiResponse;
 	}
 
-	@GetMapping("/admin/{id}")
-	public APIResponse<LessonResponse> getById(@PathVariable Long id) {
-		LessonResponse response = lessonService.findById(id);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get by id success");
-		return apiResponse;
-	}
-
 	@GetMapping("/{id}")
-	public APIResponse<LessonResponse> getByIdPublicLesson(@PathVariable Long id) {
-		LessonResponse response = lessonService.findByIdPublicLesson(id);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+	public APIResponse<LessonDetailResponse> getByIdPublicLesson(@PathVariable Long id) {
+		LessonDetailResponse response = lessonService.findByIdPublicLesson(id);
+		APIResponse<LessonDetailResponse> apiResponse = new APIResponse<LessonDetailResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("get by id success");
-		return apiResponse;
-	}
-
-	@GetMapping("/admin")
-	public APIResponse<LessonResponse> getAll() {
-		List<LessonResponse> response = lessonService.getAllLessons();
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
-		return apiResponse;
-	}
-
-	@GetMapping("/admin/rating")
-	public APIResponse<ContentRatingSummaryResponse> getAllLessonRatingSummary() {
-		List<ContentRatingSummaryResponse> response = lessonService.getAllLessonRatingSummary();
-		APIResponse<ContentRatingSummaryResponse> apiResponse = new APIResponse<ContentRatingSummaryResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
-		return apiResponse;
-	}
-
-	@GetMapping("/admin/report")
-	public APIResponse<ContentReportSummaryResponse> getAllLessonReportSummary() {
-		List<ContentReportSummaryResponse> response = lessonService.getAllLessonReportSummary();
-		APIResponse<ContentReportSummaryResponse> apiResponse = new APIResponse<ContentReportSummaryResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@GetMapping
-	public APIResponse<LessonResponse> getAllPublicLesson() {
-		List<LessonResponse> response = lessonService.getAllPublicLessons();
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+	public APIResponse<LessonFavoriteResponse> getAllPublicLesson() {
+		List<LessonFavoriteResponse> response = lessonService.getAllPublicLessonsCheckFavorite();
+		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
-		return apiResponse;
-	}
-
-	@DeleteMapping("/admin/{id}")
-	public APIResponse<LessonResponse> delete(@PathVariable Long id) {
-		lessonService.delete(id);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
@@ -139,7 +92,7 @@ public class LessonController {
 
 	@GetMapping("/user/{userId}")
 	public APIResponse<LessonFavoriteResponse> getAllLessonsByUser(@PathVariable Long userId) {
-		List<LessonFavoriteResponse> response = lessonService.getAllLessonsByUserheckFavorite(userId);
+		List<LessonFavoriteResponse> response = lessonService.getAllLessonsByUserCheckFavorite(userId);
 		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
@@ -153,24 +106,6 @@ public class LessonController {
 		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
-		return apiResponse;
-	}
-
-	@PutMapping("/admin/hide/{id}")
-	public APIResponse<LessonResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
-		LessonResponse response = lessonService.hide(id, dto);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
-		return apiResponse;
-	}
-
-	@PutMapping("admin/{id}")
-	public APIResponse<LessonResponse> update(@PathVariable Long id, @RequestBody LessonRequest dto) {
-		LessonResponse response = lessonService.update(id, dto);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
 		return apiResponse;
 	}
 
@@ -192,23 +127,21 @@ public class LessonController {
 	}
 
 	@PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public APIResponse<LessonResponse> create(@RequestPart("video") MultipartFile video,
+	public APIResponse<LessonDetailResponse> create(@RequestPart("video") MultipartFile video,
 			@RequestPart(value = "document", required = false) MultipartFile document,
 			@RequestPart(value = "subfile", required = false) MultipartFile subfile,
 			@RequestPart("data") String dataJson) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			LessonRequest dto = mapper.readValue(dataJson, LessonRequest.class);
-			LessonResponse response = lessonService.uploadLesson(video, document, subfile, dto);
-			APIResponse<LessonResponse> apiResponse = new APIResponse<>();
+			LessonDetailResponse response = lessonService.uploadLesson(video, document, subfile, dto);
+			APIResponse<LessonDetailResponse> apiResponse = new APIResponse<>();
 			apiResponse.setMessage("Upload thành công");
 			apiResponse.setResult(response);
 			return apiResponse;
 
 		} catch (Exception e) {
-			APIResponse<LessonResponse> apiResponse = new APIResponse<>();
-			apiResponse.setMessage("Upload thất bại: " + e.getMessage());
-			return apiResponse;
+			throw new AppException("Upload Thất bại", 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
 
@@ -236,14 +169,7 @@ public class LessonController {
 	public ResponseEntity<Resource> getPublicLessonVideo(@PathVariable Long id, @RequestHeader HttpHeaders headers)
 			throws IOException {
 		File video = lessonService.loadPublicLessonFile(id);
-		return getVideo(video, headers);
-	}
-
-	@GetMapping("admin/{id}/video")
-	public ResponseEntity<Resource> getLessonVideo(@PathVariable Long id, @RequestHeader HttpHeaders headers)
-			throws IOException {
-		File video = lessonService.loadLessonFile(id);
-		return getVideo(video, headers);
+		return fileManager.getVideo(video, headers);
 	}
 
 	@GetMapping("/{id}/document")
@@ -265,27 +191,28 @@ public class LessonController {
 	}
 
 	@GetMapping("/my-lesson")
-	public APIResponse<LessonResponse> getMylesson() {
-		List<LessonResponse> response = lessonService.getMyLesson();
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+	public APIResponse<LessonUserResponse> getMylesson() {
+		List<LessonUserResponse> response = lessonService.getMyLesson();
+		APIResponse<LessonUserResponse> apiResponse = new APIResponse<LessonUserResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@PutMapping("my-lesson/{id}")
-	public APIResponse<LessonResponse> updateMyLesson(@PathVariable Long id, @RequestBody @Valid LessonRequest dto) {
-		LessonResponse response = lessonService.updateMyDocument(id, dto);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+	public APIResponse<LessonUserResponse> updateMyLesson(@PathVariable Long id,
+			@RequestBody @Valid LessonRequest dto) {
+		LessonUserResponse response = lessonService.updateMyDocument(id, dto);
+		APIResponse<LessonUserResponse> apiResponse = new APIResponse<LessonUserResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("update success");
 		return apiResponse;
 	}
 
 	@DeleteMapping("my-lesson/{id}")
-	public APIResponse<LessonResponse> deleteMyLesson(@PathVariable Long id) {
+	public APIResponse<Void> deleteMyLesson(@PathVariable Long id) {
 		lessonService.deleteMyLesson(id);
-		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
+		APIResponse<Void> apiResponse = new APIResponse<Void>();
 		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
@@ -299,33 +226,4 @@ public class LessonController {
 		return apiResponse;
 	}
 
-	private ResponseEntity<Resource> getVideo(File video, @RequestHeader HttpHeaders headers) throws IOException {
-
-		long fileLength = video.length();
-
-		String range = headers.getFirst(HttpHeaders.RANGE);
-
-		// 👉 Trường hợp browser chưa seek
-		if (range == null) {
-			return ResponseEntity.ok().contentType(MediaType.valueOf("video/mp4")).contentLength(fileLength)
-					.header(HttpHeaders.ACCEPT_RANGES, "bytes").body(new FileSystemResource(video));
-		}
-
-		// 👉 Browser yêu cầu seek
-		long start = Long.parseLong(range.replace("bytes=", "").replace("-", ""));
-		long end = fileLength - 1;
-		long contentLength = end - start + 1;
-
-		HttpHeaders responseHeaders = new HttpHeaders();
-		responseHeaders.set(HttpHeaders.CONTENT_TYPE, "video/mp4");
-		responseHeaders.set(HttpHeaders.ACCEPT_RANGES, "bytes");
-		responseHeaders.set(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileLength);
-		responseHeaders.set(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength));
-
-		InputStream inputStream = new FileInputStream(video);
-		inputStream.skip(start);
-
-		return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT).headers(responseHeaders)
-				.body(new InputStreamResource(inputStream));
-	}
 }

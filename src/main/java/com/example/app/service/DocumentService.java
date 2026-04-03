@@ -1,18 +1,12 @@
 package com.example.app.service;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-import javax.imageio.ImageIO;
-
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -24,12 +18,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
-import com.example.app.dto.response.ContentRatingSummaryResponse;
-import com.example.app.dto.response.ContentReportSummaryResponse;
-import com.example.app.dto.response.DocumentFavoriteResponse;
-import com.example.app.dto.response.DocumentResponse;
-import com.example.app.dto.response.DocumentStatsResponse;
 import com.example.app.dto.response.FileResponse;
+import com.example.app.dto.response.document.DocumentAdminResponse;
+import com.example.app.dto.response.document.DocumentDetailResponse;
+import com.example.app.dto.response.document.DocumentFavoriteResponse;
+import com.example.app.dto.response.document.DocumentStatsResponse;
+import com.example.app.dto.response.document.DocumentUserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.DocumentMapper;
 import com.example.app.model.Category;
@@ -66,62 +60,20 @@ public class DocumentService {
 		return documentRepository.getStats();
 	}
 
-	public DocumentResponse findByIdPublicDocument(Long id) {
-		Document find = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		return documentMapper.documentToResponse(find);
-	}
-
-	public void increaseView(Long id) {
-		documentRepository.findById(id).ifPresent(entity -> {
-			entity.setViewsCount(entity.getViewsCount() + 1);
-			documentRepository.save(entity);
-		});
-	}
-
-	public void increaseDownload(Long id) {
-		documentRepository.findById(id).ifPresent(entity -> {
-			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
-			documentRepository.save(entity);
-		});
-	}
-
-	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
-		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
-		return loadDocumentFile(doc);
-	}
-
-	public Long countDocumentOfUser(Long userId) {
-		return documentRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
-	}
-
 	@PreAuthorize("hasRole('ADMIN')")
-	public DocumentResponse findById(Long id) {
+	public DocumentDetailResponse findById(Long id) {
 		Document find = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		return documentMapper.documentToResponse(find);
+		return documentMapper.documentToDocumentDetailResponse(find);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public List<DocumentResponse> getAllDocuments() {
+	public List<DocumentAdminResponse> getAllDocuments() {
 		List<Document> documents = documentRepository.findAll();
-		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
+		List<DocumentAdminResponse> response = new ArrayList<DocumentAdminResponse>();
 		for (Document d : documents) {
-			response.add(documentMapper.documentToResponse(d));
+			response.add(documentMapper.documentToDocumentAdminResponse(d));
 		}
-		return response;
-	}
-
-	@PreAuthorize("hasRole('ADMIN')")
-	public List<ContentRatingSummaryResponse> getAllDocumentRatingSummary() {
-		List<ContentRatingSummaryResponse> response = documentRepository.getAllDocumentRatingSummary();
-		return response;
-	}
-
-	@PreAuthorize("hasRole('ADMIN')")
-	public List<ContentReportSummaryResponse> getAllDocumentReportSummary() {
-		List<ContentReportSummaryResponse> response = documentRepository.getAllDocumentReportSummary();
 		return response;
 	}
 
@@ -142,7 +94,7 @@ public class DocumentService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public DocumentResponse hide(Long id, HideRequest dto) {
+	public DocumentDetailResponse hide(Long id, HideRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
 		boolean tempHide = entity.isHide();
@@ -152,12 +104,12 @@ public class DocumentService {
 		User admin = getUserByToken.get();
 		sendNotification.sendNotificationHide(dto.isHide(), tempHide, entity.getTitle(), entity.getUser().getId(),
 				admin, Type.DOCUMENT);
-		return documentMapper.documentToResponse(saved);
+		return documentMapper.documentToDocumentDetailResponse(saved);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@Transactional
-	public DocumentResponse update(Long id, DocumentRequest dto) {
+	public DocumentDetailResponse update(Long id, DocumentRequest dto) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
@@ -173,7 +125,7 @@ public class DocumentService {
 		sendNotification.sendNotificationPublished(dto.getStatus(), tempStatus, entity.getId(), entityTitle,
 				entity.getUser().getUsername(), entityUserId, admin, Type.DOCUMENT);
 		sendNotification.sendNotificationHide(dto.isHide(), tempHide, entityTitle, entityUserId, admin, Type.DOCUMENT);
-		return documentMapper.documentToResponse(saved);
+		return documentMapper.documentToDocumentDetailResponse(saved);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
@@ -183,16 +135,63 @@ public class DocumentService {
 		return loadDocumentFile(doc);
 	}
 
+	@PreAuthorize("hasAuthority('GET_MY_DOCUMENT')")
+	public List<DocumentUserResponse> getMyDocument() {
+		User user = getUserByToken.get();
+		List<Document> documents = documentRepository.findByUser_Id(user.getId());
+		List<DocumentUserResponse> response = new ArrayList<DocumentUserResponse>();
+		for (Document d : documents) {
+			response.add(documentMapper.documentToDocumentUserResponse(d));
+		}
+		return response;
+	}
+
+	@PreAuthorize("hasAuthority('UPDATE_MY_DOCUMENT')")
+	public DocumentUserResponse updateMyDocument(Long id, DocumentRequest dto) {
+		User user = getUserByToken.get();
+		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		boolean tempHide = entity.isHide();
+		documentMapper.updateDocument(entity, dto);
+		entity.setUpdatedAt(LocalDateTime.now());
+		Document saved = documentRepository.save(entity);
+		sendNotification.sendNotificationMyHide(dto.isHide(), tempHide, entity.getTitle(), user.getId(),
+				user.getUsername(), Type.DOCUMENT);
+		return documentMapper.documentToDocumentUserResponse(saved);
+	}
+
+	@PreAuthorize("hasAuthority('DELETE_MY_DOCUMENT')")
+	public void deleteMyDocument(Long id) {
+		try {
+			User user = getUserByToken.get();
+			Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
+					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+			fileStorage.deleteFile(documentStorage + File.separator + entity.getFileUrl());
+			fileStorage.deleteFile(thumbnailStorage + File.separator + entity.getThumbnailUrl());
+			documentRepository.deleteById(id);
+			sendNotification.sendNotificationMyDelete(entity.getTitle(), user.getId(), user.getUsername(),
+					Type.DOCUMENT);
+		} catch (EmptyResultDataAccessException e) {
+			throw new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	@PreAuthorize("hasAuthority('COUNT_MY_DOCUMENT')")
+	public Long countMyDocument() {
+		User user = getUserByToken.get();
+		return documentRepository.countByUser_Id(user.getId());
+	}
+
 	@PreAuthorize("hasAuthority('UPLOAD_FILE')")
 	@Transactional
-	public DocumentResponse uploadFile(MultipartFile fileToSave, DocumentRequest dto) throws IOException {
+	public DocumentDetailResponse uploadFile(MultipartFile fileToSave, DocumentRequest dto) throws IOException {
 		Document document = documentMapper.requestToDocument(dto);
 		document.setCreatedAt(LocalDateTime.now());
 
-		String fileUrl = handlefile(fileToSave);
+		String fileUrl = fileStorage.handleFile(fileToSave);
 		document.setFileUrl(fileUrl);
 
-		String thumbnailUrl = handleThumbnail(documentStorage + "\\" + fileUrl);
+		String thumbnailUrl = fileStorage.handleDocumentThumbnail(documentStorage + "\\" + fileUrl);
 		document.setThumbnailUrl(thumbnailUrl);
 
 		Category category = dto.getCategoryId() != null ? categoryRepository.findById(dto.getCategoryId())
@@ -203,7 +202,7 @@ public class DocumentService {
 		document.setUser(user);
 
 		Document saved = documentRepository.save(document);
-		DocumentResponse response = documentMapper.documentToResponse(saved);
+		DocumentDetailResponse response = documentMapper.documentToDocumentDetailResponse(saved);
 		return response;
 	}
 
@@ -265,7 +264,7 @@ public class DocumentService {
 
 	}
 
-	public List<DocumentFavoriteResponse> getAllDocumentsByUserheckFavorite(Long authorId) {
+	public List<DocumentFavoriteResponse> getAllDocumentsByUserCheckFavorite(Long authorId) {
 		User user = getUserByToken.get();
 		if (user == null) {
 			return documentRepository.findAllDocumentsByUserWithoutFavorite(authorId);
@@ -273,53 +272,34 @@ public class DocumentService {
 		return documentRepository.findAllDocumentsByUserWithFavoriteStatus(authorId, user.getId());
 	}
 
-	//
-
-	@PreAuthorize("hasAuthority('GET_MY_DOCUMENT')")
-	public List<DocumentResponse> getMyDocument() {
-		User user = getUserByToken.get();
-		List<Document> documents = documentRepository.findByUser_Id(user.getId());
-		List<DocumentResponse> response = new ArrayList<DocumentResponse>();
-		for (Document d : documents) {
-			response.add(documentMapper.documentToResponse(d));
-		}
-		return response;
-	}
-
-	@PreAuthorize("hasAuthority('UPDATE_MY_DOCUMENT')")
-	public DocumentResponse updateMyDocument(Long id, DocumentRequest dto) {
-		User user = getUserByToken.get();
-		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
+	public DocumentDetailResponse findByIdPublicDocument(Long id) {
+		Document find = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		boolean tempHide = entity.isHide();
-		documentMapper.updateDocument(entity, dto);
-		entity.setUpdatedAt(LocalDateTime.now());
-		Document saved = documentRepository.save(entity);
-		sendNotification.sendNotificationMyHide(dto.isHide(), tempHide, entity.getTitle(), user.getId(),
-				user.getUsername(), Type.DOCUMENT);
-		return documentMapper.documentToResponse(saved);
+		return documentMapper.documentToDocumentDetailResponse(find);
 	}
 
-	@PreAuthorize("hasAuthority('DELETE_MY_DOCUMENT')")
-	public void deleteMyDocument(Long id) {
-		try {
-			User user = getUserByToken.get();
-			Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
-					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-			fileStorage.deleteFile(documentStorage + File.separator + entity.getFileUrl());
-			fileStorage.deleteFile(thumbnailStorage + File.separator + entity.getThumbnailUrl());
-			documentRepository.deleteById(id);
-			sendNotification.sendNotificationMyDelete(entity.getTitle(), user.getId(), user.getUsername(),
-					Type.DOCUMENT);
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST);
-		}
+	public void increaseView(Long id) {
+		documentRepository.findById(id).ifPresent(entity -> {
+			entity.setViewsCount(entity.getViewsCount() + 1);
+			documentRepository.save(entity);
+		});
 	}
 
-	@PreAuthorize("hasAuthority('COUNT_MY_DOCUMENT')")
-	public Long countMyDocument() {
-		User user = getUserByToken.get();
-		return documentRepository.countByUser_Id(user.getId());
+	public void increaseDownload(Long id) {
+		documentRepository.findById(id).ifPresent(entity -> {
+			entity.setDownloadsCount(entity.getDownloadsCount() + 1);
+			documentRepository.save(entity);
+		});
+	}
+
+	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
+		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
+		return loadDocumentFile(doc);
+	}
+
+	public Long countDocumentOfUser(Long userId) {
+		return documentRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
 	}
 
 	private FileResponse loadDocumentFile(Document doc) throws IOException {
@@ -335,47 +315,6 @@ public class DocumentService {
 		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
 		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, doc.getTitle());
-	}
-
-	private String handlefile(MultipartFile fileToSave) throws IOException {
-		String fileName = fileToSave.getOriginalFilename();
-		if (fileName.endsWith(".pdf") || fileName.endsWith(".doc") || fileName.endsWith(".docx")
-				|| fileName.endsWith(".ppt") || fileName.endsWith(".pptx")) {
-
-			String fileUrl = fileStorage.saveFile(fileToSave, documentStorage);
-			if (!fileUrl.endsWith(".pdf")) {
-				int index = fileUrl.lastIndexOf(".");
-				String result = (index != -1) ? fileUrl.substring(0, index) + ".pdf" : fileUrl;
-
-				String input = documentStorage + File.separator + fileUrl;
-				String output = documentStorage + File.separator + result;
-
-				fileStorage.convertToPDF(input, output);
-
-				fileUrl = result;
-			}
-			return fileUrl;
-		} else {
-			throw new AppException("file không hợp lệ", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
-
-	private String handleThumbnail(String url) {
-		File docFile = new File(url);
-		// Load pdf
-		try (PDDocument doc = PDDocument.load(docFile)) {
-			// Render trang đầu
-			PDFRenderer renderer = new PDFRenderer(doc);
-			BufferedImage image = renderer.renderImageWithDPI(0, 150); // 0 = trang đầu
-
-			// Lưu ra ảnh PNG
-			String thumbnailUrl = UUID.randomUUID().toString() + ".png";
-			String outputPath = thumbnailStorage + File.separator + thumbnailUrl;
-			ImageIO.write(image, "png", new File(outputPath));
-			return thumbnailUrl;
-		} catch (Exception e) {
-			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
-		}
 	}
 
 }

@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.request.ActiveAccountRequest;
 import com.example.app.dto.request.AuthenticationRequest;
-import com.example.app.dto.request.ChangePasswordRequest;
+import com.example.app.dto.request.ForgotPasswordRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.AuthenticationResponse;
-import com.example.app.dto.response.IntrospectResponse;
-import com.example.app.dto.response.UserResponse;
+import com.example.app.dto.response.authentication.AuthenticationResponse;
+import com.example.app.dto.response.authentication.IntrospectResponse;
+import com.example.app.dto.response.user.UserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.service.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
@@ -84,7 +84,7 @@ public class AuthenticationController {
 	}
 
 	@PostMapping("/change-password")
-	public APIResponse<UserResponse> ChangePassword(@RequestBody ChangePasswordRequest dto) {
+	public APIResponse<UserResponse> ChangePassword(@RequestBody ForgotPasswordRequest dto) {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		authenticationService.changePassword(dto);
 		apiResponse.setMessage("change password success");

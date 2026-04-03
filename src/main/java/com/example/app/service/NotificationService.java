@@ -7,7 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.example.app.dto.response.NotificationResponse;
+import com.example.app.dto.request.NotificationRequest;
+import com.example.app.dto.response.notification.NotificationResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.NotificationMapper;
 import com.example.app.model.Notification;
@@ -21,13 +22,13 @@ public class NotificationService {
 	private final NotificationRepository notificationRepository;
 	private final NotificationMapper notificationMapper;
 
-//	@PreAuthorize("hasAuthority('CREATE_NOTIFICATION')")
-//	public NotificationResponse save(NotificationRequest request) {
-//		Notification notification = notificationMapper.requestToNotification(request);
-//		Notification saved = notificationRepository.save(notification);
-//		NotificationResponse response = notificationMapper.notificationToResponse(saved);
-//		return response;
-//	}
+	@PreAuthorize("hasAuthority('ADMIN')")
+	public NotificationResponse save(NotificationRequest request) {
+		Notification notification = notificationMapper.requestToNotification(request);
+		Notification saved = notificationRepository.save(notification);
+		NotificationResponse response = notificationMapper.notificationToResponse(saved);
+		return response;
+	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<NotificationResponse> getAllNotifications() {

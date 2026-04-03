@@ -9,8 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import com.example.app.dto.response.FollowCountResponse;
-import com.example.app.dto.response.UserFollowResponse;
+import com.example.app.dto.response.userfollow.FollowCountResponse;
+import com.example.app.dto.response.userfollow.UserFollowResponse;
 import com.example.app.exception.AppException;
 import com.example.app.mapper.UserFollowMapper;
 import com.example.app.model.User;
@@ -33,6 +33,7 @@ public class UserFollowService {
 	private final SendNotification sendNotification;
 
 	@PreAuthorize("hasAuthority('FOLLOW')")
+	@Transactional
 	public UserFollowResponse save(Long request) {
 		UserFollow userFollow = new UserFollow();
 		User follower = getUserByToken.get();
@@ -100,13 +101,6 @@ public class UserFollowService {
 		return response;
 	}
 
-	public FollowCountResponse getFollowCount(Long userId) {
-		Long follower = userFollowRepository.countByFollowing_Id(userId);
-		Long following = userFollowRepository.countByFollower_Id(userId);
-		FollowCountResponse response = new FollowCountResponse(follower, following);
-		return response;
-	}
-
 	@PreAuthorize("hasAuthority('CHECK_FOLLOWED')")
 	public boolean checkFollowed(Long userId) {
 		User follower = getUserByToken.get();
@@ -122,4 +116,10 @@ public class UserFollowService {
 		return follower.getId() == userId;
 	}
 
+	public FollowCountResponse getFollowCount(Long userId) {
+		Long follower = userFollowRepository.countByFollowing_Id(userId);
+		Long following = userFollowRepository.countByFollower_Id(userId);
+		FollowCountResponse response = new FollowCountResponse(follower, following);
+		return response;
+	}
 }

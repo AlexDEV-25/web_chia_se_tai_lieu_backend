@@ -5,7 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.example.app.dto.request.RoleRequest;
-import com.example.app.dto.response.RoleResponse;
+import com.example.app.dto.response.role.RoleResponse;
 import com.example.app.model.Role;
 
 @Mapper(componentModel = "spring")

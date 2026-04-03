@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import com.example.app.dto.request.UserNotificationRequest;
-import com.example.app.dto.response.UserNotificationResponse;
+import com.example.app.dto.response.usernotificaion.UserNotificationResponse;
 import com.example.app.model.UserNotification;
 
 @Mapper(componentModel = "spring")

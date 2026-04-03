@@ -5,7 +5,9 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.example.app.dto.request.LessonRequest;
-import com.example.app.dto.response.LessonResponse;
+import com.example.app.dto.response.lesson.LessonAdminResponse;
+import com.example.app.dto.response.lesson.LessonDetailResponse;
+import com.example.app.dto.response.lesson.LessonUserResponse;
 import com.example.app.model.Lesson;
 
 @Mapper(componentModel = "spring")
@@ -20,17 +22,13 @@ public interface LessonMapper {
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "category", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "reports", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
 	Lesson requestToLesson(LessonRequest request);
 
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "category.id", target = "categoryId")
 	@Mapping(source = "category.name", target = "categoryName")
 	@Mapping(source = "user.username", target = "userName")
-	LessonResponse lessonToResponse(Lesson entity);
+	LessonDetailResponse lessonToLessonDetailResponse(Lesson entity);
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "thumbnailUrl", ignore = true)
@@ -42,9 +40,11 @@ public interface LessonMapper {
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "category", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "reports", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
 	void updateLesson(@MappingTarget Lesson entity, LessonRequest request);
+
+	@Mapping(source = "category.id", target = "categoryId")
+	LessonUserResponse lessonToLessonUserResponse(Lesson entity);
+
+	@Mapping(source = "category.name", target = "categoryName")
+	LessonAdminResponse lessonToLessonAdminResponse(Lesson entity);
 }

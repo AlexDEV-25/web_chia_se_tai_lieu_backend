@@ -9,12 +9,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.example.app.dto.response.CategoryCountResponse;
-import com.example.app.dto.response.ContentRatingSummaryResponse;
-import com.example.app.dto.response.ContentReportSummaryResponse;
-import com.example.app.dto.response.DailyCountResponse;
-import com.example.app.dto.response.LessonFavoriteResponse;
-import com.example.app.dto.response.LessonStatsResponse;
+import com.example.app.dto.response.lesson.LessonFavoriteResponse;
+import com.example.app.dto.response.lesson.LessonStatsResponse;
+import com.example.app.dto.response.statistic.CategoryCountResponse;
+import com.example.app.dto.response.statistic.DailyCountResponse;
 import com.example.app.model.Category;
 import com.example.app.model.Lesson;
 import com.example.app.share.Status;
@@ -44,7 +42,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	long countByUser_Id(Long userId);
 
 	@Query("""
-				SELECT new com.example.app.dto.response.DailyCountResponse(
+				SELECT new com.example.app.dto.response.statistic.DailyCountResponse(
 			    CAST(FUNCTION('date', l.createdAt) AS java.time.LocalDate),
 			    COUNT(l)
 			)
@@ -58,13 +56,13 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	List<DailyCountResponse> countLessonByDay(@Param("fromDate") LocalDateTime fromDate);
 
 	@Query("""
-			  	SELECT new com.example.app.dto.response.CategoryCountResponse(
+			  	SELECT new com.example.app.dto.response.statistic.CategoryCountResponse(
 			    c.id,
 			    c.name,
 			    COUNT(l)
 			)
 				FROM Lesson l
-				JOIN l.category c
+				JOIN Category c
 				WHERE l.status = 'PUBLISHED'
 				AND (l.hide = false OR l.hide IS NULL)
 				GROUP BY c.id, c.name
@@ -72,7 +70,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	List<CategoryCountResponse> countLessonByCategory();
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonStatsResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonStatsResponse(
 			        COUNT(l),
 			        COALESCE(SUM(l.viewsCount), 0)
 			    )
@@ -83,7 +81,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	LessonStatsResponse getStats();
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -93,8 +91,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN l.favorites f
-			        ON f.user.id = :currentUserId
+			    LEFT JOIN Favorite f
+			        ON  f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.LESSON
 			    WHERE l.hide = false
 			      AND l.status = com.example.app.share.Status.PUBLISHED
@@ -109,7 +107,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			@Param("categoryId") Long categoryId, @Param("currentUserId") Long currentUserId);
 
 	@Query("""
-			  SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			  SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -132,7 +130,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			@Param("categoryId") Long categoryId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -142,8 +140,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN l.favorites f
-			        ON f.lesson.id = l.id
+			    LEFT JOIN Favorite f
+			        ON  f.lesson.id = l.id
 			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.LESSON
 			    WHERE l.user.id = :authorId
@@ -156,7 +154,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			@Param("currentUserId") Long currentUserId, @Param("currentLessonId") Long currentLessonId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -176,7 +174,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			@Param("currentLessonId") Long currentLessonId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -186,7 +184,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN l.favorites f
+			    LEFT JOIN Favorite f
 			        ON  f.lesson.id = l.id
 			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.LESSON
@@ -199,7 +197,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			@Param("currentUserId") Long currentUserId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -217,7 +215,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	List<LessonFavoriteResponse> findAllLessonsByUserWithoutFavorite(@Param("authorId") Long authorId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -227,8 +225,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN l.favorites f
-			        ON f.lesson.id = l.id
+			    LEFT JOIN Favorite f
+			        ON  f.lesson.id = l.id
 			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.LESSON
 			    WHERE l.category.id = :categoryId
@@ -241,7 +239,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			@Param("currentUserId") Long currentUserId, @Param("currentLessonId") Long currentLessonId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -261,7 +259,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			@Param("currentLessonId") Long currentLessonId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -271,8 +269,8 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN l.favorites f
-			        ON f.lesson.id = l.id
+			    LEFT JOIN Favorite f
+			        ON  f.lesson.id = l.id
 			        AND f.user.id = :currentUserId
 			        AND f.type = com.example.app.share.Type.LESSON
 			    WHERE l.status = com.example.app.share.Status.PUBLISHED
@@ -282,7 +280,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	List<LessonFavoriteResponse> findAllWithFavoriteStatus(@Param("currentUserId") Long currentUserId);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -297,42 +295,6 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			    ORDER BY l.createdAt DESC
 			""")
 	List<LessonFavoriteResponse> findAllWithoutFavorite();
-
-	@Query("""
-			    SELECT new com.example.app.dto.response.ContentRatingSummaryResponse(
-			     	l.id,
-			        l.title,
-			        COALESCE(AVG(r.rating), 0),
-			        COUNT(r),
-			        com.example.app.share.Type.LESSON
-			    )
-			    FROM Lesson l
-			    LEFT JOIN l.ratings r
-			        ON r.type = com.example.app.share.Type.LESSON
-			    WHERE l.status = com.example.app.share.Status.PUBLISHED
-			    GROUP BY l.id, l.title
-			    ORDER BY
-			     COALESCE(AVG(r.rating), 0) DESC,
-			     COUNT(r) DESC
-			""")
-	List<ContentRatingSummaryResponse> getAllLessonRatingSummary();
-
-	@Query("""
-			    SELECT new com.example.app.dto.response.ContentReportSummaryResponse(
-			     	l.id,
-			        l.title,
-			        COUNT(r),
-			        com.example.app.share.Type.LESSON
-			    )
-			    FROM Lesson l
-			    LEFT JOIN l.reports r
-			        ON r.type = com.example.app.share.Type.LESSON
-			    WHERE l.status = com.example.app.share.Status.PUBLISHED
-			    GROUP BY l.id, l.title
-			    ORDER BY
-			     COUNT(r) DESC
-			""")
-	List<ContentReportSummaryResponse> getAllLessonReportSummary();
 
 	List<Lesson> findByCategoryAndStatusAndHideFalse(Category category, Status status);
 

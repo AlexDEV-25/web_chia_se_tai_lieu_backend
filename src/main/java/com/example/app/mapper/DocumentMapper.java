@@ -5,7 +5,9 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.example.app.dto.request.DocumentRequest;
-import com.example.app.dto.response.DocumentResponse;
+import com.example.app.dto.response.document.DocumentAdminResponse;
+import com.example.app.dto.response.document.DocumentDetailResponse;
+import com.example.app.dto.response.document.DocumentUserResponse;
 import com.example.app.model.Document;
 
 @Mapper(componentModel = "spring")
@@ -19,17 +21,13 @@ public interface DocumentMapper {
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "category", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "reports", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
 	Document requestToDocument(DocumentRequest request);
 
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "category.id", target = "categoryId")
 	@Mapping(source = "category.name", target = "categoryName")
 	@Mapping(source = "user.username", target = "userName")
-	DocumentResponse documentToResponse(Document entity);
+	DocumentDetailResponse documentToDocumentDetailResponse(Document entity);
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "thumbnailUrl", ignore = true)
@@ -40,9 +38,11 @@ public interface DocumentMapper {
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "category", ignore = true)
-	@Mapping(target = "comments", ignore = true)
-	@Mapping(target = "favorites", ignore = true)
-	@Mapping(target = "reports", ignore = true)
-	@Mapping(target = "ratings", ignore = true)
 	void updateDocument(@MappingTarget Document document, DocumentRequest request);
+
+	@Mapping(source = "category.id", target = "categoryId")
+	DocumentUserResponse documentToDocumentUserResponse(Document entity);
+
+	@Mapping(source = "category.name", target = "categoryName")
+	DocumentAdminResponse documentToDocumentAdminResponse(Document entity);
 }
