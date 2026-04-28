@@ -1,17 +1,13 @@
 package com.example.app.service;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,7 +26,11 @@ import com.example.app.model.Category;
 import com.example.app.model.Document;
 import com.example.app.model.User;
 import com.example.app.repository.CategoryRepository;
+import com.example.app.repository.CommentRepository;
 import com.example.app.repository.DocumentRepository;
+import com.example.app.repository.FavoriteRepository;
+import com.example.app.repository.RatingRepository;
+import com.example.app.repository.ReportRepository;
 import com.example.app.share.FileManager;
 import com.example.app.share.GetUserByToken;
 import com.example.app.share.SendNotification;
@@ -45,16 +45,14 @@ import lombok.RequiredArgsConstructor;
 public class DocumentService {
 	private final DocumentRepository documentRepository;
 	private final CategoryRepository categoryRepository;
+	private final FavoriteRepository favoriteRepository;
+	private final RatingRepository ratingRepository;
+	private final ReportRepository reportRepository;
+	private final CommentRepository commentRepository;
 	private final DocumentMapper documentMapper;
 	private final GetUserByToken getUserByToken;
 	private final FileManager fileStorage;
 	private final SendNotification sendNotification;
-
-	@Value("${app.storage-directory-document}")
-	private String documentStorage;
-
-	@Value("${app.storage-directory-image}")
-	private String thumbnailStorage;
 
 	public DocumentStatsResponse getStats() {
 		return documentRepository.getStats();
@@ -77,14 +75,21 @@ public class DocumentService {
 		return response;
 	}
 
+	@Transactional
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
 		try {
 			Document entity = documentRepository.findById(id)
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-			fileStorage.deleteFile(documentStorage + File.separator + entity.getFileUrl());
-			fileStorage.deleteFile(thumbnailStorage + File.separator + entity.getThumbnailUrl());
-			documentRepository.deleteById(id);
+			try {
+				fileStorage.deleteFile(entity.getFileUrl(), "image");
+				fileStorage.deleteFile(entity.getThumbnailUrl(), "image");
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			deleteByKey(id);
 
 			User admin = getUserByToken.get();
 			sendNotification.sendNotificationDelete(entity.getTitle(), entity.getUser().getId(), admin, Type.DOCUMENT);
@@ -128,13 +133,6 @@ public class DocumentService {
 		return documentMapper.documentToDocumentDetailResponse(saved);
 	}
 
-	@PreAuthorize("hasRole('ADMIN')")
-	public FileResponse loadAnyDocumentFile(Long id) throws IOException {
-		Document doc = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
-		return loadDocumentFile(doc);
-	}
-
 	@PreAuthorize("hasAuthority('GET_MY_DOCUMENT')")
 	public List<DocumentUserResponse> getMyDocument() {
 		User user = getUserByToken.get();
@@ -166,9 +164,16 @@ public class DocumentService {
 			User user = getUserByToken.get();
 			Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-			fileStorage.deleteFile(documentStorage + File.separator + entity.getFileUrl());
-			fileStorage.deleteFile(thumbnailStorage + File.separator + entity.getThumbnailUrl());
-			documentRepository.deleteById(id);
+			try {
+				fileStorage.deleteFile(entity.getFileUrl(), "image");
+				fileStorage.deleteFile(entity.getThumbnailUrl(), "image");
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			deleteByKey(id);
+
 			sendNotification.sendNotificationMyDelete(entity.getTitle(), user.getId(), user.getUsername(),
 					Type.DOCUMENT);
 		} catch (EmptyResultDataAccessException e) {
@@ -188,11 +193,20 @@ public class DocumentService {
 		Document document = documentMapper.requestToDocument(dto);
 		document.setCreatedAt(LocalDateTime.now());
 
-		String fileUrl = fileStorage.handleFile(fileToSave);
-		document.setFileUrl(fileUrl);
+		try {
+			Map<?, ?> handleDoc = fileStorage.handleDocument(fileToSave);
 
-		String thumbnailUrl = fileStorage.handleDocumentThumbnail(documentStorage + "\\" + fileUrl);
-		document.setThumbnailUrl(thumbnailUrl);
+			String url = (String) handleDoc.get("secure_url");
+			String publicId = (String) handleDoc.get("public_id");
+
+			document.setFileUrl(url);
+
+			String thumbnailUrl = fileStorage.getThumbnail(publicId, "pdf");
+			document.setThumbnailUrl(thumbnailUrl);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		Category category = dto.getCategoryId() != null ? categoryRepository.findById(dto.getCategoryId())
 				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST)) : null;
@@ -207,23 +221,14 @@ public class DocumentService {
 	}
 
 	@PreAuthorize("hasAuthority('DOWNLOAD_FILE')")
-	public FileResponse downloadById(Long id) throws IOException {
+	public FileResponse downloadById(Long id) throws Exception {
 
 		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("Document không tồn tại", 1001, HttpStatus.NOT_FOUND));
 
-		String storedFileName = doc.getFileUrl();
-		File file = new File(documentStorage + File.separator + storedFileName);
+		FileResponse file = fileStorage.downloadFile(doc.getFileUrl());
+		return file;
 
-		if (!file.exists()) {
-			throw new AppException("File không tồn tại trong hệ thống", 1001, HttpStatus.NOT_FOUND);
-		}
-
-		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-		String downloadName = doc.getTitle() + ".pdf";
-
-		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, downloadName);
 	}
 
 	public List<DocumentFavoriteResponse> search(String keyword, Long categoryId) {
@@ -292,29 +297,15 @@ public class DocumentService {
 		});
 	}
 
-	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
-		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
-		return loadDocumentFile(doc);
-	}
-
 	public Long countDocumentOfUser(Long userId) {
 		return documentRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
 	}
 
-	private FileResponse loadDocumentFile(Document doc) throws IOException {
-
-		String filePath = documentStorage + "\\" + doc.getFileUrl();
-
-		File file = new File(filePath);
-
-		if (!file.exists()) {
-			throw new RuntimeException("File không tồn tại trong hệ thống");
-		}
-
-		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, doc.getTitle());
+	private void deleteByKey(Long id) {
+		favoriteRepository.deleteByDocument_Id(id);
+		ratingRepository.deleteByDocument_Id(id);
+		reportRepository.deleteByDocument_Id(id);
+		commentRepository.deleteByDocument_Id(id);
+		documentRepository.deleteById(id);
 	}
-
 }

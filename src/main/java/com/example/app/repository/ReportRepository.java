@@ -23,6 +23,10 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
 	boolean existsByUserAndLesson(User user, Lesson lesson);
 
+	void deleteByDocument_Id(Long documentId);
+
+	void deleteByLesson_Id(Long lessonId);
+
 	@Query("""
 			    SELECT new com.example.app.dto.response.report.ReportAdminResponse(
 			        d.id,

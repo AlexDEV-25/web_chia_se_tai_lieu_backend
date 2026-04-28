@@ -1,6 +1,5 @@
 package com.example.app.controller;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.springframework.core.io.Resource;
@@ -158,21 +157,12 @@ public class DocumentController {
 	}
 
 	@GetMapping("/{id}/download")
-	public ResponseEntity<Resource> download(@PathVariable Long id) throws IOException {
+	public ResponseEntity<Resource> download(@PathVariable Long id) throws Exception {
 
 		FileResponse file = documentService.downloadById(id);
 
 		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
-				.body(file.getResource());
-	}
-
-	@GetMapping("/{id}/file")
-	public ResponseEntity<Resource> loadPublicDocument(@PathVariable Long id) throws IOException {
-
-		FileResponse file = documentService.loadPublicDocumentFile(id);
-
-		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
 				.body(file.getResource());
 	}
 

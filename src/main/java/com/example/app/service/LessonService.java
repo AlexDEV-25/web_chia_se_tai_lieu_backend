@@ -1,17 +1,13 @@
 package com.example.app.service;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,7 +26,11 @@ import com.example.app.model.Category;
 import com.example.app.model.Lesson;
 import com.example.app.model.User;
 import com.example.app.repository.CategoryRepository;
+import com.example.app.repository.CommentRepository;
+import com.example.app.repository.FavoriteRepository;
 import com.example.app.repository.LessonRepository;
+import com.example.app.repository.RatingRepository;
+import com.example.app.repository.ReportRepository;
 import com.example.app.share.FileManager;
 import com.example.app.share.GetUserByToken;
 import com.example.app.share.SendNotification;
@@ -45,22 +45,14 @@ import lombok.RequiredArgsConstructor;
 public class LessonService {
 	private final LessonRepository lessonRepository;
 	private final CategoryRepository categoryRepository;
+	private final FavoriteRepository favoriteRepository;
+	private final RatingRepository ratingRepository;
+	private final ReportRepository reportRepository;
+	private final CommentRepository commentRepository;
 	private final LessonMapper lessonMapper;
 	private final GetUserByToken getUserByToken;
 	private final FileManager fileStorage;
 	private final SendNotification sendNotification;
-
-	@Value("${app.storage-directory-document}")
-	private String documentStorage;
-
-	@Value("${app.storage-directory-image}")
-	private String thumbnailStorage;
-
-	@Value("${app.storage-directory-video}")
-	private String videoStorage;
-
-	@Value("${app.storage-directory-subfile}")
-	private String subfileStorage;
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public LessonDetailResponse findById(Long id) {
@@ -79,12 +71,25 @@ public class LessonService {
 		return response;
 	}
 
+	@Transactional
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
 		try {
 			Lesson entity = lessonRepository.findById(id)
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));
-			lessonRepository.deleteById(id);
+
+			try {
+				fileStorage.deleteFile(entity.getLessonUrl(), "video");
+				fileStorage.deleteFile(entity.getDocumentUrl(), "image");
+				fileStorage.deleteFile(entity.getThumbnailUrl(), "image");
+				fileStorage.deleteFile(entity.getSubFileUrl(), "raw");
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			deleteByKey(id);
+
 			User admin = getUserByToken.get();
 			sendNotification.sendNotificationDelete(entity.getTitle(), entity.getUser().getId(), admin, Type.LESSON);
 		} catch (EmptyResultDataAccessException e) {
@@ -124,19 +129,6 @@ public class LessonService {
 		return lessonMapper.lessonToLessonDetailResponse(saved);
 	}
 
-	@PreAuthorize("hasRole('ADMIN')")
-	public File loadLessonFile(Long id) throws IOException {
-		Lesson lesson = lessonRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy bài giàng"));
-		return loadVideoFile(lesson);
-	}
-
-	@PreAuthorize("hasRole('ADMIN')")
-	public FileResponse loadAnyDocumentFile(Long id) throws IOException {
-		Lesson doc = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
-		return loadDocumentFile(doc);
-	}
-
 	@PreAuthorize("hasAuthority('GET_MY_LESSON')")
 	public List<LessonUserResponse> getMyLesson() {
 		User user = getUserByToken.get();
@@ -168,18 +160,16 @@ public class LessonService {
 			User user = getUserByToken.get();
 			Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-			fileStorage.deleteFile(videoStorage + File.separator + entity.getLessonUrl());
-			fileStorage.deleteFile(thumbnailStorage + File.separator + entity.getThumbnailUrl());
-
-			if (entity.getDocumentUrl() != null) {
-				fileStorage.deleteFile(documentStorage + File.separator + entity.getDocumentUrl());
+			try {
+				fileStorage.deleteFile(entity.getLessonUrl(), "video");
+				fileStorage.deleteFile(entity.getThumbnailUrl(), "image");
+				fileStorage.deleteFile(entity.getDocumentUrl(), "image");
+				fileStorage.deleteFile(entity.getSubFileUrl(), "raw");
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 
-			if (entity.getSubFileUrl() != null) {
-				fileStorage.deleteFile(documentStorage + File.separator + entity.getSubFileUrl());
-			}
-
-			lessonRepository.deleteById(id);
+			deleteByKey(id);
 
 			sendNotification.sendNotificationMyDelete(entity.getTitle(), user.getId(), user.getUsername(), Type.LESSON);
 		} catch (EmptyResultDataAccessException e) {
@@ -200,21 +190,39 @@ public class LessonService {
 		Lesson lesson = lessonMapper.requestToLesson(dto);
 		lesson.setCreatedAt(LocalDateTime.now());
 
-		String lessonUrl = fileStorage.handleVideo(video);
-		lesson.setLessonUrl(lessonUrl);
+		String videoName = fileStorage.fileName(video);
+		String subFileName = fileStorage.fileName(subFile);
+		try {
+			if (videoName.endsWith(".mp4") || videoName.endsWith(".avi") || videoName.endsWith(".mov")) {
+				Map<?, ?> handleVideo = fileStorage.uploadVideo(video);
 
-		if (document != null) {
-			String documentUrl = fileStorage.handleFile(document);
-			lesson.setDocumentUrl(documentUrl);
+				String lessonUrl = (String) handleVideo.get("secure_url");
+				String publicId = (String) handleVideo.get("public_id");
+
+				lesson.setLessonUrl(lessonUrl);
+
+				String thumbnailUrl = fileStorage.getThumbnail(publicId, "video");
+				lesson.setThumbnailUrl(thumbnailUrl);
+			} else {
+				throw new AppException("video không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+			}
+
+			if (document != null) {
+				Map<?, ?> handleDoc = fileStorage.handleDocument(document);
+				String documentUrl = (String) handleDoc.get("secure_url");
+
+				lesson.setDocumentUrl(documentUrl);
+			}
+
+			if (subFile != null && (subFileName.endsWith(".rar") || subFileName.endsWith(".zip"))) {
+				Map<?, ?> handleSubFile = fileStorage.uploadArchive(subFile, subFileName);
+				String subFileUrl = (String) handleSubFile.get("secure_url");
+
+				lesson.setSubFileUrl(subFileUrl);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-
-		if (subFile != null) {
-			String subFileUrl = fileStorage.handleSubFile(subFile);
-			lesson.setSubFileUrl(subFileUrl);
-		}
-
-		String thumbnailUrl = fileStorage.handleVideoThumbnail(videoStorage + "\\" + lessonUrl);
-		lesson.setThumbnailUrl(thumbnailUrl);
 
 		Category category = dto.getCategoryId() != null ? categoryRepository.findById(dto.getCategoryId())
 				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST)) : null;
@@ -229,7 +237,7 @@ public class LessonService {
 	}
 
 	@PreAuthorize("hasAuthority('DOWNLOAD_LESSON_DOCUMENT')")
-	public FileResponse downloadDocumentByLessonId(Long lessonId) throws IOException {
+	public FileResponse downloadDocumentByLessonId(Long lessonId) throws Exception {
 
 		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
@@ -238,21 +246,12 @@ public class LessonService {
 			throw new AppException("Lesson không có tài liệu", 1001, HttpStatus.BAD_REQUEST);
 		}
 
-		File file = new File(documentStorage + File.separator + lesson.getDocumentUrl());
-
-		if (!file.exists()) {
-			throw new AppException("File không tồn tại trong hệ thống", 1001, HttpStatus.NOT_FOUND);
-		}
-
-		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-		String downloadName = lesson.getTitle() + ".pdf";
-
-		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, downloadName);
+		FileResponse file = fileStorage.downloadFile(lesson.getDocumentUrl());
+		return file;
 	}
 
 	@PreAuthorize("hasAuthority('DOWNLOAD_LESSON_SUBFILE')")
-	public FileResponse downloadSubFileByLessonId(Long lessonId) throws IOException {
+	public FileResponse downloadSubFileByLessonId(Long lessonId) throws Exception {
 
 		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, Status.PUBLISHED)
 				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
@@ -261,15 +260,8 @@ public class LessonService {
 			throw new AppException("Lesson không có file đính kèm", 1001, HttpStatus.BAD_REQUEST);
 		}
 
-		File file = new File(subfileStorage + File.separator + lesson.getSubFileUrl());
-
-		if (!file.exists()) {
-			throw new AppException("File không tồn tại trong hệ thống", 1001, HttpStatus.NOT_FOUND);
-		}
-
-		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-		return new FileResponse(resource, file.length(), MediaType.APPLICATION_OCTET_STREAM, lesson.getSubFileUrl());
+		FileResponse file = fileStorage.downloadFile(lesson.getSubFileUrl());
+		return file;
 	}
 
 	public List<LessonFavoriteResponse> search(String keyword, Long categoryId) {
@@ -330,46 +322,16 @@ public class LessonService {
 		});
 	}
 
-	public FileResponse loadPublicDocumentFile(Long id) throws IOException {
-		Lesson doc = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy tài liệu"));
-		return loadDocumentFile(doc);
-	}
-
-	public File loadPublicLessonFile(Long id) throws IOException {
-		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy bài giảng"));
-		return loadVideoFile(lesson);
-	}
-
 	public Long countLessonOfUser(Long userId) {
 		return lessonRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
 	}
 
-	private File loadVideoFile(Lesson lesson) {
-
-		File file = new File(videoStorage + File.separator + lesson.getLessonUrl());
-
-		if (!file.exists()) {
-			throw new RuntimeException("File không tồn tại trong hệ thống");
-		}
-
-		return file;
-	}
-
-	private FileResponse loadDocumentFile(Lesson doc) throws IOException {
-
-		String filePath = documentStorage + File.separator + doc.getDocumentUrl();
-
-		File file = new File(filePath);
-
-		if (!file.exists()) {
-			throw new RuntimeException("File không tồn tại trong hệ thống");
-		}
-
-		InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-		return new FileResponse(resource, file.length(), MediaType.APPLICATION_PDF, doc.getTitle());
+	private void deleteByKey(Long id) {
+		favoriteRepository.deleteByLesson_Id(id);
+		ratingRepository.deleteByLesson_Id(id);
+		reportRepository.deleteByLesson_Id(id);
+		commentRepository.deleteByLesson_Id(id);
+		lessonRepository.deleteById(id);
 	}
 
 }

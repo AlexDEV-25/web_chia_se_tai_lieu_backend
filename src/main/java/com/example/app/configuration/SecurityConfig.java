@@ -36,7 +36,7 @@ public class SecurityConfig {
 			"/api/lessons/view/{id}",
 
 //			"/api/chats"
-	};
+			"/api/tests/upload" };
 
 	private final String[] PUBLIC_ENDPOINTS_GET = {
 //			"/api/categories"
@@ -47,8 +47,7 @@ public class SecurityConfig {
 
 //			"/api/documents"
 			"/api/documents", "/api/documents/{id}", "/api/documents/user/{userId}",
-			"/api/documents/category/{categoryId}", "/api/documents/{id}/file", "/api/documents/user/{id}",
-			"/api/documents/count/{userId}",
+			"/api/documents/category/{categoryId}", "/api/documents/user/{userId}", "/api/documents/count/{userId}",
 
 //			"/api/ratings"
 			"/api/ratings/document-summary/{documentId}", "/api/ratings/lesson-summary/{lessonId}",
@@ -56,16 +55,14 @@ public class SecurityConfig {
 //			"/api/users"
 			"/api/users/email/{email:.+}", "/api/users/username/{username}", "/api/users/info/{id}",
 
-//			"/api/images"
-			"/api/images/**",
-
 //			"/api/lessons"
 			"/api/lessons", "/api/lessons/{id}", "/api/lessons/user/{userId}", "/api/lessons/category/{categoryId}",
-			"/api/lessons/{id}/video", "/api/lessons/{id}/document", "/api/lessons/user/{id}",
-			"/api/lessons/count/{userId}",
+			"/api/lessons/user/{userId}", "/api/lessons/count/{userId}",
 
 //			"/api/follows"
-			"/api/follows/follow-count/{userId}", };
+			"/api/follows/follow-count/{userId}",
+
+			"/api/tests/pdf" };
 
 	private CustomJwtDecoder customJwtDecoder;
 

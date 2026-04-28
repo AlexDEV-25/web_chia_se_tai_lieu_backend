@@ -1,10 +1,7 @@
 package com.example.app.controller.admin;
 
-import java.io.IOException;
 import java.util.List;
 
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.APIResponse;
-import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.document.DocumentAdminResponse;
 import com.example.app.dto.response.document.DocumentDetailResponse;
 import com.example.app.service.DocumentService;
@@ -74,12 +70,4 @@ public class AdminDocumentController {
 		return apiResponse;
 	}
 
-	@GetMapping("/{id}/file")
-	public ResponseEntity<Resource> loadAnyDocumentFile(@PathVariable Long id) throws IOException {
-
-		FileResponse file = documentService.loadAnyDocumentFile(id);
-
-		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
-				.body(file.getResource());
-	}
 }

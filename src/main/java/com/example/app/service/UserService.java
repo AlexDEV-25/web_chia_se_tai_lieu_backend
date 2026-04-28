@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -89,8 +90,19 @@ public class UserService {
 	public UserResponse updateMyinfo(MultipartFile avt, ChangeUserInfoRequest dto) throws IOException {
 		User entity = getUserByToken.get();
 		entity.setUpdatedAt(LocalDateTime.now());
-		if (avt != null) {
-			entity.setAvatarUrl(fileStorage.handleAvatar(entity.getAvatarUrl(), avt));
+		String fileName = fileStorage.fileName(avt);
+		if (avt != null && (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png")
+				|| fileName.endsWith(".webp"))) {
+			try {
+				Map<?, ?> handleAvt = fileStorage.uploadImage(avt);
+				String avatarUrl = (String) handleAvt.get("secure_url");
+
+				entity.setAvatarUrl(avatarUrl);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 		}
 		userMapper.updateUserInfo(entity, dto);
 

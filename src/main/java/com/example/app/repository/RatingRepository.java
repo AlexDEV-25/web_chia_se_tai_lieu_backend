@@ -26,6 +26,10 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
 
 	boolean existsByUserAndLesson(User user, Lesson lesson);
 
+	void deleteByDocument_Id(Long documentId);
+
+	void deleteByLesson_Id(Long lessonId);
+
 	@Query("""
 			    SELECT new com.example.app.dto.response.rating.RatingSummaryResponse(
 			        AVG(r.rating),

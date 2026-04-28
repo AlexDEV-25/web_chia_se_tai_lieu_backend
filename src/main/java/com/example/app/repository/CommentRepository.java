@@ -31,4 +31,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 	List<Comment> findByDocument_IdAndHideFalseOrderByLevelAscCreatedAtAsc(Long documentId);
 
 	List<Comment> findByLesson_IdAndHideFalseOrderByLevelAscCreatedAtAsc(Long lessonId);
+
+	void deleteByDocument_Id(Long documentId);
+
+	void deleteByLesson_Id(Long lessonId);
 }

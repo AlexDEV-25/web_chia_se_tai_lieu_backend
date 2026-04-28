@@ -1,7 +1,5 @@
 package com.example.app.controller;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 import org.springframework.core.io.Resource;
@@ -15,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -31,7 +28,6 @@ import com.example.app.dto.response.lesson.LessonStatsResponse;
 import com.example.app.dto.response.lesson.LessonUserResponse;
 import com.example.app.exception.AppException;
 import com.example.app.service.LessonService;
-import com.example.app.share.FileManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.Valid;
@@ -42,7 +38,6 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class LessonController {
 	private final LessonService lessonService;
-	private final FileManager fileManager;
 
 	@GetMapping("/stats")
 	public APIResponse<LessonStatsResponse> getStats() {
@@ -146,7 +141,7 @@ public class LessonController {
 	}
 
 	@GetMapping("/{id}/download-document")
-	public ResponseEntity<Resource> downloadDocument(@PathVariable Long id) throws IOException {
+	public ResponseEntity<Resource> downloadDocument(@PathVariable Long id) throws Exception {
 
 		FileResponse file = lessonService.downloadDocumentByLessonId(id);
 
@@ -156,37 +151,12 @@ public class LessonController {
 	}
 
 	@GetMapping("/{id}/download-subfile")
-	public ResponseEntity<Resource> downloadSubFile(@PathVariable Long id) throws IOException {
+	public ResponseEntity<Resource> downloadSubFile(@PathVariable Long id) throws Exception {
 
 		FileResponse file = lessonService.downloadSubFileByLessonId(id);
 
 		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
-				.body(file.getResource());
-	}
-
-	@GetMapping("/{id}/video")
-	public ResponseEntity<Resource> getPublicLessonVideo(@PathVariable Long id, @RequestHeader HttpHeaders headers)
-			throws IOException {
-		File video = lessonService.loadPublicLessonFile(id);
-		return fileManager.getVideo(video, headers);
-	}
-
-	@GetMapping("/{id}/document")
-	public ResponseEntity<Resource> loadPublicDocument(@PathVariable Long id) throws IOException {
-
-		FileResponse file = lessonService.loadPublicDocumentFile(id);
-
-		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
-				.body(file.getResource());
-	}
-
-	@GetMapping("/admin/{id}/document")
-	public ResponseEntity<Resource> loadAnyDocumentFile(@PathVariable Long id) throws IOException {
-
-		FileResponse file = lessonService.loadAnyDocumentFile(id);
-
-		return ResponseEntity.ok().contentLength(file.getLength()).contentType(file.getMediaType())
 				.body(file.getResource());
 	}
 
