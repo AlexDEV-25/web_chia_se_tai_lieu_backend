@@ -27,12 +27,14 @@ public class StatisticsService {
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<DailyCountResponse> userLast7Days() {
-		return fill7Days(userRepository.countUserByDay(LocalDate.now().minusDays(6).atStartOfDay()));
+		return fill7Days(
+				mapToDailyCountResponse(userRepository.countUserByDay(LocalDate.now().minusDays(6).atStartOfDay())));
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<DailyCountResponse> documentLast7Days() {
-		return fill7Days(documentRepository.countDocumentByDay(LocalDate.now().minusDays(6).atStartOfDay()));
+		return fill7Days(mapToDailyCountResponse(
+				documentRepository.countDocumentByDay(LocalDate.now().minusDays(6).atStartOfDay())));
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
@@ -47,11 +49,22 @@ public class StatisticsService {
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<DailyCountResponse> lessonLast7Days() {
-		return fill7Days(lessonRepository.countLessonByDay(LocalDate.now().minusDays(6).atStartOfDay()));
+		return fill7Days(mapToDailyCountResponse(
+				lessonRepository.countLessonByDay(LocalDate.now().minusDays(6).atStartOfDay())));
+	}
+
+	private List<DailyCountResponse> mapToDailyCountResponse(List<Object[]> raw) {
+		return raw.stream()
+				.map(obj -> {
+					java.sql.Date sqlDate = (java.sql.Date) obj[0];
+					LocalDate date = sqlDate.toLocalDate();
+					Long count = ((Number) obj[1]).longValue();
+					return new DailyCountResponse(date, count);
+				})
+				.collect(Collectors.toList());
 	}
 
 	private List<DailyCountResponse> fill7Days(List<DailyCountResponse> raw) {
-
 		LocalDate today = LocalDate.now();
 		LocalDate fromDate = today.minusDays(6);
 

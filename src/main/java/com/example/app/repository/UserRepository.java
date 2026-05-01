@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import com.example.app.dto.response.statistic.DailyCountResponse;
 import com.example.app.model.User;
 
 import feign.Param;
@@ -29,17 +28,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 	boolean existsByAvatarUrl(String avatarUrl);
 
-	@Query("""
-				SELECT new com.example.app.dto.response.statistic.DailyCountResponse(
-			    CAST(FUNCTION('date', u.createdAt) AS java.time.LocalDate),
-			    COUNT(u)
-			)
-
-				FROM User u
-				WHERE (u.hide = false OR u.hide IS NULL)
-				AND u.createdAt >= :fromDate
-				GROUP BY FUNCTION('date', u.createdAt)
-				ORDER BY FUNCTION('date', u.createdAt)
-			""")
-	List<DailyCountResponse> countUserByDay(@Param("fromDate") LocalDateTime fromDate);
+	@Query(value = """
+				SELECT DATE(u.created_at) as stat_date, COUNT(u.id)
+				FROM users u
+				WHERE (u.hide = 0 OR u.hide IS NULL)
+				AND u.created_at >= :fromDate
+				GROUP BY DATE(u.created_at)
+				ORDER BY DATE(u.created_at)
+			""", nativeQuery = true)
+	List<Object[]> countUserByDay(@Param("fromDate") LocalDateTime fromDate);
 }

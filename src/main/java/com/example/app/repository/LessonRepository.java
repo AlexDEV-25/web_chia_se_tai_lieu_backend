@@ -12,7 +12,6 @@ import org.springframework.stereotype.Repository;
 import com.example.app.dto.response.lesson.LessonFavoriteResponse;
 import com.example.app.dto.response.lesson.LessonStatsResponse;
 import com.example.app.dto.response.statistic.CategoryCountResponse;
-import com.example.app.dto.response.statistic.DailyCountResponse;
 import com.example.app.model.Category;
 import com.example.app.model.Lesson;
 import com.example.app.share.Status;
@@ -41,19 +40,16 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	// lấy số bài giảng của chính mình đăng tải lên
 	long countByUser_Id(Long userId);
 
-	@Query("""
-				SELECT new com.example.app.dto.response.statistic.DailyCountResponse(
-			    CAST(FUNCTION('date', l.createdAt) AS java.time.LocalDate),
-			    COUNT(l)
-			)
-				FROM Lesson l
+	@Query(value = """
+				SELECT DATE(l.created_at) as stat_date, COUNT(l.id)
+				FROM lessons l
 				WHERE l.status = 'PUBLISHED'
-				AND (l.hide = false OR l.hide IS NULL)
-				AND l.createdAt >= :fromDate
-				GROUP BY FUNCTION('date', l.createdAt)
-				ORDER BY FUNCTION('date', l.createdAt)
-			""")
-	List<DailyCountResponse> countLessonByDay(@Param("fromDate") LocalDateTime fromDate);
+				AND (l.hide = 0 OR l.hide IS NULL)
+				AND l.created_at >= :fromDate
+				GROUP BY DATE(l.created_at)
+				ORDER BY DATE(l.created_at)
+			""", nativeQuery = true)
+	List<Object[]> countLessonByDay(@Param("fromDate") LocalDateTime fromDate);
 
 	@Query("""
 			  	SELECT new com.example.app.dto.response.statistic.CategoryCountResponse(
@@ -62,7 +58,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			    COUNT(l)
 			)
 				FROM Lesson l
-				JOIN Category c
+				JOIN Category c ON l.category.id = c.id
 				WHERE l.status = 'PUBLISHED'
 				AND (l.hide = false OR l.hide IS NULL)
 				GROUP BY c.id, c.name

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Repository;
 import com.example.app.dto.response.document.DocumentFavoriteResponse;
 import com.example.app.dto.response.document.DocumentStatsResponse;
 import com.example.app.dto.response.statistic.CategoryCountResponse;
-import com.example.app.dto.response.statistic.DailyCountResponse;
 import com.example.app.model.Category;
 import com.example.app.model.Document;
 import com.example.app.share.Status;
@@ -41,19 +40,16 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	// lấy số tài liệu của chính mình đăng tải lên
 	long countByUser_Id(Long userId);
 
-	@Query("""
-				SELECT new com.example.app.dto.response.statistic.DailyCountResponse(
-			    CAST(FUNCTION('date', d.createdAt) AS java.time.LocalDate),
-			    COUNT(d)
-			)
-				FROM Document d
+	@Query(value = """
+				SELECT DATE(d.created_at) as stat_date, COUNT(d.id)
+				FROM documents d
 				WHERE d.status = 'PUBLISHED'
-				AND (d.hide = false OR d.hide IS NULL)
-				AND d.createdAt >= :fromDate
-				GROUP BY FUNCTION('date', d.createdAt)
-				ORDER BY FUNCTION('date', d.createdAt)
-			""")
-	List<DailyCountResponse> countDocumentByDay(@Param("fromDate") LocalDateTime fromDate);
+				AND (d.hide = 0 OR d.hide IS NULL)
+				AND d.created_at >= :fromDate
+				GROUP BY DATE(d.created_at)
+				ORDER BY DATE(d.created_at)
+			""", nativeQuery = true)
+	List<Object[]> countDocumentByDay(@Param("fromDate") LocalDateTime fromDate);
 
 	@Query("""
 				SELECT new com.example.app.dto.response.statistic.CategoryCountResponse(
@@ -62,7 +58,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    COUNT(d)
 			)
 				FROM Document d
-				JOIN  d.category c
+				JOIN  d.category c ON d.category.id = c.id
 				WHERE d.status = 'PUBLISHED'
 				AND (d.hide = false OR d.hide IS NULL)
 				GROUP BY c.id, c.name
