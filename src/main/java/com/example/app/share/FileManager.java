@@ -75,7 +75,7 @@ public class FileManager {
 		));
 	}
 
-	public String fileName(MultipartFile file) {
+	private String fileName(MultipartFile file) {
 		String originalFilename = file.getOriginalFilename();
 		if (originalFilename == null) {
 			originalFilename = "file";
@@ -111,11 +111,11 @@ public class FileManager {
 
 	}
 
-	public Map<?, ?> uploadArchive(MultipartFile file, String originalFilename) throws Exception {
+	public Map<?, ?> uploadArchive(MultipartFile file) throws Exception {
 		String subFileName = this.fileName(file);
 		if (subFileName.endsWith(".rar") || subFileName.endsWith(".zip")) {
 			String folder = "tailieu/archive";
-			String publicId = folder + "/" + UUID.randomUUID() + "_" + originalFilename;
+			String publicId = folder + "/" + UUID.randomUUID() + "_" + subFileName;
 
 			return uploadToCloudinary(file, "raw", publicId);
 		} else {

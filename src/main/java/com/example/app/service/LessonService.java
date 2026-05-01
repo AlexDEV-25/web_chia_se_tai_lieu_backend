@@ -209,8 +209,7 @@ public class LessonService {
 			}
 
 			if (subFile != null) {
-				String subFileName = fileStorage.fileName(subFile);
-				Map<?, ?> handleSubFile = fileStorage.uploadArchive(subFile, subFileName);
+				Map<?, ?> handleSubFile = fileStorage.uploadArchive(subFile);
 
 				String subFileUrl = (String) handleSubFile.get("secure_url");
 				lesson.setSubFileUrl(subFileUrl);
