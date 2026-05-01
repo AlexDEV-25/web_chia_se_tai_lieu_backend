@@ -1,6 +1,5 @@
 package com.example.app.service;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,19 +86,16 @@ public class UserService {
 	}
 
 	@PreAuthorize("hasAuthority('UPDATE_MY_INFO')")
-	public UserResponse updateMyinfo(MultipartFile avt, ChangeUserInfoRequest dto) throws IOException {
+	public UserResponse updateMyinfo(MultipartFile avt, ChangeUserInfoRequest dto) {
 		User entity = getUserByToken.get();
 		entity.setUpdatedAt(LocalDateTime.now());
-		String fileName = fileStorage.fileName(avt);
-		if (avt != null && (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png")
-				|| fileName.endsWith(".webp"))) {
+		if (avt != null) {
 			try {
 				Map<?, ?> handleAvt = fileStorage.uploadImage(avt);
 				String avatarUrl = (String) handleAvt.get("secure_url");
 
 				entity.setAvatarUrl(avatarUrl);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 

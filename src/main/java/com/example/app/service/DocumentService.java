@@ -1,6 +1,5 @@
 package com.example.app.service;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -189,16 +188,15 @@ public class DocumentService {
 
 	@PreAuthorize("hasAuthority('UPLOAD_FILE')")
 	@Transactional
-	public DocumentDetailResponse uploadFile(MultipartFile fileToSave, DocumentRequest dto) throws IOException {
+	public DocumentDetailResponse uploadFile(MultipartFile fileToSave, DocumentRequest dto) {
 		Document document = documentMapper.requestToDocument(dto);
 		document.setCreatedAt(LocalDateTime.now());
 
 		try {
-			Map<?, ?> handleDoc = fileStorage.handleDocument(fileToSave);
+			Map<?, ?> handleDoc = fileStorage.uploadPdf(fileToSave);
 
 			String url = (String) handleDoc.get("secure_url");
 			String publicId = (String) handleDoc.get("public_id");
-
 			document.setFileUrl(url);
 
 			String thumbnailUrl = fileStorage.getThumbnail(publicId, "pdf");

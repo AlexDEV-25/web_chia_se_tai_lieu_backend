@@ -1,6 +1,5 @@
 package com.example.app.service;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -186,38 +185,34 @@ public class LessonService {
 	@PreAuthorize("hasAuthority('UPLOAD_LESSON')")
 	@Transactional
 	public LessonDetailResponse uploadLesson(MultipartFile video, MultipartFile document, MultipartFile subFile,
-			LessonRequest dto) throws IOException {
+			LessonRequest dto) {
 		Lesson lesson = lessonMapper.requestToLesson(dto);
 		lesson.setCreatedAt(LocalDateTime.now());
 
-		String videoName = fileStorage.fileName(video);
-		String subFileName = fileStorage.fileName(subFile);
 		try {
-			if (videoName.endsWith(".mp4") || videoName.endsWith(".avi") || videoName.endsWith(".mov")) {
+			if (video != null) {
 				Map<?, ?> handleVideo = fileStorage.uploadVideo(video);
 
 				String lessonUrl = (String) handleVideo.get("secure_url");
 				String publicId = (String) handleVideo.get("public_id");
-
 				lesson.setLessonUrl(lessonUrl);
 
 				String thumbnailUrl = fileStorage.getThumbnail(publicId, "video");
 				lesson.setThumbnailUrl(thumbnailUrl);
-			} else {
-				throw new AppException("video không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
 			}
 
 			if (document != null) {
-				Map<?, ?> handleDoc = fileStorage.handleDocument(document);
-				String documentUrl = (String) handleDoc.get("secure_url");
+				Map<?, ?> handleDoc = fileStorage.uploadPdf(document);
 
+				String documentUrl = (String) handleDoc.get("secure_url");
 				lesson.setDocumentUrl(documentUrl);
 			}
 
-			if (subFile != null && (subFileName.endsWith(".rar") || subFileName.endsWith(".zip"))) {
+			if (subFile != null) {
+				String subFileName = fileStorage.fileName(subFile);
 				Map<?, ?> handleSubFile = fileStorage.uploadArchive(subFile, subFileName);
-				String subFileUrl = (String) handleSubFile.get("secure_url");
 
+				String subFileUrl = (String) handleSubFile.get("secure_url");
 				lesson.setSubFileUrl(subFileUrl);
 			}
 		} catch (Exception e) {

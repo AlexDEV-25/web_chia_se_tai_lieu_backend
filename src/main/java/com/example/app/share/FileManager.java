@@ -1,14 +1,7 @@
 package com.example.app.share;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
@@ -30,11 +23,6 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class FileManager {
-	@Value("${libreoffice.path}")
-	private String libreOfficePath;
-
-	@Value("${app.storage-directory-document}")
-	private String documentStorage;
 
 	private final Cloudinary cloudinary;
 	private final RestTemplate restTemplate;
@@ -79,32 +67,6 @@ public class FileManager {
 		}
 	}
 
-	public Map<?, ?> handleDocument(MultipartFile file) throws Exception {
-		String fileName = file.getOriginalFilename();
-
-		if (!isValidFile(fileName)) {
-			throw new AppException("file không hợp lệ", 1001, HttpStatus.BAD_REQUEST);
-		}
-
-		if (!fileName.endsWith(".pdf")) {
-			String fileUrl = saveFileToLocalStorage(file);
-
-			int index = fileUrl.lastIndexOf(".");
-			String result = (index != -1) ? fileUrl.substring(0, index) + ".pdf" : fileUrl;
-
-			String input = documentStorage + File.separator + fileUrl;
-			String output = documentStorage + File.separator + result;
-
-			File fileAfterConvert = convertToPDF(input, output);
-
-			deleteFileLocal(input);
-
-			return uploadLocalFile(fileAfterConvert);
-
-		}
-		return uploadPdf(file);
-	}
-
 	public Map<?, ?> deleteFile(String url, String resourceType) throws Exception {
 		String publicId = extractPublicId(url);
 
@@ -123,177 +85,59 @@ public class FileManager {
 	}
 
 	public Map<?, ?> uploadImage(MultipartFile file) throws Exception {
+		String avatarName = this.fileName(file);
+		if (avatarName.endsWith(".jpg") || avatarName.endsWith(".jpeg") || avatarName.endsWith(".png")
+				|| avatarName.endsWith(".webp")) {
+			String folder = "tailieu/image";
+			String publicId = folder + "/" + UUID.randomUUID();
 
-		String folder = "tailieu/image";
-		String publicId = folder + "/" + UUID.randomUUID();
+			return uploadToCloudinary(file, "image", publicId);
+		} else {
+			throw new AppException("ảnh  không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+		}
 
-		return uploadToCloudinary(file, "image", publicId);
 	}
 
 	public Map<?, ?> uploadVideo(MultipartFile file) throws Exception {
+		String videoName = this.fileName(file);
+		if (videoName.endsWith(".mp4") || videoName.endsWith(".avi") || videoName.endsWith(".mov")) {
+			String folder = "tailieu/video";
+			String publicId = folder + "/" + UUID.randomUUID();
 
-		String folder = "tailieu/video";
-		String publicId = folder + "/" + UUID.randomUUID();
+			return uploadToCloudinary(file, "video", publicId);
+		} else {
+			throw new AppException("video không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+		}
 
-		return uploadToCloudinary(file, "video", publicId);
 	}
 
 	public Map<?, ?> uploadArchive(MultipartFile file, String originalFilename) throws Exception {
+		String subFileName = this.fileName(file);
+		if (subFileName.endsWith(".rar") || subFileName.endsWith(".zip")) {
+			String folder = "tailieu/archive";
+			String publicId = folder + "/" + UUID.randomUUID() + "_" + originalFilename;
 
-		String folder = "tailieu/archive";
-		String publicId = folder + "/" + UUID.randomUUID() + "_" + originalFilename;
-
-		return uploadToCloudinary(file, "raw", publicId);
-	}
-
-	private String saveFileToLocalStorage(MultipartFile fileToSave) throws IOException {
-		if (fileToSave == null) {
-			throw new NullPointerException("fileToSave is null");
-		}
-
-		// Lấy tên file thật sự, tránh ../../ hack
-		String originalFilename = fileToSave.getOriginalFilename();
-		String cleanedFilename = originalFilename != null ? Paths.get(originalFilename).getFileName().toString()
-				: "file";
-
-		// Tạo tên an toàn
-		String safeFilename = UUID.randomUUID() + "_" + cleanedFilename;
-
-		File targetFile = new File(documentStorage, safeFilename);
-
-		// Kiểm tra path traversal (bắt buộc)
-		if (!targetFile.getCanonicalPath().startsWith(new File(documentStorage).getCanonicalPath())) {
-			throw new SecurityException("Invalid file path!");
-		}
-
-		// Copy file
-		Files.copy(fileToSave.getInputStream(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-		return safeFilename;
-	}
-
-	private File convertToPDF(String input, String output) {
-		try {
-			if (libreOfficePath == null || libreOfficePath.isBlank()) {
-				throw new IllegalStateException("libreoffice.path is missing");
-			}
-
-			File officeExe = new File(libreOfficePath);
-			if (!officeExe.exists()) {
-				throw new IllegalStateException("LibreOffice executable not found: " + libreOfficePath);
-			}
-
-			File inputFile = new File(input);
-			if (!inputFile.exists()) {
-				throw new IllegalArgumentException("Input file not found: " + input);
-			}
-
-			File outputFile = new File(output);
-			File outDir = outputFile.getParentFile();
-
-			if (outDir == null) {
-				throw new IllegalArgumentException("Invalid output path: " + output);
-			}
-
-			Files.createDirectories(outDir.toPath());
-
-			// 🔥 Run LibreOffice
-			ProcessBuilder pb = new ProcessBuilder(libreOfficePath, "--headless", "--nologo", "--nolockcheck",
-					"--norestore", "--convert-to", "pdf", "--outdir", outDir.getAbsolutePath(),
-					inputFile.getAbsolutePath());
-
-			pb.redirectErrorStream(true);
-			Process process = pb.start();
-
-			boolean finished = process.waitFor(120, TimeUnit.SECONDS);
-			String outputLog = new String(process.getInputStream().readAllBytes());
-
-			if (!finished) {
-				process.destroyForcibly();
-				throw new IllegalStateException("LibreOffice conversion timed out. Log: " + outputLog);
-			}
-
-			int exitCode = process.exitValue();
-			if (exitCode != 0) {
-				throw new IllegalStateException(
-						"LibreOffice conversion failed with exitCode=" + exitCode + ". Log: " + outputLog);
-			}
-
-			// 🔹 File PDF được tạo ra
-			String baseName = inputFile.getName();
-			int dot = baseName.lastIndexOf('.');
-			if (dot != -1) {
-				baseName = baseName.substring(0, dot);
-			}
-
-			File generated = new File(outDir, baseName + ".pdf");
-
-			if (!generated.exists()) {
-				throw new IllegalStateException(
-						"Converted PDF not found at: " + generated.getAbsolutePath() + ". Log: " + outputLog);
-			}
-
-			// 🔹 Nếu khác tên output thì move
-			if (!generated.getCanonicalPath().equals(outputFile.getCanonicalPath())) {
-				Files.move(generated.toPath(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			}
-			// 🔥 RETURN FILE
-			return outputFile;
-
-		} catch (Exception e) {
-			throw new RuntimeException("convertToPDF failed: " + e.getMessage(), e);
+			return uploadToCloudinary(file, "raw", publicId);
+		} else {
+			throw new AppException("sub file không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
 		}
 	}
 
-	private boolean deleteFileLocal(String filePath) {
-		try {
-			Path path = Paths.get(filePath);
-			return Files.deleteIfExists(path);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
+	public Map<?, ?> uploadPdf(MultipartFile file) throws Exception {
+		String documentName = this.fileName(file);
+		if (documentName.endsWith(".pdf")) {
+			String folder = "tailieu/pdf";
+			String publicId = folder + "/" + UUID.randomUUID();
+			return uploadToCloudinary(file, "image", publicId);
+		} else {
+			throw new AppException("document không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
 		}
-	}
-
-	private boolean isValidFile(String fileName) {
-		return fileName.endsWith(".pdf") || fileName.endsWith(".doc") || fileName.endsWith(".docx")
-				|| fileName.endsWith(".ppt") || fileName.endsWith(".pptx");
 	}
 
 	private Map<?, ?> uploadToCloudinary(MultipartFile file, String resourceType, String publicId) throws Exception {
 
 		return cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", resourceType,
 				"public_id", publicId, "type", "upload", "access_mode", "public"));
-	}
-
-	private Map<?, ?> uploadPdf(MultipartFile file) throws Exception {
-
-		String folder = "tailieu/pdf";
-		String publicId = folder + "/" + UUID.randomUUID();
-
-		// dùng image để có thumbnail
-		return uploadToCloudinary(file, "image", publicId);
-	}
-
-	private Map<?, ?> uploadLocalFile(File file) throws Exception {
-
-		String originalFilename = file.getName();
-		String lowerName = originalFilename.toLowerCase();
-
-		String publicId;
-		String resourceType = "auto";
-		String folder = "tailieu";
-
-		if (lowerName.endsWith(".pdf")) {
-			resourceType = "image";
-			folder += "/pdf";
-			publicId = folder + "/" + UUID.randomUUID();
-
-		} else {
-			throw new RuntimeException("File không hợp lệ");
-		}
-
-		return cloudinary.uploader().upload(file,
-				ObjectUtils.asMap("resource_type", resourceType, "public_id", publicId));
 	}
 
 	private String extractPublicId(String url) {
