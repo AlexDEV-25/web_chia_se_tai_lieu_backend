@@ -33,10 +33,7 @@ public class SecurityConfig {
 			"/api/documents/view/{id}",
 
 //			"/api/lessons"
-			"/api/lessons/view/{id}",
-
-//			"/api/chats"
-			"/api/tests/upload" };
+			"/api/lessons/view/{id}", };
 
 	private final String[] PUBLIC_ENDPOINTS_GET = {
 //			"/api/categories"
@@ -60,9 +57,7 @@ public class SecurityConfig {
 			"/api/lessons/user/{userId}", "/api/lessons/count/{userId}",
 
 //			"/api/follows"
-			"/api/follows/follow-count/{userId}",
-
-			"/api/tests/pdf" };
+			"/api/follows/follow-count/{userId}", };
 
 	private CustomJwtDecoder customJwtDecoder;
 
