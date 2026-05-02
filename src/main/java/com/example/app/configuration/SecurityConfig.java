@@ -1,5 +1,6 @@
 package com.example.app.configuration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -61,6 +62,9 @@ public class SecurityConfig {
 
 	private CustomJwtDecoder customJwtDecoder;
 
+	@Value("${app.domain.frontend}")
+	private String frontendDomain;
+
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
 		httpSecurity.cors(Customizer.withDefaults());// <-- BẮT BUỘC để CORS hoạt động với Security
@@ -94,7 +98,7 @@ public class SecurityConfig {
 	CorsFilter corsFilter() {
 		CorsConfiguration corsConfiguration = new CorsConfiguration();
 
-		corsConfiguration.addAllowedOrigin("http://localhost:5173");
+		corsConfiguration.addAllowedOrigin(frontendDomain);
 		corsConfiguration.addAllowedMethod("*");
 		corsConfiguration.addAllowedHeader("*");
 		corsConfiguration.setMaxAge(3600L);
