@@ -3,6 +3,7 @@ package com.example.app.share;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,9 @@ public class SendNotification {
 	private final NotificationMapper notificationMapper;
 	private final UserFollowRepository userFollowRepository;
 	private final CommentRepository commentRepository;
+
+	@Value("${app.domain.frontend}")
+	private String frontendDomain;
 
 	@Transactional
 	private Long saveNotification(String content, String link, NotificationType type) {
@@ -72,8 +76,8 @@ public class SendNotification {
 			String head = "";
 			String url = "";
 			head = (type == Type.DOCUMENT) ? "Tài liệu" : "Bài giảng";
-			url = (type == Type.DOCUMENT) ? "http://localhost:5173/document/" + entityId
-					: "http://localhost:5173/lesson/" + entityId;
+			url = (type == Type.DOCUMENT) ? frontendDomain + "/document/" + entityId
+					: frontendDomain + "/lesson/" + entityId;
 
 			Long NotificationId = saveNotification(head + " \" " + entityTitle + "\" của bạn đã được duyệt", url,
 					NotificationType.INFO);
@@ -155,8 +159,8 @@ public class SendNotification {
 			Comment cmt = commentRepository.findById(parentId)
 					.orElseThrow(() -> new AppException("comment không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 			String url = "";
-			url = (cmt.getType() == Type.DOCUMENT) ? "http://localhost:5173/document/" + cmt.getDocument().getId()
-					: "http://localhost:5173/lesson/" + cmt.getLesson().getId();
+			url = (cmt.getType() == Type.DOCUMENT) ? frontendDomain + "/document/" + cmt.getDocument().getId()
+					: frontendDomain + "/lesson/" + cmt.getLesson().getId();
 
 			User receiver = cmt.getUser();
 			if (receiver != null && user != null && !receiver.getId().equals(user.getId())) {
@@ -174,7 +178,7 @@ public class SendNotification {
 
 	public void sendNotificationFollow(User follower, User following) {
 
-		String url = "http://localhost:5173/profile/" + follower.getId();
+		String url = frontendDomain + "/profile/" + follower.getId();
 
 		Long NotificationId = saveNotification("người dùng \" " + follower.getUsername() + "\" đã theo dõi bạn", url,
 				NotificationType.INFO);
