@@ -27,7 +27,7 @@ public class FavoriteController {
 
 	private final FavoriteService favoriteService;
 
-	@PostMapping("/")
+	@PostMapping
 	public APIResponse<FavoriteResponse> addFavorite(@RequestBody @Valid FavoriteRequest dto) {
 		FavoriteResponse response = favoriteService.addFavorite(dto);
 		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
@@ -36,15 +36,7 @@ public class FavoriteController {
 		return apiResponse;
 	}
 
-	@DeleteMapping("/{id}")
-	public APIResponse<Void> removeFavorite(@PathVariable Long id) {
-		favoriteService.removeFavorite(id);
-		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
-		return apiResponse;
-	}
-
-	@DeleteMapping("document/{documentId}")
+	@DeleteMapping("/document/{documentId}")
 	public APIResponse<Void> removeDocumentFavorite(@PathVariable Long documentId) {
 		favoriteService.removeDocumentFavorite(documentId);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
@@ -52,7 +44,7 @@ public class FavoriteController {
 		return apiResponse;
 	}
 
-	@DeleteMapping("lesson/{lessonId}")
+	@DeleteMapping("/lesson/{lessonId}")
 	public APIResponse<Void> removeLessonFavorite(@PathVariable Long lessonId) {
 		favoriteService.removeLessonFavorite(lessonId);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();

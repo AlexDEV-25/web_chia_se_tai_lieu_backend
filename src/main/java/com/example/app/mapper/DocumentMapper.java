@@ -7,6 +7,7 @@ import org.mapstruct.MappingTarget;
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.response.document.DocumentAdminResponse;
 import com.example.app.dto.response.document.DocumentDetailResponse;
+import com.example.app.dto.response.document.DocumentEventDTO;
 import com.example.app.dto.response.document.DocumentUserResponse;
 import com.example.app.model.Document;
 
@@ -40,9 +41,10 @@ public interface DocumentMapper {
 	@Mapping(target = "category", ignore = true)
 	void updateDocument(@MappingTarget Document document, DocumentRequest request);
 
-	@Mapping(source = "category.id", target = "categoryId")
 	DocumentUserResponse documentToDocumentUserResponse(Document entity);
 
 	@Mapping(source = "category.name", target = "categoryName")
 	DocumentAdminResponse documentToDocumentAdminResponse(Document entity);
+
+	DocumentEventDTO documentToDocumentDTO(Document entity);
 }

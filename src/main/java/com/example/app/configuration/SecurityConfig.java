@@ -71,7 +71,8 @@ public class SecurityConfig {
 		httpSecurity.authorizeHttpRequests(request -> //
 		request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS_POST).permitAll()//
 				.requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS_GET).permitAll()//
-				.anyRequest().authenticated());
+				.requestMatchers("/ws/**").permitAll().anyRequest()//
+				.authenticated());
 
 		httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
 				.jwtAuthenticationConverter(jwtAuthenticationConverter())));

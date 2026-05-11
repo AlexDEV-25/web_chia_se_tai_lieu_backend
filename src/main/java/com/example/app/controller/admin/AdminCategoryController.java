@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.request.CategoryRequest;
-import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.request.DisplayRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.category.CategoryResponse;
 import com.example.app.service.CategoryService;
@@ -63,8 +63,8 @@ public class AdminCategoryController {
 	}
 
 	@PutMapping("/hide/{id}")
-	public APIResponse<CategoryResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
-		CategoryResponse response = categoryService.hide(id, dto);
+	public APIResponse<CategoryResponse> hide(@PathVariable Long id, @RequestBody @Valid DisplayRequest dto) {
+		CategoryResponse response = categoryService.display(id, dto);
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("hide success");

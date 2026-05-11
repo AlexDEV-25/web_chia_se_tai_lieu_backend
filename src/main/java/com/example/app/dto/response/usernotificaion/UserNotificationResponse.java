@@ -2,7 +2,7 @@ package com.example.app.dto.response.usernotificaion;
 
 import java.time.LocalDateTime;
 
-import com.example.app.share.NotificationType;
+import com.example.app.constant.NotificationType;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -2,7 +2,7 @@ package com.example.app.dto.response.lesson;
 
 import java.time.LocalDateTime;
 
-import com.example.app.share.Status;
+import com.example.app.constant.ContentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,10 +19,10 @@ public class LessonDetailResponse {
 	private String subFileUrl;
 	private String description;
 	private String thumbnailUrl;
-	private Long viewsCount = 0L;
+	private Long viewsCount;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
-	private Status status;
+	private ContentStatus status;
 	private boolean hide;
 	private Long categoryId;
 	private String categoryName;

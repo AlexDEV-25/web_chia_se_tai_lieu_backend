@@ -1,40 +1,41 @@
 package com.example.app.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.app.dto.request.HideRequest;
+import com.example.app.constant.ContentStatus;
+import com.example.app.constant.NotificationAction;
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.lesson.LessonAdminResponse;
+import com.example.app.dto.response.lesson.LessonDTO;
 import com.example.app.dto.response.lesson.LessonDetailResponse;
-import com.example.app.dto.response.lesson.LessonFavoriteResponse;
+import com.example.app.dto.response.lesson.LessonResponse;
 import com.example.app.dto.response.lesson.LessonStatsResponse;
 import com.example.app.dto.response.lesson.LessonUserResponse;
+import com.example.app.event.LessonDeleteEvent;
+import com.example.app.event.LessonStatusEvent;
 import com.example.app.exception.AppException;
+import com.example.app.helper.FileManager;
+import com.example.app.helper.GetUserByToken;
 import com.example.app.mapper.LessonMapper;
 import com.example.app.model.Category;
 import com.example.app.model.Lesson;
 import com.example.app.model.User;
 import com.example.app.repository.CategoryRepository;
-import com.example.app.repository.CommentRepository;
-import com.example.app.repository.FavoriteRepository;
+import com.example.app.repository.LessonCommentRepository;
+import com.example.app.repository.LessonFavoriteRepository;
+import com.example.app.repository.LessonRatingRepository;
+import com.example.app.repository.LessonReportRepository;
 import com.example.app.repository.LessonRepository;
-import com.example.app.repository.RatingRepository;
-import com.example.app.repository.ReportRepository;
-import com.example.app.share.FileManager;
-import com.example.app.share.GetUserByToken;
-import com.example.app.share.SendNotification;
-import com.example.app.share.Status;
-import com.example.app.share.Type;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -44,14 +45,14 @@ import lombok.RequiredArgsConstructor;
 public class LessonService {
 	private final LessonRepository lessonRepository;
 	private final CategoryRepository categoryRepository;
-	private final FavoriteRepository favoriteRepository;
-	private final RatingRepository ratingRepository;
-	private final ReportRepository reportRepository;
-	private final CommentRepository commentRepository;
+	private final LessonFavoriteRepository favoriteLessonRepository;
+	private final LessonRatingRepository ratingLessonRepository;
+	private final LessonReportRepository reportLessonRepository;
+	private final LessonCommentRepository commentLessonRepository;
+	private final ApplicationEventPublisher eventPublisher;
 	private final LessonMapper lessonMapper;
 	private final GetUserByToken getUserByToken;
 	private final FileManager fileStorage;
-	private final SendNotification sendNotification;
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public LessonDetailResponse findById(Long id) {
@@ -63,68 +64,44 @@ public class LessonService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<LessonAdminResponse> getAllLessons() {
 		List<Lesson> lessons = lessonRepository.findAll();
-		List<LessonAdminResponse> response = new ArrayList<LessonAdminResponse>();
-		for (Lesson l : lessons) {
-			response.add(lessonMapper.lessonToLessonAdminResponse(l));
-		}
+		List<LessonAdminResponse> response = lessons.stream().map(lessonMapper::lessonToLessonAdminResponse).toList();
 		return response;
 	}
 
 	@Transactional
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
-		try {
-			Lesson entity = lessonRepository.findById(id)
-					.orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));
-
-			try {
-				fileStorage.deleteFile(entity.getLessonUrl(), "video");
-				fileStorage.deleteFile(entity.getDocumentUrl(), "image");
-				fileStorage.deleteFile(entity.getThumbnailUrl(), "image");
-				fileStorage.deleteFile(entity.getSubFileUrl(), "raw");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			deleteByKey(id);
-
-			User admin = getUserByToken.get();
-			sendNotification.sendNotificationDelete(entity.getTitle(), entity.getUser().getId(), admin, Type.LESSON);
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
-
-	@PreAuthorize("hasRole('ADMIN')")
-	public LessonDetailResponse hide(Long id, HideRequest dto) {
 		Lesson entity = lessonRepository.findById(id).orElseThrow(() -> new RuntimeException("Không tìm thấy lesson"));
-		boolean tempHide = entity.isHide();
-		entity.setHide(dto.isHide());
-		Lesson saved = lessonRepository.save(entity);
+
+		eventPublisher.publishEvent(new LessonDeleteEvent(entity));
+
+		LessonDTO dto = lessonMapper.lessonToLessonDTO(entity);
+		deleteByKey(id);
 
 		User admin = getUserByToken.get();
-		sendNotification.sendNotificationHide(dto.isHide(), tempHide, entity.getTitle(), entity.getUser().getId(),
-				admin, Type.LESSON);
-		return lessonMapper.lessonToLessonDetailResponse(saved);
+		eventPublisher.publishEvent(new LessonStatusEvent(dto, admin, NotificationAction.ADMIN_DELETE));
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public LessonDetailResponse update(Long id, LessonRequest dto) {
+	public LessonDetailResponse update(Long id, LessonRequest request) {
 		Lesson entity = lessonRepository.findById(id)
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		boolean tempHide = entity.isHide();
-		Status tempStatus = entity.getStatus();
-		lessonMapper.updateLesson(entity, dto);
+
+		ContentStatus initialStatus = entity.getStatus();
+
+		lessonMapper.updateLesson(entity, request);
 		entity.setUpdatedAt(LocalDateTime.now());
 		Lesson saved = lessonRepository.save(entity);
 
+		LessonDTO dto = lessonMapper.lessonToLessonDTO(saved);
+
 		User admin = getUserByToken.get();
-		Long entityUserId = entity.getUser().getId();
-		String entityTitle = entity.getTitle();
-		sendNotification.sendNotificationPublished(dto.getStatus(), tempStatus, entity.getId(), entityTitle,
-				entity.getUser().getUsername(), entityUserId, admin, Type.LESSON);
-		sendNotification.sendNotificationHide(dto.isHide(), tempHide, entityTitle, entityUserId, admin, Type.LESSON);
+		if (initialStatus == ContentStatus.PENDING && saved.getStatus() == ContentStatus.PUBLISHED) {
+			eventPublisher.publishEvent(new LessonStatusEvent(dto, admin, NotificationAction.PUBLIC));
+		}
+		if (initialStatus == ContentStatus.PUBLISHED && saved.getStatus() == ContentStatus.HIDDEN) {
+			eventPublisher.publishEvent(new LessonStatusEvent(dto, admin, NotificationAction.ADMIN_HIDDEN));
+		}
 		return lessonMapper.lessonToLessonDetailResponse(saved);
 	}
 
@@ -132,24 +109,32 @@ public class LessonService {
 	public List<LessonUserResponse> getMyLesson() {
 		User user = getUserByToken.get();
 		List<Lesson> lessons = lessonRepository.findByUser_Id(user.getId());
-		List<LessonUserResponse> response = new ArrayList<LessonUserResponse>();
-		for (Lesson l : lessons) {
-			response.add(lessonMapper.lessonToLessonUserResponse(l));
-		}
+		List<LessonUserResponse> response = lessons.stream().map(lessonMapper::lessonToLessonUserResponse).toList();
 		return response;
 	}
 
-	@PreAuthorize("hasAuthority('UPDATE_MY_LESSON')")
-	public LessonUserResponse updateMyDocument(Long id, LessonRequest dto) {
+	@PreAuthorize("hasAuthority('GET_MY_LESSON_DETAIL')")
+	public LessonDetailResponse getMyLessonDetail(Long id) {
 		User user = getUserByToken.get();
 		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		boolean tempHide = entity.isHide();
-		lessonMapper.updateLesson(entity, dto);
+		return lessonMapper.lessonToLessonDetailResponse(entity);
+	}
+
+	@PreAuthorize("hasAuthority('UPDATE_MY_LESSON')")
+	public LessonUserResponse updateMyDocument(Long id, LessonRequest request) {
+		User user = getUserByToken.get();
+		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
+				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		boolean initialState = entity.isHide();
+		lessonMapper.updateLesson(entity, request);
 		entity.setUpdatedAt(LocalDateTime.now());
 		Lesson saved = lessonRepository.save(entity);
-		sendNotification.sendNotificationMyHide(dto.isHide(), tempHide, entity.getTitle(), user.getId(),
-				user.getUsername(), Type.LESSON);
+		LessonDTO dto = lessonMapper.lessonToLessonDTO(saved);
+
+		if (initialState == false && saved.isHide() == true && saved.getStatus() == ContentStatus.PUBLISHED) {
+			eventPublisher.publishEvent(new LessonStatusEvent(dto, user, NotificationAction.AUTHOR_HIDDEN));
+		}
 		return lessonMapper.lessonToLessonUserResponse(saved);
 	}
 
@@ -159,18 +144,15 @@ public class LessonService {
 			User user = getUserByToken.get();
 			Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
 					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-			try {
-				fileStorage.deleteFile(entity.getLessonUrl(), "video");
-				fileStorage.deleteFile(entity.getThumbnailUrl(), "image");
-				fileStorage.deleteFile(entity.getDocumentUrl(), "image");
-				fileStorage.deleteFile(entity.getSubFileUrl(), "raw");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
 
+			eventPublisher.publishEvent(new LessonDeleteEvent(entity));
+
+			LessonDTO dto = lessonMapper.lessonToLessonDTO(entity);
 			deleteByKey(id);
 
-			sendNotification.sendNotificationMyDelete(entity.getTitle(), user.getId(), user.getUsername(), Type.LESSON);
+			if (dto.getStatus() == ContentStatus.PUBLISHED) {
+				eventPublisher.publishEvent(new LessonStatusEvent(dto, user, NotificationAction.AUTHOR_DELETE));
+			}
 		} catch (EmptyResultDataAccessException e) {
 			throw new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST);
 		}
@@ -233,7 +215,7 @@ public class LessonService {
 	@PreAuthorize("hasAuthority('DOWNLOAD_LESSON_DOCUMENT')")
 	public FileResponse downloadDocumentByLessonId(Long lessonId) throws Exception {
 
-		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, Status.PUBLISHED)
+		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, ContentStatus.PUBLISHED)
 				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
 
 		if (lesson.getDocumentUrl() == null) {
@@ -247,7 +229,7 @@ public class LessonService {
 	@PreAuthorize("hasAuthority('DOWNLOAD_LESSON_SUBFILE')")
 	public FileResponse downloadSubFileByLessonId(Long lessonId) throws Exception {
 
-		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, Status.PUBLISHED)
+		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, ContentStatus.PUBLISHED)
 				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
 
 		if (lesson.getSubFileUrl() == null) {
@@ -258,53 +240,57 @@ public class LessonService {
 		return file;
 	}
 
-	public List<LessonFavoriteResponse> search(String keyword, Long categoryId) {
+	public List<LessonResponse> search(String keyword, Long categoryId) {
 
 		User user = getUserByToken.get();
 		if (user == null) {
-			return lessonRepository.searchWithWithoutFavorite(keyword, categoryId);
+			return lessonRepository.searchWithoutLogin(keyword, categoryId, ContentStatus.PUBLISHED);
 		}
-		return lessonRepository.searchWithFavoriteStatus(keyword, categoryId, user.getId());
+		return lessonRepository.searchWhenLogin(keyword, categoryId, user.getId(), ContentStatus.PUBLISHED);
 	}
 
-	public List<LessonFavoriteResponse> getAllPublicLessonsCheckFavorite() {
+	public List<LessonResponse> getAllPublicLessonsCheckFavorite() {
 		User user = getUserByToken.get();
 		if (user == null) {
-			return lessonRepository.findAllWithoutFavorite();
+			return lessonRepository.getAllWithoutLogin(ContentStatus.PUBLISHED);
 		}
-		return lessonRepository.findAllWithFavoriteStatus(user.getId());
+		return lessonRepository.getAllWhenLogin(user.getId(), ContentStatus.PUBLISHED);
 	}
 
-	public List<LessonFavoriteResponse> getLessonsByUserCheckFavorite(Long authorId, Long currentLessonId) {
+	public List<LessonResponse> getLessonsByUserCheckFavorite(Long authorId, Long currentLessonId) {
 		User user = getUserByToken.get();
 		if (user == null) {
-			return lessonRepository.findLessonsByUserWithoutFavorite(authorId, currentLessonId);
+			return lessonRepository.getByUserWithoutLoginAndDifferentCurrentLesson(authorId, currentLessonId,
+					ContentStatus.PUBLISHED);
 		}
-		return lessonRepository.findLessonsByUserWithFavoriteStatus(authorId, user.getId(), currentLessonId);
+		return lessonRepository.getByUserWhenLoginAndDifferentCurrentLesson(authorId, user.getId(), currentLessonId,
+				ContentStatus.PUBLISHED);
 	}
 
-	public List<LessonFavoriteResponse> getLessonsByCategoryCheckFavorite(Long categoryId, Long currentLessonId) {
+	public List<LessonResponse> getLessonsByCategoryCheckFavorite(Long categoryId, Long currentLessonId) {
 		User user = getUserByToken.get();
 		if (user == null) {
-			return lessonRepository.findLessonsByCategoryWithoutFavorite(categoryId, currentLessonId);
+			return lessonRepository.getByCategoryWithoutLoginAndDifferentCurrentLesson(categoryId, currentLessonId,
+					ContentStatus.PUBLISHED);
 		}
-		return lessonRepository.findLessonsByCategoryWithFavoriteStatus(categoryId, user.getId(), currentLessonId);
+		return lessonRepository.getByCategoryWhenLoginAndDifferentCurrentLesson(categoryId, user.getId(),
+				currentLessonId, ContentStatus.PUBLISHED);
 	}
 
-	public List<LessonFavoriteResponse> getAllLessonsByUserCheckFavorite(Long authorId) {
+	public List<LessonResponse> getAllLessonsByUserCheckFavorite(Long authorId) {
 		User user = getUserByToken.get();
 		if (user == null) {
-			return lessonRepository.findAllLessonsByUserWithoutFavorite(authorId);
+			return lessonRepository.getByUserWithoutLogin(authorId, ContentStatus.PUBLISHED);
 		}
-		return lessonRepository.findAllLessonsByUserWithFavoriteStatus(authorId, user.getId());
+		return lessonRepository.getByUserWhenLogin(authorId, user.getId(), ContentStatus.PUBLISHED);
 	}
 
 	public LessonStatsResponse getStats() {
-		return lessonRepository.getStats();
+		return lessonRepository.getStats(ContentStatus.PUBLISHED);
 	}
 
 	public LessonDetailResponse findByIdPublicLesson(Long id) {
-		Lesson find = lessonRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+		Lesson find = lessonRepository.findByIdAndStatusAndHideFalse(id, ContentStatus.PUBLISHED)
 				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		return lessonMapper.lessonToLessonDetailResponse(find);
 	}
@@ -317,15 +303,14 @@ public class LessonService {
 	}
 
 	public Long countLessonOfUser(Long userId) {
-		return lessonRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
+		return lessonRepository.countByUser_IdAndStatusAndHideFalse(userId, ContentStatus.PUBLISHED);
 	}
 
 	private void deleteByKey(Long id) {
-		favoriteRepository.deleteByLesson_Id(id);
-		ratingRepository.deleteByLesson_Id(id);
-		reportRepository.deleteByLesson_Id(id);
-		commentRepository.deleteByLesson_Id(id);
+		favoriteLessonRepository.deleteByLesson_Id(id);
+		ratingLessonRepository.deleteByLesson_Id(id);
+		reportLessonRepository.deleteByLesson_Id(id);
+		commentLessonRepository.deleteByLesson_Id(id);
 		lessonRepository.deleteById(id);
 	}
-
 }

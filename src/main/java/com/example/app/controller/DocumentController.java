@@ -23,7 +23,7 @@ import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.document.DocumentDetailResponse;
-import com.example.app.dto.response.document.DocumentFavoriteResponse;
+import com.example.app.dto.response.document.DocumentResponse;
 import com.example.app.dto.response.document.DocumentStatsResponse;
 import com.example.app.dto.response.document.DocumentUserResponse;
 import com.example.app.exception.AppException;
@@ -39,7 +39,6 @@ import lombok.AllArgsConstructor;
 public class DocumentController {
 	private final DocumentService documentService;
 
-	// heroComp
 	@GetMapping("/stats")
 	public APIResponse<DocumentStatsResponse> getStats() {
 		DocumentStatsResponse response = documentService.getStats();
@@ -49,18 +48,16 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-	// mainComp
 	@GetMapping("/search")
-	public APIResponse<DocumentFavoriteResponse> search(@RequestParam(required = false) String keyword,
+	public APIResponse<DocumentResponse> search(@RequestParam(required = false) String keyword,
 			@RequestParam(required = false) Long categoryId) {
-		List<DocumentFavoriteResponse> response = documentService.search(keyword, categoryId);
-		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
+		List<DocumentResponse> response = documentService.search(keyword, categoryId);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	// detail
 	@GetMapping("/{id}")
 	public APIResponse<DocumentDetailResponse> getByIdPublicDocument(@PathVariable Long id) {
 		DocumentDetailResponse response = documentService.findByIdPublicDocument(id);
@@ -70,43 +67,37 @@ public class DocumentController {
 		return apiResponse;
 	}
 
-	// mainComp
 	@GetMapping
-	public APIResponse<DocumentFavoriteResponse> getAllPublicDocuments() {
-		List<DocumentFavoriteResponse> response = documentService.getAllPublicDocumentsCheckFavorite();
-		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
+	public APIResponse<DocumentResponse> getAllPublicDocuments() {
+		List<DocumentResponse> response = documentService.getAllPublicDocuments();
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	// rightSideComp
 	@GetMapping("/user")
-	public APIResponse<DocumentFavoriteResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
-		List<DocumentFavoriteResponse> response = documentService.getDocumentsByUserCheckFavorite(userId, documentId);
-		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
+	public APIResponse<DocumentResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
+		List<DocumentResponse> response = documentService.getDocumentsByUser(userId, documentId);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	// CarouselComp
 	@GetMapping("/category")
-	public APIResponse<DocumentFavoriteResponse> getByCategory(@RequestParam Long categoryId,
-			@RequestParam Long documentId) {
-		List<DocumentFavoriteResponse> response = documentService.getDocumentsByCategoryCheckFavorite(categoryId,
-				documentId);
-		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
+	public APIResponse<DocumentResponse> getByCategory(@RequestParam Long categoryId, @RequestParam Long documentId) {
+		List<DocumentResponse> response = documentService.getDocumentsByCategory(categoryId, documentId);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
-	// profile
 	@GetMapping("/user/{userId}")
-	public APIResponse<DocumentFavoriteResponse> getAllDocumentsByUser(@PathVariable Long userId) {
-		List<DocumentFavoriteResponse> response = documentService.getAllDocumentsByUserCheckFavorite(userId);
-		APIResponse<DocumentFavoriteResponse> apiResponse = new APIResponse<DocumentFavoriteResponse>();
+	public APIResponse<DocumentResponse> getAllDocumentsByUser(@PathVariable Long userId) {
+		List<DocumentResponse> response = documentService.getAllDocumentsByUser(userId);
+		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
@@ -171,6 +162,15 @@ public class DocumentController {
 		List<DocumentUserResponse> response = documentService.getMyDocument();
 		APIResponse<DocumentUserResponse> apiResponse = new APIResponse<DocumentUserResponse>();
 		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/my-document/{id}")
+	public APIResponse<DocumentDetailResponse> getMyDocumentDetail(@PathVariable Long id) {
+		DocumentDetailResponse response = documentService.getMyDocumentDetail(id);
+		APIResponse<DocumentDetailResponse> apiResponse = new APIResponse<DocumentDetailResponse>();
+		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}

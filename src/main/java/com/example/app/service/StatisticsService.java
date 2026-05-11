@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.ContentStatus;
 import com.example.app.dto.response.statistic.CategoryCountResponse;
 import com.example.app.dto.response.statistic.DailyCountResponse;
 import com.example.app.repository.DocumentRepository;
@@ -33,35 +34,33 @@ public class StatisticsService {
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<DailyCountResponse> documentLast7Days() {
-		return fill7Days(mapToDailyCountResponse(
-				documentRepository.countDocumentByDay(LocalDate.now().minusDays(6).atStartOfDay())));
+		return fill7Days(mapToDailyCountResponse(documentRepository
+				.countDocumentByDay(LocalDate.now().minusDays(6).atStartOfDay(), ContentStatus.PUBLISHED)));
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<CategoryCountResponse> documentByCategory() {
-		return documentRepository.countDocumentByCategory();
+		return documentRepository.countDocumentByCategory(ContentStatus.PUBLISHED);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<CategoryCountResponse> lessonByCategory() {
-		return lessonRepository.countLessonByCategory();
+		return lessonRepository.countLessonByCategory(ContentStatus.PUBLISHED);
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<DailyCountResponse> lessonLast7Days() {
-		return fill7Days(mapToDailyCountResponse(
-				lessonRepository.countLessonByDay(LocalDate.now().minusDays(6).atStartOfDay())));
+		return fill7Days(mapToDailyCountResponse(lessonRepository
+				.countLessonByDay(LocalDate.now().minusDays(6).atStartOfDay(), ContentStatus.PUBLISHED)));
 	}
 
 	private List<DailyCountResponse> mapToDailyCountResponse(List<Object[]> raw) {
-		return raw.stream()
-				.map(obj -> {
-					java.sql.Date sqlDate = (java.sql.Date) obj[0];
-					LocalDate date = sqlDate.toLocalDate();
-					Long count = ((Number) obj[1]).longValue();
-					return new DailyCountResponse(date, count);
-				})
-				.collect(Collectors.toList());
+		return raw.stream().map(obj -> {
+			java.sql.Date sqlDate = (java.sql.Date) obj[0];
+			LocalDate date = sqlDate.toLocalDate();
+			Long count = ((Number) obj[1]).longValue();
+			return new DailyCountResponse(date, count);
+		}).collect(Collectors.toList());
 	}
 
 	private List<DailyCountResponse> fill7Days(List<DailyCountResponse> raw) {

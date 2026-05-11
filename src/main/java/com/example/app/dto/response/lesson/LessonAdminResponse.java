@@ -1,6 +1,6 @@
 package com.example.app.dto.response.lesson;
 
-import com.example.app.share.Status;
+import com.example.app.constant.ContentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,6 +14,5 @@ public class LessonAdminResponse {
 	private String title;
 	private String description;
 	private String categoryName;
-	private boolean hide;
-	private Status status;
+	private ContentStatus status;
 }

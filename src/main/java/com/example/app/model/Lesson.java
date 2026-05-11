@@ -1,38 +1,26 @@
 package com.example.app.model;
 
-import java.time.LocalDateTime;
+import com.example.app.model.parent.BaseContent;
 
-import com.example.app.share.Status;
-
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "lessons")
-@Data
+@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Lesson {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id")
-	private Long id;
-
-	@Column(name = "title", nullable = false)
-	private String title;
+@SuperBuilder
+public class Lesson extends BaseContent {
 
 	@Column(name = "lesson_url", nullable = false)
 	private String lessonUrl;
@@ -43,34 +31,4 @@ public class Lesson {
 	@Column(name = "sub_file_url")
 	private String subFileUrl;
 
-	@Lob
-	@Column(name = "description")
-	private String description;
-
-	@Column(name = "thumbnail_url")
-	private String thumbnailUrl;
-
-	@Column(name = "views_count")
-	private Long viewsCount = 0L;
-
-	@Column(name = "created_at")
-	private LocalDateTime createdAt = LocalDateTime.now();
-
-	@Column(name = "updated_at")
-	private LocalDateTime updatedAt = LocalDateTime.now();
-
-	@Enumerated(EnumType.STRING)
-	@Column(name = "status", nullable = false)
-	private Status status = Status.PENDING;
-
-	@Column(name = "hide")
-	private boolean hide;
-
-	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
-	@JoinColumn(name = "category_id", nullable = true)
-	private Category category;
-
-	@ManyToOne(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
-	@JoinColumn(name = "user_id", nullable = false)
-	private User user;
 }

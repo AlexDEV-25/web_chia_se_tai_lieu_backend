@@ -23,7 +23,7 @@ import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.lesson.LessonDetailResponse;
-import com.example.app.dto.response.lesson.LessonFavoriteResponse;
+import com.example.app.dto.response.lesson.LessonResponse;
 import com.example.app.dto.response.lesson.LessonStatsResponse;
 import com.example.app.dto.response.lesson.LessonUserResponse;
 import com.example.app.exception.AppException;
@@ -49,10 +49,10 @@ public class LessonController {
 	}
 
 	@GetMapping("/search")
-	public APIResponse<LessonFavoriteResponse> search(@RequestParam(required = false) String keyword,
+	public APIResponse<LessonResponse> search(@RequestParam(required = false) String keyword,
 			@RequestParam(required = false) Long categoryId) {
-		List<LessonFavoriteResponse> response = lessonService.search(keyword, categoryId);
-		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
+		List<LessonResponse> response = lessonService.search(keyword, categoryId);
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
@@ -68,37 +68,36 @@ public class LessonController {
 	}
 
 	@GetMapping
-	public APIResponse<LessonFavoriteResponse> getAllPublicLesson() {
-		List<LessonFavoriteResponse> response = lessonService.getAllPublicLessonsCheckFavorite();
-		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
+	public APIResponse<LessonResponse> getAllPublicLesson() {
+		List<LessonResponse> response = lessonService.getAllPublicLessonsCheckFavorite();
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@GetMapping("/user")
-	public APIResponse<LessonFavoriteResponse> getByUser(@RequestParam Long lessonId, @RequestParam Long userId) {
-		List<LessonFavoriteResponse> response = lessonService.getLessonsByUserCheckFavorite(lessonId, userId);
-		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
+	public APIResponse<LessonResponse> getByUser(@RequestParam Long lessonId, @RequestParam Long userId) {
+		List<LessonResponse> response = lessonService.getLessonsByUserCheckFavorite(lessonId, userId);
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@GetMapping("/user/{userId}")
-	public APIResponse<LessonFavoriteResponse> getAllLessonsByUser(@PathVariable Long userId) {
-		List<LessonFavoriteResponse> response = lessonService.getAllLessonsByUserCheckFavorite(userId);
-		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
+	public APIResponse<LessonResponse> getAllLessonsByUser(@PathVariable Long userId) {
+		List<LessonResponse> response = lessonService.getAllLessonsByUserCheckFavorite(userId);
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
 
 	@GetMapping("/category")
-	public APIResponse<LessonFavoriteResponse> getByCategory(@RequestParam Long categoryId,
-			@RequestParam Long lessonId) {
-		List<LessonFavoriteResponse> response = lessonService.getLessonsByCategoryCheckFavorite(categoryId, lessonId);
-		APIResponse<LessonFavoriteResponse> apiResponse = new APIResponse<LessonFavoriteResponse>();
+	public APIResponse<LessonResponse> getByCategory(@RequestParam Long categoryId, @RequestParam Long lessonId) {
+		List<LessonResponse> response = lessonService.getLessonsByCategoryCheckFavorite(categoryId, lessonId);
+		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
@@ -165,6 +164,15 @@ public class LessonController {
 		List<LessonUserResponse> response = lessonService.getMyLesson();
 		APIResponse<LessonUserResponse> apiResponse = new APIResponse<LessonUserResponse>();
 		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/my-lesson/{id}")
+	public APIResponse<LessonDetailResponse> getMyLessonDetail(@PathVariable Long id) {
+		LessonDetailResponse response = lessonService.getMyLessonDetail(id);
+		APIResponse<LessonDetailResponse> apiResponse = new APIResponse<LessonDetailResponse>();
+		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}

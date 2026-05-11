@@ -1,6 +1,6 @@
 package com.example.app.dto.request;
 
-import com.example.app.share.Type;
+import com.example.app.constant.InteractionType;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -23,5 +23,5 @@ public class RatingRequest {
 	private Long contentId;
 
 	@NotNull(message = "Type không được null")
-	private Type type;
+	private InteractionType type;
 }

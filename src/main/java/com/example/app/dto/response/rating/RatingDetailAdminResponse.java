@@ -1,7 +1,5 @@
 package com.example.app.dto.response.rating;
 
-import com.example.app.share.Type;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,5 +15,4 @@ public class RatingDetailAdminResponse {
 	private Long star3;
 	private Long star4;
 	private Long star5;
-	private Type type;
 }

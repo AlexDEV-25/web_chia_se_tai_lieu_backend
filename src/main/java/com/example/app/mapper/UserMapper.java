@@ -18,6 +18,7 @@ public interface UserMapper {
 	@Mapping(target = "avatarUrl", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
+	@Mapping(target = "status", ignore = true)
 	@Mapping(target = "roles", ignore = true)
 	User requestToUser(UserRequest request);
 
@@ -29,6 +30,7 @@ public interface UserMapper {
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "roles", ignore = true)
 	@Mapping(target = "hide", ignore = true)
+	@Mapping(target = "status", ignore = true)
 	@Mapping(target = "password", ignore = true)
 	@Mapping(target = "verified", ignore = true)
 	User changeUserInfoRequestToUser(ChangeUserInfoRequest request);
@@ -46,6 +48,7 @@ public interface UserMapper {
 	@Mapping(target = "forgotPasswordCode", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
+	@Mapping(target = "status", ignore = true)
 	@Mapping(target = "roles", ignore = true)
 	void updateUser(@MappingTarget User user, UserRequest request);
 
@@ -60,6 +63,7 @@ public interface UserMapper {
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "roles", ignore = true)
 	@Mapping(target = "hide", ignore = true)
+	@Mapping(target = "status", ignore = true)
 	@Mapping(target = "verified", ignore = true)
 	void updateUserInfo(@MappingTarget User user, ChangeUserInfoRequest request);
 }

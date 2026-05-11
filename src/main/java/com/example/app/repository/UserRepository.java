@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import com.example.app.dto.response.user.UserBioResponse;
 import com.example.app.model.User;
 
 import feign.Param;
@@ -37,4 +38,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
 				ORDER BY DATE(u.created_at)
 			""", nativeQuery = true)
 	List<Object[]> countUserByDay(@Param("fromDate") LocalDateTime fromDate);
+
+	@Query("""
+			    SELECT new com.example.app.dto.response.user.UserBioResponse(
+			        u.id,
+			        u.username,
+			        u.avatarUrl,
+			        u.bio,
+			        u.status
+			    )
+			    FROM User u
+			    WHERE u.hide = false
+			      AND (u.username LIKE CONCAT('%', :keyword, '%'))
+			""")
+	List<UserBioResponse> search(@Param("keyword") String keyword);
 }

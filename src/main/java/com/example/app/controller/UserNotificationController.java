@@ -20,15 +20,6 @@ import lombok.AllArgsConstructor;
 public class UserNotificationController {
 	private final UserNotificationService userNotificationService;
 
-//	@PostMapping
-//	public APIResponse<UserNotificationResponse> create(@RequestBody @Valid UserNotificationRequest dto) {
-//		UserNotificationResponse response = userNotificationService.save(dto);
-//		APIResponse<UserNotificationResponse> apiResponse = new APIResponse<UserNotificationResponse>();
-//		apiResponse.setResult(response);
-//		apiResponse.setMessage("save success");
-//		return apiResponse;
-//	}
-
 	@GetMapping("/receiver")
 	public APIResponse<UserNotificationResponse> getByReceiver() {
 		List<UserNotificationResponse> response = userNotificationService.getByReceiver();

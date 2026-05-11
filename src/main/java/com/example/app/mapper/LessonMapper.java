@@ -6,6 +6,7 @@ import org.mapstruct.MappingTarget;
 
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.lesson.LessonAdminResponse;
+import com.example.app.dto.response.lesson.LessonDTO;
 import com.example.app.dto.response.lesson.LessonDetailResponse;
 import com.example.app.dto.response.lesson.LessonUserResponse;
 import com.example.app.model.Lesson;
@@ -42,9 +43,10 @@ public interface LessonMapper {
 	@Mapping(target = "category", ignore = true)
 	void updateLesson(@MappingTarget Lesson entity, LessonRequest request);
 
-	@Mapping(source = "category.id", target = "categoryId")
 	LessonUserResponse lessonToLessonUserResponse(Lesson entity);
 
 	@Mapping(source = "category.name", target = "categoryName")
 	LessonAdminResponse lessonToLessonAdminResponse(Lesson entity);
+
+	LessonDTO lessonToLessonDTO(Lesson entity);
 }

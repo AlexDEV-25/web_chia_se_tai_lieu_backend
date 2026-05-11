@@ -1,6 +1,6 @@
 package com.example.app.dto.response.lesson;
 
-import com.example.app.share.Status;
+import com.example.app.constant.ContentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,8 +14,6 @@ public class LessonUserResponse {
 	private String title;
 	private String description;
 	private String thumbnailUrl;
-	private Long viewsCount = 0L;
-	private boolean hide;
-	private Long categoryId;
-	private Status status;
+	private Long viewsCount;
+	private ContentStatus status;
 }

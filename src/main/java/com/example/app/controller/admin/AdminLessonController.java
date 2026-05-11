@@ -10,14 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.lesson.LessonAdminResponse;
 import com.example.app.dto.response.lesson.LessonDetailResponse;
 import com.example.app.service.LessonService;
 
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -50,15 +48,6 @@ public class AdminLessonController {
 		lessonService.delete(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
 		apiResponse.setMessage("delete success");
-		return apiResponse;
-	}
-
-	@PutMapping("/hide/{id}")
-	public APIResponse<LessonDetailResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
-		LessonDetailResponse response = lessonService.hide(id, dto);
-		APIResponse<LessonDetailResponse> apiResponse = new APIResponse<LessonDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
 		return apiResponse;
 	}
 

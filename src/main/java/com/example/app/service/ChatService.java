@@ -20,23 +20,27 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.InteractionType;
+import com.example.app.constant.ContentStatus;
 import com.example.app.dto.response.ai.ChatHistoryResponse;
 import com.example.app.dto.response.ai.LectureResponse;
 import com.example.app.dto.response.comment.CommentResponse;
 import com.example.app.dto.response.rating.RatingSummaryResponse;
 import com.example.app.exception.AppException;
+import com.example.app.helper.GetUserByToken;
 import com.example.app.mapper.CommentMapper;
 import com.example.app.model.Category;
-import com.example.app.model.Comment;
+import com.example.app.model.DocumentComment;
+import com.example.app.model.LessonComment;
 import com.example.app.model.Document;
 import com.example.app.model.Lesson;
 import com.example.app.repository.CategoryRepository;
-import com.example.app.repository.CommentRepository;
+import com.example.app.repository.DocumentCommentRepository;
+import com.example.app.repository.LessonCommentRepository;
 import com.example.app.repository.DocumentRepository;
 import com.example.app.repository.LessonRepository;
-import com.example.app.repository.RatingRepository;
-import com.example.app.share.GetUserByToken;
-import com.example.app.share.Status;
+import com.example.app.repository.DocumentRatingRepository;
+import com.example.app.repository.LessonRatingRepository;
 
 @Service
 public class ChatService {
@@ -45,22 +49,27 @@ public class ChatService {
 	private final JdbcChatMemoryRepository jdbcChatMemoryRepository;
 	private final GetUserByToken getUserByToken;
 	private final CategoryRepository categoryRepository;
-	private final RatingRepository ratingRepository;
+	private final DocumentRatingRepository ratingDocumentRepository;
+	private final LessonRatingRepository ratingLessonRepository;
 	private final DocumentRepository documentRepository;
 	private final LessonRepository lessonRepository;
-	private final CommentRepository commentRepository;
+	private final DocumentCommentRepository commentDocumentRepository;
+	private final LessonCommentRepository commentLessonRepository;
 	private final CommentMapper commentMapper;
 
 	public ChatService(ChatClient.Builder builder, JdbcChatMemoryRepository jdbcChatMemoryRepository,
 			GetUserByToken getUserByToken, CategoryRepository categoryRepository, LessonRepository lessonRepository,
-			CommentRepository commentRepository, RatingRepository ratingRepository,
+			DocumentCommentRepository commentDocumentRepository, LessonCommentRepository commentLessonRepository,
+			DocumentRatingRepository ratingDocumentRepository, LessonRatingRepository ratingLessonRepository,
 			DocumentRepository documentRepository, CommentMapper commentMapper) {
 		this.jdbcChatMemoryRepository = jdbcChatMemoryRepository;
 		this.getUserByToken = getUserByToken;
 		this.categoryRepository = categoryRepository;
 		this.lessonRepository = lessonRepository;
-		this.commentRepository = commentRepository;
-		this.ratingRepository = ratingRepository;
+		this.commentDocumentRepository = commentDocumentRepository;
+		this.commentLessonRepository = commentLessonRepository;
+		this.ratingDocumentRepository = ratingDocumentRepository;
+		this.ratingLessonRepository = ratingLessonRepository;
 		this.documentRepository = documentRepository;
 		this.commentMapper = commentMapper;
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().chatMemoryRepository(jdbcChatMemoryRepository)
@@ -71,9 +80,13 @@ public class ChatService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public List<CommentResponse> filterCommnent() {
-
-		List<CommentResponse> comments = getCommentsLast7Days();
+	public List<CommentResponse> filterCommnent(String type) {
+		List<CommentResponse> comments = new ArrayList<CommentResponse>();
+		if (type.equals(InteractionType.DOCUMENT.name())) {
+			comments = getDocumentCommentsLast7Days();
+		} else {
+			comments = getLessonCommentsLast7Days();
+		}
 
 		if (comments.isEmpty()) {
 			return new ArrayList<>();
@@ -182,11 +195,11 @@ public class ChatService {
 	private List<LectureResponse> getAvailableLecture() {
 		List<LectureResponse> availableLectures = new ArrayList<LectureResponse>();
 
-		List<Lesson> lessons = lessonRepository.findByStatusAndHideFalse(Status.PUBLISHED);
+		List<Lesson> lessons = lessonRepository.findByStatusAndHideFalse(ContentStatus.PUBLISHED);
 
 		for (Lesson lesson : lessons) {
 			LectureResponse lecture = new LectureResponse();
-			RatingSummaryResponse ratingSummaryResponse = ratingRepository.getRatingSummaryLesson(lesson.getId());
+			RatingSummaryResponse ratingSummaryResponse = ratingLessonRepository.getLessonRatingSummary(lesson.getId());
 			lecture.setTitle(lesson.getTitle());
 			lecture.setCategory(lesson.getCategory().getName());
 			lecture.setAuthor(lesson.getUser().getUsername());
@@ -202,11 +215,12 @@ public class ChatService {
 	private List<LectureResponse> getAvailableLecture2() {
 		List<LectureResponse> availableLectures = new ArrayList<LectureResponse>();
 
-		List<Document> documents = documentRepository.findByStatusAndHideFalse(Status.PUBLISHED);
+		List<Document> documents = documentRepository.findByStatusAndHideFalse(ContentStatus.PUBLISHED);
 
 		for (Document document : documents) {
 			LectureResponse lecture = new LectureResponse();
-			RatingSummaryResponse ratingSummaryResponse = ratingRepository.getRatingSummaryDocument(document.getId());
+			RatingSummaryResponse ratingSummaryResponse = ratingDocumentRepository
+					.getDocumentRatingSummary(document.getId());
 			lecture.setTitle(document.getTitle());
 			lecture.setCategory(document.getCategory().getName());
 			lecture.setAuthor(document.getUser().getUsername());
@@ -562,12 +576,22 @@ public class ChatService {
 				""";
 	}
 
-	private List<CommentResponse> getCommentsLast7Days() {
+	private List<CommentResponse> getDocumentCommentsLast7Days() {
 		List<CommentResponse> commentsResponseLast7Days = new ArrayList<CommentResponse>();
 		LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
-		List<Comment> commentsLast7Days = commentRepository.findCommentsLast7Days(sevenDaysAgo);
-		for (Comment comment : commentsLast7Days) {
-			commentsResponseLast7Days.add(commentMapper.commentToCommentResponse(comment));
+		List<DocumentComment> commentsLast7Days = commentDocumentRepository.findDocumentCommentsLast7Days(sevenDaysAgo);
+		for (DocumentComment comment : commentsLast7Days) {
+			commentsResponseLast7Days.add(commentMapper.documentCommentToCommentResponse(comment));
+		}
+		return commentsResponseLast7Days;
+	}
+
+	private List<CommentResponse> getLessonCommentsLast7Days() {
+		List<CommentResponse> commentsResponseLast7Days = new ArrayList<CommentResponse>();
+		LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+		List<LessonComment> commentsLast7Days = commentLessonRepository.findLessonCommentsLast7Days(sevenDaysAgo);
+		for (LessonComment comment : commentsLast7Days) {
+			commentsResponseLast7Days.add(commentMapper.lessonCommentToCommentResponse(comment));
 		}
 		return commentsResponseLast7Days;
 	}

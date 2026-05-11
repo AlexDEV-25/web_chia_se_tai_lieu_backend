@@ -35,5 +35,5 @@ public class UserRequest {
 	@NotEmpty(message = "role không được để trống")
 	private List<String> roles;
 
-	private boolean hide = false;
+	private boolean hide;
 }

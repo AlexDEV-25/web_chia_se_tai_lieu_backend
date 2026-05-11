@@ -1,6 +1,6 @@
 package com.example.app.dto.response.notification;
 
-import com.example.app.share.NotificationType;
+import com.example.app.constant.NotificationType;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

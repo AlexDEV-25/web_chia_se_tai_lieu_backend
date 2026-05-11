@@ -7,60 +7,62 @@ import org.mapstruct.MappingTarget;
 import com.example.app.dto.request.CommentRequest;
 import com.example.app.dto.response.comment.CommentResponse;
 import com.example.app.dto.response.comment.CommentTreeResponse;
-import com.example.app.model.Comment;
+import com.example.app.model.DocumentComment;
+import com.example.app.model.LessonComment;
 
 @Mapper(componentModel = "spring")
 public interface CommentMapper {
-	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "user", ignore = true)
-	@Mapping(target = "level", ignore = true)
-	@Mapping(target = "document", ignore = true)
-	@Mapping(target = "lesson", ignore = true)
-	@Mapping(target = "createdAt", ignore = true)
-	@Mapping(target = "updatedAt", ignore = true)
-	Comment commentRequestToComment(CommentRequest request);
-
-	@Mapping(source = "user.id", target = "userId")
-	@Mapping(source = "user.username", target = "username")
-	@Mapping(source = "user.avatarUrl", target = "userAvatar")
-	@Mapping(target = "contentId", ignore = true)
-	CommentResponse commentToCommentResponse(Comment entity);
 
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "user.username", target = "username")
 	@Mapping(source = "user.avatarUrl", target = "userAvatar")
 	@Mapping(source = "document.id", target = "contentId")
-	CommentResponse commentToCommentDocumentResponse(Comment entity);
+	@Mapping(source = "parent.id", target = "parentId")
+	CommentResponse documentCommentToCommentResponse(DocumentComment entity);
 
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "user.username", target = "username")
 	@Mapping(source = "user.avatarUrl", target = "userAvatar")
 	@Mapping(source = "lesson.id", target = "contentId")
-	CommentResponse commentToCommentLessonResponse(Comment entity);
+	@Mapping(source = "parent.id", target = "parentId")
+	CommentResponse lessonCommentToCommentResponse(LessonComment entity);
 
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "user.username", target = "username")
 	@Mapping(source = "user.avatarUrl", target = "userAvatar")
 	@Mapping(source = "document.id", target = "contentId")
+	@Mapping(source = "parent.id", target = "parentId")
 	@Mapping(target = "children", ignore = true)
-	CommentTreeResponse commentToCommentDocumentTreeResponse(Comment entity);
+	CommentTreeResponse documentCommentToCommentTreeResponse(DocumentComment entity);
 
 	@Mapping(source = "user.id", target = "userId")
 	@Mapping(source = "user.username", target = "username")
 	@Mapping(source = "user.avatarUrl", target = "userAvatar")
 	@Mapping(source = "lesson.id", target = "contentId")
+	@Mapping(source = "parent.id", target = "parentId")
 	@Mapping(target = "children", ignore = true)
-	CommentTreeResponse commentToCommentLessonTreeResponse(Comment entity);
+	CommentTreeResponse lessonCommentToCommentTreeResponse(LessonComment entity);
 
 	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "idParent", ignore = true)
 	@Mapping(target = "level", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
 	@Mapping(target = "document", ignore = true)
-	@Mapping(target = "lesson", ignore = true)
+	@Mapping(target = "parent", ignore = true)
+	@Mapping(target = "replies", ignore = true)
 	@Mapping(target = "user", ignore = true)
 	@Mapping(target = "hide", ignore = true)
-	void updateComment(@MappingTarget Comment entity, CommentRequest request);
+	void updateDocumentComment(@MappingTarget DocumentComment entity, CommentRequest request);
+
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "level", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	@Mapping(target = "updatedAt", ignore = true)
+	@Mapping(target = "lesson", ignore = true)
+	@Mapping(target = "parent", ignore = true)
+	@Mapping(target = "replies", ignore = true)
+	@Mapping(target = "user", ignore = true)
+	@Mapping(target = "hide", ignore = true)
+	void updateLessonComment(@MappingTarget LessonComment entity, CommentRequest request);
 
 }

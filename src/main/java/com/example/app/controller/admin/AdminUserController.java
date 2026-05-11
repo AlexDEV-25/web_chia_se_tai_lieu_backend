@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.request.DisplayRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.user.UserResponse;
@@ -26,7 +26,7 @@ public class AdminUserController {
 	private final UserService userService;
 
 	@PutMapping("hide/{id}")
-	public APIResponse<UserResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
+	public APIResponse<UserResponse> hide(@PathVariable Long id, @RequestBody @Valid DisplayRequest dto) {
 		UserResponse response = userService.hide(id, dto);
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
 		apiResponse.setResult(response);

@@ -1,9 +1,9 @@
 package com.example.app.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,14 +11,14 @@ import org.springframework.stereotype.Service;
 
 import com.example.app.dto.response.userfollow.FollowCountResponse;
 import com.example.app.dto.response.userfollow.UserFollowResponse;
+import com.example.app.event.UserFollowCreateEvent;
 import com.example.app.exception.AppException;
+import com.example.app.helper.GetUserByToken;
 import com.example.app.mapper.UserFollowMapper;
 import com.example.app.model.User;
 import com.example.app.model.UserFollow;
 import com.example.app.repository.UserFollowRepository;
 import com.example.app.repository.UserRepository;
-import com.example.app.share.GetUserByToken;
-import com.example.app.share.SendNotification;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -28,14 +28,14 @@ import lombok.AllArgsConstructor;
 public class UserFollowService {
 	private final UserFollowRepository userFollowRepository;
 	private final UserRepository userRepository;
+	private final ApplicationEventPublisher eventPublisher;
 	private final UserFollowMapper userFollowMapper;
 	private final GetUserByToken getUserByToken;
-	private final SendNotification sendNotification;
 
 	@PreAuthorize("hasAuthority('FOLLOW')")
 	@Transactional
 	public UserFollowResponse save(Long request) {
-		UserFollow userFollow = new UserFollow();
+
 		User follower = getUserByToken.get();
 		User following = userRepository.findById(request)
 				.orElseThrow(() -> new AppException("người nhận không tồn tại", 1001, HttpStatus.BAD_REQUEST));
@@ -45,13 +45,12 @@ public class UserFollowService {
 		if (follower.getId().equals(following.getId())) {
 			throw new AppException("không thể follow chính mình", 1001, HttpStatus.BAD_REQUEST);
 		}
-		userFollow.setFollower(follower);
-		userFollow.setFollowing(following);
-		userFollow.setCreatedAt(LocalDateTime.now());
+		UserFollow userFollow = UserFollow.builder().follower(follower).following(following)
+				.createdAt(LocalDateTime.now()).build();
 		UserFollow saved = userFollowRepository.save(userFollow);
 		UserFollowResponse response = userFollowMapper.userFollowToResponse(saved);
 		if (response != null) {
-			sendNotification.sendNotificationFollow(follower, following);
+			eventPublisher.publishEvent(new UserFollowCreateEvent(follower, following));
 		}
 		return response;
 	}
@@ -74,10 +73,7 @@ public class UserFollowService {
 	public List<UserFollowResponse> getFollowingByFollower() {
 		User user = getUserByToken.get();
 		List<UserFollow> userFollows = userFollowRepository.findByFollower_Id(user.getId());
-		List<UserFollowResponse> response = new ArrayList<UserFollowResponse>();
-		for (UserFollow u : userFollows) {
-			response.add(userFollowMapper.userFollowToResponse(u));
-		}
+		List<UserFollowResponse> response = userFollows.stream().map(userFollowMapper::userFollowToResponse).toList();
 		return response;
 	}
 
@@ -85,10 +81,7 @@ public class UserFollowService {
 	public List<UserFollowResponse> getFollowerByFollowing() {
 		User user = getUserByToken.get();
 		List<UserFollow> userFollows = userFollowRepository.findByFollowing_Id(user.getId());
-		List<UserFollowResponse> response = new ArrayList<UserFollowResponse>();
-		for (UserFollow u : userFollows) {
-			response.add(userFollowMapper.userFollowToResponse(u));
-		}
+		List<UserFollowResponse> response = userFollows.stream().map(userFollowMapper::userFollowToResponse).toList();
 		return response;
 	}
 

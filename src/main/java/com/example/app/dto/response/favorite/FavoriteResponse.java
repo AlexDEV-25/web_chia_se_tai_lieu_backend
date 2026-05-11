@@ -2,8 +2,6 @@ package com.example.app.dto.response.favorite;
 
 import java.time.LocalDateTime;
 
-import com.example.app.share.Type;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,5 +16,4 @@ public class FavoriteResponse {
 	private String title;
 	private String thumbnailUrl;
 	private String authorName;
-	private Type type;
 }

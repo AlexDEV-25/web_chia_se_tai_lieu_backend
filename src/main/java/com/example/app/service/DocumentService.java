@@ -1,40 +1,40 @@
 package com.example.app.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.ContentStatus;
+import com.example.app.constant.NotificationAction;
 import com.example.app.dto.request.DocumentRequest;
-import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.document.DocumentAdminResponse;
 import com.example.app.dto.response.document.DocumentDetailResponse;
-import com.example.app.dto.response.document.DocumentFavoriteResponse;
+import com.example.app.dto.response.document.DocumentEventDTO;
+import com.example.app.dto.response.document.DocumentResponse;
 import com.example.app.dto.response.document.DocumentStatsResponse;
 import com.example.app.dto.response.document.DocumentUserResponse;
+import com.example.app.event.DocumentDeleteEvent;
+import com.example.app.event.DocumentStatusEvent;
 import com.example.app.exception.AppException;
+import com.example.app.helper.FileManager;
+import com.example.app.helper.GetUserByToken;
 import com.example.app.mapper.DocumentMapper;
 import com.example.app.model.Category;
 import com.example.app.model.Document;
 import com.example.app.model.User;
 import com.example.app.repository.CategoryRepository;
-import com.example.app.repository.CommentRepository;
+import com.example.app.repository.DocumentCommentRepository;
+import com.example.app.repository.DocumentFavoriteRepository;
+import com.example.app.repository.DocumentRatingRepository;
+import com.example.app.repository.DocumentReportRepository;
 import com.example.app.repository.DocumentRepository;
-import com.example.app.repository.FavoriteRepository;
-import com.example.app.repository.RatingRepository;
-import com.example.app.repository.ReportRepository;
-import com.example.app.share.FileManager;
-import com.example.app.share.GetUserByToken;
-import com.example.app.share.SendNotification;
-import com.example.app.share.Status;
-import com.example.app.share.Type;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -44,18 +44,14 @@ import lombok.RequiredArgsConstructor;
 public class DocumentService {
 	private final DocumentRepository documentRepository;
 	private final CategoryRepository categoryRepository;
-	private final FavoriteRepository favoriteRepository;
-	private final RatingRepository ratingRepository;
-	private final ReportRepository reportRepository;
-	private final CommentRepository commentRepository;
+	private final DocumentFavoriteRepository favoriteDocumentRepository;
+	private final DocumentRatingRepository ratingDocumentRepository;
+	private final DocumentReportRepository reportDocumentRepository;
+	private final DocumentCommentRepository commentDocumentRepository;
+	private final ApplicationEventPublisher eventPublisher;
 	private final DocumentMapper documentMapper;
 	private final GetUserByToken getUserByToken;
 	private final FileManager fileStorage;
-	private final SendNotification sendNotification;
-
-	public DocumentStatsResponse getStats() {
-		return documentRepository.getStats();
-	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public DocumentDetailResponse findById(Long id) {
@@ -65,70 +61,49 @@ public class DocumentService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public List<DocumentAdminResponse> getAllDocuments() {
+	public List<DocumentAdminResponse> findAll() {
 		List<Document> documents = documentRepository.findAll();
-		List<DocumentAdminResponse> response = new ArrayList<DocumentAdminResponse>();
-		for (Document d : documents) {
-			response.add(documentMapper.documentToDocumentAdminResponse(d));
-		}
+		List<DocumentAdminResponse> response = documents.stream().map(documentMapper::documentToDocumentAdminResponse)
+				.toList();
 		return response;
 	}
 
 	@Transactional
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
-		try {
-			Document entity = documentRepository.findById(id)
-					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-			try {
-				fileStorage.deleteFile(entity.getFileUrl(), "image");
-				fileStorage.deleteFile(entity.getThumbnailUrl(), "image");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			deleteByKey(id);
-
-			User admin = getUserByToken.get();
-			sendNotification.sendNotificationDelete(entity.getTitle(), entity.getUser().getId(), admin, Type.DOCUMENT);
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
-
-	@PreAuthorize("hasRole('ADMIN')")
-	public DocumentDetailResponse hide(Long id, HideRequest dto) {
 		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-		boolean tempHide = entity.isHide();
-		entity.setHide(dto.isHide());
-		Document saved = documentRepository.save(entity);
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+
+		eventPublisher.publishEvent(new DocumentDeleteEvent(entity));
+
+		DocumentEventDTO dto = documentMapper.documentToDocumentDTO(entity);
+		deleteByKey(id);
 
 		User admin = getUserByToken.get();
-		sendNotification.sendNotificationHide(dto.isHide(), tempHide, entity.getTitle(), entity.getUser().getId(),
-				admin, Type.DOCUMENT);
-		return documentMapper.documentToDocumentDetailResponse(saved);
+		eventPublisher.publishEvent(new DocumentStatusEvent(dto, admin, NotificationAction.ADMIN_DELETE));
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@Transactional
-	public DocumentDetailResponse update(Long id, DocumentRequest dto) {
+	public DocumentDetailResponse update(Long id, DocumentRequest request) {
 		Document entity = documentRepository.findById(id)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
-		boolean tempHide = entity.isHide();
-		Status tempStatus = entity.getStatus();
-		documentMapper.updateDocument(entity, dto);
+		ContentStatus initialStatus = entity.getStatus();
+
+		documentMapper.updateDocument(entity, request);
 		entity.setUpdatedAt(LocalDateTime.now());
 		Document saved = documentRepository.save(entity);
 
+		DocumentEventDTO dto = documentMapper.documentToDocumentDTO(saved);
 		User admin = getUserByToken.get();
-		Long entityUserId = entity.getUser().getId();
-		String entityTitle = entity.getTitle();
-		sendNotification.sendNotificationPublished(dto.getStatus(), tempStatus, entity.getId(), entityTitle,
-				entity.getUser().getUsername(), entityUserId, admin, Type.DOCUMENT);
-		sendNotification.sendNotificationHide(dto.isHide(), tempHide, entityTitle, entityUserId, admin, Type.DOCUMENT);
+		if (initialStatus == ContentStatus.PENDING && saved.getStatus() == ContentStatus.PUBLISHED) {
+			eventPublisher.publishEvent(new DocumentStatusEvent(dto, admin, NotificationAction.PUBLIC));
+		}
+		if (initialStatus == ContentStatus.PUBLISHED && saved.getStatus() == ContentStatus.HIDDEN) {
+			eventPublisher.publishEvent(new DocumentStatusEvent(dto, admin, NotificationAction.ADMIN_HIDDEN));
+		}
+
 		return documentMapper.documentToDocumentDetailResponse(saved);
 	}
 
@@ -136,47 +111,48 @@ public class DocumentService {
 	public List<DocumentUserResponse> getMyDocument() {
 		User user = getUserByToken.get();
 		List<Document> documents = documentRepository.findByUser_Id(user.getId());
-		List<DocumentUserResponse> response = new ArrayList<DocumentUserResponse>();
-		for (Document d : documents) {
-			response.add(documentMapper.documentToDocumentUserResponse(d));
-		}
+		List<DocumentUserResponse> response = documents.stream().map(documentMapper::documentToDocumentUserResponse)
+				.toList();
 		return response;
 	}
 
-	@PreAuthorize("hasAuthority('UPDATE_MY_DOCUMENT')")
-	public DocumentUserResponse updateMyDocument(Long id, DocumentRequest dto) {
+	@PreAuthorize("hasAuthority('GET_MY_DOCUMENT_DETAIL')")
+	public DocumentDetailResponse getMyDocumentDetail(Long id) {
 		User user = getUserByToken.get();
 		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		boolean tempHide = entity.isHide();
-		documentMapper.updateDocument(entity, dto);
+		return documentMapper.documentToDocumentDetailResponse(entity);
+	}
+
+	@PreAuthorize("hasAuthority('UPDATE_MY_DOCUMENT')")
+	public DocumentUserResponse updateMyDocument(Long id, DocumentRequest request) {
+		User user = getUserByToken.get();
+		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		boolean initialState = entity.isHide();
+		documentMapper.updateDocument(entity, request);
 		entity.setUpdatedAt(LocalDateTime.now());
 		Document saved = documentRepository.save(entity);
-		sendNotification.sendNotificationMyHide(dto.isHide(), tempHide, entity.getTitle(), user.getId(),
-				user.getUsername(), Type.DOCUMENT);
+		DocumentEventDTO dto = documentMapper.documentToDocumentDTO(saved);
+
+		if (initialState == false && saved.isHide() == true && saved.getStatus() == ContentStatus.PUBLISHED) {
+			eventPublisher.publishEvent(new DocumentStatusEvent(dto, user, NotificationAction.AUTHOR_HIDDEN));
+		}
 		return documentMapper.documentToDocumentUserResponse(saved);
 	}
 
 	@PreAuthorize("hasAuthority('DELETE_MY_DOCUMENT')")
 	public void deleteMyDocument(Long id) {
-		try {
-			User user = getUserByToken.get();
-			Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
-					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
-			try {
-				fileStorage.deleteFile(entity.getFileUrl(), "image");
-				fileStorage.deleteFile(entity.getThumbnailUrl(), "image");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		User user = getUserByToken.get();
+		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
+				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 
-			deleteByKey(id);
+		eventPublisher.publishEvent(new DocumentDeleteEvent(entity));
 
-			sendNotification.sendNotificationMyDelete(entity.getTitle(), user.getId(), user.getUsername(),
-					Type.DOCUMENT);
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		DocumentEventDTO dto = documentMapper.documentToDocumentDTO(entity);
+		deleteByKey(id);
+		if (dto.getStatus() == ContentStatus.PUBLISHED) {
+			eventPublisher.publishEvent(new DocumentStatusEvent(dto, user, NotificationAction.AUTHOR_DELETE));
 		}
 	}
 
@@ -202,7 +178,6 @@ public class DocumentService {
 			String thumbnailUrl = fileStorage.getThumbnail(publicId, "pdf");
 			document.setThumbnailUrl(thumbnailUrl);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -221,7 +196,7 @@ public class DocumentService {
 	@PreAuthorize("hasAuthority('DOWNLOAD_FILE')")
 	public FileResponse downloadById(Long id) throws Exception {
 
-		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, ContentStatus.PUBLISHED)
 				.orElseThrow(() -> new AppException("Document không tồn tại", 1001, HttpStatus.NOT_FOUND));
 
 		FileResponse file = fileStorage.downloadFile(doc.getFileUrl());
@@ -229,54 +204,61 @@ public class DocumentService {
 
 	}
 
-	public List<DocumentFavoriteResponse> search(String keyword, Long categoryId) {
+	public List<DocumentResponse> search(String keyword, Long categoryId) {
 
 		User user = getUserByToken.get();
 		if (user == null) {
-			return documentRepository.searchWithWithoutFavorite(keyword, categoryId);
+			return documentRepository.searchWithoutLogin(keyword, categoryId, ContentStatus.PUBLISHED);
 		}
 
-		return documentRepository.searchWithFavoriteStatus(keyword, categoryId, user.getId());
+		return documentRepository.searchWhenLogin(keyword, categoryId, user.getId(), ContentStatus.PUBLISHED);
 	}
 
-	public List<DocumentFavoriteResponse> getAllPublicDocumentsCheckFavorite() {
+	public List<DocumentResponse> getAllPublicDocuments() {
 		User user = getUserByToken.get();
 		if (user == null) {
-			return documentRepository.findAllWithoutFavorite();
+			return documentRepository.getAllWithoutLogin(ContentStatus.PUBLISHED);
 		}
-		return documentRepository.findAllWithFavoriteStatus(user.getId());
-
-	}
-
-	public List<DocumentFavoriteResponse> getDocumentsByUserCheckFavorite(Long authorId, Long currentDocumentId) {
-		User user = getUserByToken.get();
-		if (user == null) {
-			return documentRepository.findDocumentsByUserWithoutFavorite(authorId, currentDocumentId);
-		}
-		return documentRepository.findDocumentsByUserWithFavoriteStatus(authorId, user.getId(), currentDocumentId);
+		return documentRepository.getAllWhenLogin(user.getId(), ContentStatus.PUBLISHED);
 
 	}
 
-	public List<DocumentFavoriteResponse> getDocumentsByCategoryCheckFavorite(Long categoryId, Long currentDocumentId) {
+	public List<DocumentResponse> getDocumentsByUser(Long authorId, Long currentDocumentId) {
 		User user = getUserByToken.get();
 		if (user == null) {
-			return documentRepository.findDocumentsByCategoryWithoutFavorite(categoryId, currentDocumentId);
+			return documentRepository.getByUserWithoutLoginAndDifferentCurrentDocument(authorId, currentDocumentId,
+					ContentStatus.PUBLISHED);
 		}
-		return documentRepository.findDocumentsByCategoryWithFavoriteStatus(categoryId, user.getId(),
-				currentDocumentId);
+		return documentRepository.getByUserWhenLoginAndDifferentCurrentDocument(authorId, user.getId(),
+				currentDocumentId, ContentStatus.PUBLISHED);
 
 	}
 
-	public List<DocumentFavoriteResponse> getAllDocumentsByUserCheckFavorite(Long authorId) {
+	public List<DocumentResponse> getDocumentsByCategory(Long categoryId, Long currentDocumentId) {
 		User user = getUserByToken.get();
 		if (user == null) {
-			return documentRepository.findAllDocumentsByUserWithoutFavorite(authorId);
+			return documentRepository.getByCategoryWithoutLoginAndDifferentCurrentDocument(categoryId,
+					currentDocumentId, ContentStatus.PUBLISHED);
 		}
-		return documentRepository.findAllDocumentsByUserWithFavoriteStatus(authorId, user.getId());
+		return documentRepository.getByCategoryWhenLoginAndDifferentCurrentDocument(categoryId, user.getId(),
+				currentDocumentId, ContentStatus.PUBLISHED);
+
+	}
+
+	public List<DocumentResponse> getAllDocumentsByUser(Long authorId) {
+		User user = getUserByToken.get();
+		if (user == null) {
+			return documentRepository.getByUserWithoutLogin(authorId, ContentStatus.PUBLISHED);
+		}
+		return documentRepository.getByUserWhenLogin(authorId, user.getId(), ContentStatus.PUBLISHED);
+	}
+
+	public DocumentStatsResponse getStats() {
+		return documentRepository.getStats(ContentStatus.PUBLISHED);
 	}
 
 	public DocumentDetailResponse findByIdPublicDocument(Long id) {
-		Document find = documentRepository.findByIdAndStatusAndHideFalse(id, Status.PUBLISHED)
+		Document find = documentRepository.findByIdAndStatusAndHideFalse(id, ContentStatus.PUBLISHED)
 				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		return documentMapper.documentToDocumentDetailResponse(find);
 	}
@@ -296,14 +278,14 @@ public class DocumentService {
 	}
 
 	public Long countDocumentOfUser(Long userId) {
-		return documentRepository.countByUser_IdAndStatusAndHideFalse(userId, Status.PUBLISHED);
+		return documentRepository.countByUser_IdAndStatusAndHideFalse(userId, ContentStatus.PUBLISHED);
 	}
 
 	private void deleteByKey(Long id) {
-		favoriteRepository.deleteByDocument_Id(id);
-		ratingRepository.deleteByDocument_Id(id);
-		reportRepository.deleteByDocument_Id(id);
-		commentRepository.deleteByDocument_Id(id);
+		favoriteDocumentRepository.deleteByDocument_Id(id);
+		ratingDocumentRepository.deleteByDocument_Id(id);
+		reportDocumentRepository.deleteByDocument_Id(id);
+		commentDocumentRepository.deleteByDocument_Id(id);
 		documentRepository.deleteById(id);
 	}
 }

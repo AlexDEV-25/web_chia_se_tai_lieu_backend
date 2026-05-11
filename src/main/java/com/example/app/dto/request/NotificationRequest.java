@@ -1,6 +1,6 @@
 package com.example.app.dto.request;
 
-import com.example.app.share.NotificationType;
+import com.example.app.constant.NotificationType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -1,6 +1,6 @@
 package com.example.app.dto.request;
 
-import com.example.app.share.Type;
+import com.example.app.constant.InteractionType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,5 +20,5 @@ public class ReportRequest {
 	private String reason;
 
 	@NotNull(message = "Type không được null")
-	private Type type;
+	private InteractionType type;
 }

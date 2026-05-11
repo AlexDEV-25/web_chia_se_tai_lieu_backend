@@ -1,6 +1,6 @@
 package com.example.app.dto.request;
 
-import com.example.app.share.Status;
+import com.example.app.constant.ContentStatus;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,7 +19,7 @@ public class DocumentRequest {
 	private String description;
 
 	@NotNull(message = "Status không được null")
-	private Status status;
+	private ContentStatus status;
 
 	private boolean hide;
 

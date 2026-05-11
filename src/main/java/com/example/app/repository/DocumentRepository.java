@@ -9,12 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.example.app.dto.response.document.DocumentFavoriteResponse;
+import com.example.app.constant.ContentStatus;
+import com.example.app.dto.response.document.DocumentResponse;
 import com.example.app.dto.response.document.DocumentStatsResponse;
 import com.example.app.dto.response.statistic.CategoryCountResponse;
 import com.example.app.model.Category;
 import com.example.app.model.Document;
-import com.example.app.share.Status;
 
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Long> {
@@ -23,19 +23,16 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	List<Document> findByUser_Id(Long userId);
 
 	// lấy tài liệu không bị ẩn hay pending
-	Optional<Document> findByIdAndStatusAndHideFalse(Long Id, Status status);
+	Optional<Document> findByIdAndStatusAndHideFalse(Long Id, ContentStatus status);
 
 	// lấy danh sách tài liệu không bị ẩn hay pending
-	List<Document> findByStatusAndHideFalse(Status status);
+	List<Document> findByStatusAndHideFalse(ContentStatus status);
 
 	// lấy tài liệu của chính mình
 	Optional<Document> findByIdAndUser_Id(Long id, Long userId);
 
-	// lấy tài liệu không bị ẩn hay pending
-	List<Document> findByIdNotAndStatusAndHideFalse(Long docId, Status status);
-
 	// lấy số tài liệu của 1 người đã được duyệt và không bị ẩn
-	long countByUser_IdAndStatusAndHideFalse(Long userId, Status status);
+	long countByUser_IdAndStatusAndHideFalse(Long userId, ContentStatus status);
 
 	// lấy số tài liệu của chính mình đăng tải lên
 	long countByUser_Id(Long userId);
@@ -43,13 +40,13 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 	@Query(value = """
 				SELECT DATE(d.created_at) as stat_date, COUNT(d.id)
 				FROM documents d
-				WHERE d.status = 'PUBLISHED'
+				WHERE d.status = :status
 				AND (d.hide = 0 OR d.hide IS NULL)
 				AND d.created_at >= :fromDate
 				GROUP BY DATE(d.created_at)
 				ORDER BY DATE(d.created_at)
 			""", nativeQuery = true)
-	List<Object[]> countDocumentByDay(@Param("fromDate") LocalDateTime fromDate);
+	List<Object[]> countDocumentByDay(@Param("fromDate") LocalDateTime fromDate, @Param("status") ContentStatus status);
 
 	@Query("""
 				SELECT new com.example.app.dto.response.statistic.CategoryCountResponse(
@@ -59,11 +56,11 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			)
 				FROM Document d
 				JOIN  d.category c ON d.category.id = c.id
-				WHERE d.status = 'PUBLISHED'
+				WHERE d.status = :status
 				AND (d.hide = false OR d.hide IS NULL)
 				GROUP BY c.id, c.name
 			""")
-	List<CategoryCountResponse> countDocumentByCategory();
+	List<CategoryCountResponse> countDocumentByCategory(@Param("status") ContentStatus status);
 
 	@Query("""
 			    SELECT new com.example.app.dto.response.document.DocumentStatsResponse(
@@ -73,12 +70,12 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    )
 			    FROM Document d
 			    WHERE d.hide = false
-			      AND d.status = 'PUBLISHED'
+			      AND d.status = :status
 			""")
-	DocumentStatsResponse getStats();
+	DocumentStatsResponse getStats(@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -89,12 +86,11 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN Favorite f
+			    LEFT JOIN DocumentFavorite f
 			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.hide = false
-			      AND d.status = com.example.app.share.Status.PUBLISHED
+			      AND d.status = :status
 			      AND (:categoryId IS NULL OR d.category.id = :categoryId)
 			      AND (
 			            :keyword IS NULL
@@ -102,11 +98,11 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			            OR d.description LIKE CONCAT('%', :keyword, '%')
 			      )
 			""")
-	List<DocumentFavoriteResponse> searchWithFavoriteStatus(@Param("keyword") String keyword,
-			@Param("categoryId") Long categoryId, @Param("currentUserId") Long currentUserId);
+	List<DocumentResponse> searchWhenLogin(@Param("keyword") String keyword, @Param("categoryId") Long categoryId,
+			@Param("currentUserId") Long currentUserId, @Param("status") ContentStatus status);
 
 	@Query("""
-			  SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			  SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -118,7 +114,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    )
 			    FROM Document d
 			    WHERE d.hide = false
-			      AND d.status = 'PUBLISHED'
+			      AND d.status = :status
 			      AND (:categoryId IS NULL OR d.category.id = :categoryId)
 			      AND (
 			            :keyword IS NULL
@@ -126,11 +122,11 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			            OR d.description LIKE CONCAT('%', :keyword, '%')
 			      )
 			""")
-	List<DocumentFavoriteResponse> searchWithWithoutFavorite(@Param("keyword") String keyword,
-			@Param("categoryId") Long categoryId);
+	List<DocumentResponse> searchWithoutLogin(@Param("keyword") String keyword, @Param("categoryId") Long categoryId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -141,21 +137,21 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN Favorite f
+			    LEFT JOIN DocumentFavorite f
 			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.user.id = :authorId
 			        AND d.id <> :currentDocumentId
-			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.status = :status
 			        AND d.hide = false
 			    ORDER BY d.createdAt DESC
 			""")
-	List<DocumentFavoriteResponse> findDocumentsByUserWithFavoriteStatus(@Param("authorId") Long authorId,
-			@Param("currentUserId") Long currentUserId, @Param("currentDocumentId") Long currentDocumentId);
+	List<DocumentResponse> getByUserWhenLoginAndDifferentCurrentDocument(@Param("authorId") Long authorId,
+			@Param("currentUserId") Long currentUserId, @Param("currentDocumentId") Long currentDocumentId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -168,15 +164,15 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    FROM Document d
 			    WHERE d.user.id = :authorId
 			        AND d.id <> :currentDocumentId
-			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.status = :status
 			        AND d.hide = false
 			    ORDER BY d.createdAt DESC
 			""")
-	List<DocumentFavoriteResponse> findDocumentsByUserWithoutFavorite(@Param("authorId") Long authorId,
-			@Param("currentDocumentId") Long currentDocumentId);
+	List<DocumentResponse> getByUserWithoutLoginAndDifferentCurrentDocument(@Param("authorId") Long authorId,
+			@Param("currentDocumentId") Long currentDocumentId, @Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -187,20 +183,19 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			     LEFT JOIN Favorite f
+			     LEFT JOIN DocumentFavorite f
 			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.user.id = :authorId
-			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.status = :status
 			        AND d.hide = false
 			    ORDER BY d.createdAt DESC
 			""")
-	List<DocumentFavoriteResponse> findAllDocumentsByUserWithFavoriteStatus(@Param("authorId") Long authorId,
-			@Param("currentUserId") Long currentUserId);
+	List<DocumentResponse> getByUserWhenLogin(@Param("authorId") Long authorId,
+			@Param("currentUserId") Long currentUserId, @Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -212,14 +207,15 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    )
 			    FROM Document d
 			    WHERE d.user.id = :authorId
-			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.status = :status
 			        AND d.hide = false
 			    ORDER BY d.createdAt DESC
 			""")
-	List<DocumentFavoriteResponse> findAllDocumentsByUserWithoutFavorite(@Param("authorId") Long authorId);
+	List<DocumentResponse> getByUserWithoutLogin(@Param("authorId") Long authorId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -230,21 +226,21 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN Favorite f
+			    LEFT JOIN DocumentFavorite f
 			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.DOCUMENT
 			    WHERE d.category.id = :categoryId
 			        AND d.id <> :currentDocumentId
-			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.status = :status
 			        AND d.hide = false
 			    ORDER BY d.createdAt DESC
 			""")
-	List<DocumentFavoriteResponse> findDocumentsByCategoryWithFavoriteStatus(@Param("categoryId") Long categoryId,
-			@Param("currentUserId") Long currentUserId, @Param("currentDocumentId") Long currentDocumentId);
+	List<DocumentResponse> getByCategoryWhenLoginAndDifferentCurrentDocument(@Param("categoryId") Long categoryId,
+			@Param("currentUserId") Long currentUserId, @Param("currentDocumentId") Long currentDocumentId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -257,15 +253,15 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			    FROM Document d
 			    WHERE d.category.id = :categoryId
 			        AND d.id <> :currentDocumentId
-			        AND d.status = com.example.app.share.Status.PUBLISHED
+			        AND d.status = :status
 			        AND d.hide = false
 			    ORDER BY d.createdAt DESC
 			""")
-	List<DocumentFavoriteResponse> findDocumentsByCategoryWithoutFavorite(@Param("categoryId") Long categoryId,
-			@Param("currentDocumentId") Long currentDocumentId);
+	List<DocumentResponse> getByCategoryWithoutLoginAndDifferentCurrentDocument(@Param("categoryId") Long categoryId,
+			@Param("currentDocumentId") Long currentDocumentId, @Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -276,18 +272,18 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Document d
-			    LEFT JOIN Favorite f
+			    LEFT JOIN DocumentFavorite f
 			        ON  f.document.id = d.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.DOCUMENT
-			    WHERE d.status = com.example.app.share.Status.PUBLISHED
+			    WHERE d.status = :status
 			        AND d.hide = false
 			    ORDER BY d.createdAt DESC
 			""")
-	List<DocumentFavoriteResponse> findAllWithFavoriteStatus(@Param("currentUserId") Long currentUserId);
+	List<DocumentResponse> getAllWhenLogin(@Param("currentUserId") Long currentUserId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.document.DocumentFavoriteResponse(
+			    SELECT new com.example.app.dto.response.document.DocumentResponse(
 			        d.id,
 			        d.title,
 			        d.description,
@@ -298,12 +294,12 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 			        false
 			    )
 			    FROM Document d
-			    WHERE d.status = com.example.app.share.Status.PUBLISHED
+			    WHERE d.status = :status
 			        AND d.hide = false
 			    ORDER BY d.createdAt DESC
 			""")
-	List<DocumentFavoriteResponse> findAllWithoutFavorite();
+	List<DocumentResponse> getAllWithoutLogin(@Param("status") ContentStatus status);
 
-	List<Document> findByCategoryAndStatusAndHideFalse(Category category, Status status);
+	List<Document> findByCategoryAndStatusAndHideFalse(Category category, ContentStatus status);
 
 }

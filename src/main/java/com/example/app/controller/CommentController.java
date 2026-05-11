@@ -27,7 +27,7 @@ public class CommentController {
 
 	@GetMapping("/document/{docId}")
 	public APIResponse<List<CommentTreeResponse>> getDocumentCommentTree(@PathVariable Long docId) {
-		List<CommentTreeResponse> response = commentService.getDocumentCommentTree(docId);
+		List<CommentTreeResponse> response = commentService.getDocumentTree(docId);
 		APIResponse<List<CommentTreeResponse>> apiResponse = new APIResponse<List<CommentTreeResponse>>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
@@ -36,7 +36,7 @@ public class CommentController {
 
 	@GetMapping("/lesson/{lessonId}")
 	public APIResponse<List<CommentTreeResponse>> getLessonCommentTree(@PathVariable Long lessonId) {
-		List<CommentTreeResponse> response = commentService.getLessonCommentTree(lessonId);
+		List<CommentTreeResponse> response = commentService.getLessonTree(lessonId);
 		APIResponse<List<CommentTreeResponse>> apiResponse = new APIResponse<List<CommentTreeResponse>>();
 		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
@@ -61,12 +61,4 @@ public class CommentController {
 		return apiResponse;
 	}
 
-	@PutMapping("/hide/{id}")
-	public APIResponse<CommentResponse> hideMyComment(@PathVariable Long id) {
-		CommentResponse response = commentService.hideMyComment(id);
-		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
-		return apiResponse;
-	}
 }

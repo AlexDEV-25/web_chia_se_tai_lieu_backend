@@ -10,9 +10,6 @@ import com.example.app.model.UserNotification;
 @Mapper(componentModel = "spring")
 public interface UserNotificationMapper {
 	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "sender", ignore = true)
-	@Mapping(target = "receiver", ignore = true)
-	@Mapping(target = "notification", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	UserNotification requestToUserNotification(UserNotificationRequest request);
 

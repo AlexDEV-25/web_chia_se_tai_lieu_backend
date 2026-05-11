@@ -1,6 +1,6 @@
 package com.example.app.dto.request;
 
-import com.example.app.share.Type;
+import com.example.app.constant.InteractionType;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -16,5 +16,5 @@ public class FavoriteRequest {
 	private Long contentId;
 
 	@NotNull(message = "Type không được null")
-	private Type type;
+	private InteractionType type;
 }

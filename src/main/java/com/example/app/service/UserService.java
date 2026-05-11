@@ -1,7 +1,6 @@
 package com.example.app.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -11,22 +10,23 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.ConnectionStatus;
+import com.example.app.constant.HideType;
 import com.example.app.dto.request.ChangePasswordRequest;
 import com.example.app.dto.request.ChangeUserInfoRequest;
-import com.example.app.dto.request.HideRequest;
+import com.example.app.dto.request.DisplayRequest;
 import com.example.app.dto.request.UserRequest;
 import com.example.app.dto.response.user.UserBioResponse;
 import com.example.app.dto.response.user.UserResponse;
 import com.example.app.exception.AppException;
+import com.example.app.helper.FileManager;
+import com.example.app.helper.GetUserByToken;
 import com.example.app.mapper.UserMapper;
 import com.example.app.model.Role;
 import com.example.app.model.User;
 import com.example.app.repository.RoleRepository;
 import com.example.app.repository.UserRepository;
-import com.example.app.share.FileManager;
-import com.example.app.share.GetUserByToken;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -42,10 +42,7 @@ public class UserService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public List<UserResponse> getAllUsers() {
 		List<User> users = userRepository.findAll();
-		List<UserResponse> response = new ArrayList<UserResponse>();
-		for (User u : users) {
-			response.add(userMapper.userToResponse(u));
-		}
+		List<UserResponse> response = users.stream().map(userMapper::userToResponse).toList();
 		return response;
 	}
 
@@ -71,12 +68,17 @@ public class UserService {
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
-	public UserResponse hide(Long id, HideRequest dto) {
-		User entity = userRepository.findById(id)
-				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
-		entity.setHide(dto.isHide());
-		User saved = userRepository.save(entity);
-		return userMapper.userToResponse(saved);
+	public UserResponse hide(Long id, DisplayRequest request) {
+		if (request.getType() == HideType.USER) {
+			User entity = userRepository.findById(id)
+					.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+			entity.setHide(request.isHide());
+			entity.setUpdatedAt(LocalDateTime.now());
+			User saved = userRepository.save(entity);
+			return userMapper.userToResponse(saved);
+		} else {
+			throw new AppException("không đúng type", 1001, HttpStatus.BAD_REQUEST);
+		}
 	}
 
 	@PreAuthorize("hasAuthority('GET_MY_INFO')")
@@ -106,8 +108,13 @@ public class UserService {
 		return userMapper.userToResponse(saved);
 	}
 
+	@PreAuthorize("hasAuthority('SEARCH_USER')")
+	public List<UserBioResponse> search(String keyword) {
+		return userRepository.search(keyword);
+	}
+
 	@PreAuthorize("hasAuthority('CHANGE_PASSWORD')")
-	public void changePassword(@Valid ChangePasswordRequest request) {
+	public void changePassword(ChangePasswordRequest request) {
 		User entity = getUserByToken.get();
 		entity.setPassword(passwordEncoder.encode(request.getPassword()));
 		userRepository.save(entity);
@@ -125,6 +132,12 @@ public class UserService {
 		User find = userRepository.findByIdAndHideFalse(id)
 				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
 		return userMapper.userToUserBioResponse(find);
+	}
+
+	public void changeConnectStatus(String username, ConnectionStatus status) {
+		User find = userRepository.findByUsername(username);
+		find.setStatus(status);
+		userRepository.save(find);
 	}
 
 }

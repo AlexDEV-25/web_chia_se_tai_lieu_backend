@@ -9,12 +9,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.example.app.dto.response.lesson.LessonFavoriteResponse;
+import com.example.app.constant.ContentStatus;
+import com.example.app.dto.response.lesson.LessonResponse;
 import com.example.app.dto.response.lesson.LessonStatsResponse;
 import com.example.app.dto.response.statistic.CategoryCountResponse;
 import com.example.app.model.Category;
 import com.example.app.model.Lesson;
-import com.example.app.share.Status;
 
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
@@ -23,19 +23,16 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	List<Lesson> findByUser_Id(Long userId);
 
 	// lấy bài giảng không bị ẩn hay pending
-	Optional<Lesson> findByIdAndStatusAndHideFalse(Long Id, Status status);
+	Optional<Lesson> findByIdAndStatusAndHideFalse(Long Id, ContentStatus status);
 
 	// lấy danh sách bài giảng không bị ẩn hay pending
-	List<Lesson> findByStatusAndHideFalse(Status status);
+	List<Lesson> findByStatusAndHideFalse(ContentStatus status);
 
 	// lấy bài giảng của chính mình
 	Optional<Lesson> findByIdAndUser_Id(Long id, Long userId);
 
-	// lấy bài giảng không bị ẩn hay pending
-	List<Lesson> findByIdNotAndStatusAndHideFalse(Long lessonId, Status status);
-
 	// lấy số bài giảng của 1 người đã được duyệt và không bị ẩn
-	long countByUser_IdAndStatusAndHideFalse(Long userId, Status status);
+	long countByUser_IdAndStatusAndHideFalse(Long userId, ContentStatus status);
 
 	// lấy số bài giảng của chính mình đăng tải lên
 	long countByUser_Id(Long userId);
@@ -43,13 +40,13 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 	@Query(value = """
 				SELECT DATE(l.created_at) as stat_date, COUNT(l.id)
 				FROM lessons l
-				WHERE l.status = 'PUBLISHED'
+				WHERE l.status = :status
 				AND (l.hide = 0 OR l.hide IS NULL)
 				AND l.created_at >= :fromDate
 				GROUP BY DATE(l.created_at)
 				ORDER BY DATE(l.created_at)
 			""", nativeQuery = true)
-	List<Object[]> countLessonByDay(@Param("fromDate") LocalDateTime fromDate);
+	List<Object[]> countLessonByDay(@Param("fromDate") LocalDateTime fromDate, @Param("status") ContentStatus status);
 
 	@Query("""
 			  	SELECT new com.example.app.dto.response.statistic.CategoryCountResponse(
@@ -59,11 +56,11 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			)
 				FROM Lesson l
 				JOIN Category c ON l.category.id = c.id
-				WHERE l.status = 'PUBLISHED'
+				WHERE l.status = :status
 				AND (l.hide = false OR l.hide IS NULL)
 				GROUP BY c.id, c.name
 			""")
-	List<CategoryCountResponse> countLessonByCategory();
+	List<CategoryCountResponse> countLessonByCategory(@Param("status") ContentStatus status);
 
 	@Query("""
 			    SELECT new com.example.app.dto.response.lesson.LessonStatsResponse(
@@ -72,12 +69,12 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			    )
 			    FROM Lesson l
 			    WHERE l.hide = false
-			      AND l.status = 'PUBLISHED'
+			      AND l.status = :status
 			""")
-	LessonStatsResponse getStats();
+	LessonStatsResponse getStats(@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -87,11 +84,10 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN Favorite f
+			    LEFT JOIN LessonFavorite f
 			        ON  f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.LESSON
 			    WHERE l.hide = false
-			      AND l.status = com.example.app.share.Status.PUBLISHED
+			      AND l.status = :status
 			      AND (:categoryId IS NULL OR l.category.id = :categoryId)
 			      AND (
 			            :keyword IS NULL
@@ -99,11 +95,11 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			            OR l.description LIKE CONCAT('%', :keyword, '%')
 			      )
 			""")
-	List<LessonFavoriteResponse> searchWithFavoriteStatus(@Param("keyword") String keyword,
-			@Param("categoryId") Long categoryId, @Param("currentUserId") Long currentUserId);
+	List<LessonResponse> searchWhenLogin(@Param("keyword") String keyword, @Param("categoryId") Long categoryId,
+			@Param("currentUserId") Long currentUserId, @Param("status") ContentStatus status);
 
 	@Query("""
-			  SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			  SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -114,7 +110,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			    )
 			    FROM Lesson l
 			    WHERE l.hide = false
-			      AND l.status = 'PUBLISHED'
+			      AND l.status = :status
 			      AND (:categoryId IS NULL OR l.category.id = :categoryId)
 			      AND (
 			            :keyword IS NULL
@@ -122,11 +118,11 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			            OR l.description LIKE CONCAT('%', :keyword, '%')
 			      )
 			""")
-	List<LessonFavoriteResponse> searchWithWithoutFavorite(@Param("keyword") String keyword,
-			@Param("categoryId") Long categoryId);
+	List<LessonResponse> searchWithoutLogin(@Param("keyword") String keyword, @Param("categoryId") Long categoryId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -136,21 +132,21 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN Favorite f
+			    LEFT JOIN LessonFavorite f
 			        ON  f.lesson.id = l.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.LESSON
 			    WHERE l.user.id = :authorId
 			        AND l.id <> :currentLessonId
-			        AND l.status = com.example.app.share.Status.PUBLISHED
+			        AND l.status = :status
 			        AND l.hide = false
 			    ORDER BY l.createdAt DESC
 			""")
-	List<LessonFavoriteResponse> findLessonsByUserWithFavoriteStatus(@Param("authorId") Long authorId,
-			@Param("currentUserId") Long currentUserId, @Param("currentLessonId") Long currentLessonId);
+	List<LessonResponse> getByUserWhenLoginAndDifferentCurrentLesson(@Param("authorId") Long authorId,
+			@Param("currentUserId") Long currentUserId, @Param("currentLessonId") Long currentLessonId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -162,15 +158,15 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			    FROM Lesson l
 			    WHERE l.user.id = :authorId
 			        AND l.id <> :currentLessonId
-			        AND l.status = com.example.app.share.Status.PUBLISHED
+			        AND l.status = :status
 			        AND l.hide = false
 			    ORDER BY l.createdAt DESC
 			""")
-	List<LessonFavoriteResponse> findLessonsByUserWithoutFavorite(@Param("authorId") Long authorId,
-			@Param("currentLessonId") Long currentLessonId);
+	List<LessonResponse> getByUserWithoutLoginAndDifferentCurrentLesson(@Param("authorId") Long authorId,
+			@Param("currentLessonId") Long currentLessonId, @Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -180,20 +176,19 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN Favorite f
+			    LEFT JOIN LessonFavorite f
 			        ON  f.lesson.id = l.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.LESSON
 			    WHERE l.user.id = :authorId
-			        AND l.status = com.example.app.share.Status.PUBLISHED
+			        AND l.status = :status
 			        AND l.hide = false
 			    ORDER BY l.createdAt DESC
 			""")
-	List<LessonFavoriteResponse> findAllLessonsByUserWithFavoriteStatus(@Param("authorId") Long authorId,
-			@Param("currentUserId") Long currentUserId);
+	List<LessonResponse> getByUserWhenLogin(@Param("authorId") Long authorId,
+			@Param("currentUserId") Long currentUserId, @Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -204,14 +199,14 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			    )
 			    FROM Lesson l
 			    WHERE l.user.id = :authorId
-			        AND l.status = com.example.app.share.Status.PUBLISHED
+			        AND l.status = :status
 			        AND l.hide = false
 			    ORDER BY l.createdAt DESC
 			""")
-	List<LessonFavoriteResponse> findAllLessonsByUserWithoutFavorite(@Param("authorId") Long authorId);
+	List<LessonResponse> getByUserWithoutLogin(@Param("authorId") Long authorId, @Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -221,21 +216,21 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN Favorite f
+			    LEFT JOIN LessonFavorite f
 			        ON  f.lesson.id = l.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.LESSON
 			    WHERE l.category.id = :categoryId
 			        AND l.id <> :currentLessonId
-			        AND l.status = com.example.app.share.Status.PUBLISHED
+			        AND l.status = :status
 			        AND l.hide = false
 			    ORDER BY l.createdAt DESC
 			""")
-	List<LessonFavoriteResponse> findLessonsByCategoryWithFavoriteStatus(@Param("categoryId") Long categoryId,
-			@Param("currentUserId") Long currentUserId, @Param("currentLessonId") Long currentLessonId);
+	List<LessonResponse> getByCategoryWhenLoginAndDifferentCurrentLesson(@Param("categoryId") Long categoryId,
+			@Param("currentUserId") Long currentUserId, @Param("currentLessonId") Long currentLessonId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -247,15 +242,15 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			    FROM Lesson l
 			    WHERE l.category.id = :categoryId
 			        AND l.id <> :currentLessonId
-			        AND l.status = com.example.app.share.Status.PUBLISHED
+			        AND l.status = :status
 			        AND l.hide = false
 			    ORDER BY l.createdAt DESC
 			""")
-	List<LessonFavoriteResponse> findLessonsByCategoryWithoutFavorite(@Param("categoryId") Long categoryId,
-			@Param("currentLessonId") Long currentLessonId);
+	List<LessonResponse> getByCategoryWithoutLoginAndDifferentCurrentLesson(@Param("categoryId") Long categoryId,
+			@Param("currentLessonId") Long currentLessonId, @Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -265,18 +260,18 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        CASE WHEN f.id IS NOT NULL THEN true ELSE false END
 			    )
 			    FROM Lesson l
-			    LEFT JOIN Favorite f
+			    LEFT JOIN LessonFavorite f
 			        ON  f.lesson.id = l.id
 			        AND f.user.id = :currentUserId
-			        AND f.type = com.example.app.share.Type.LESSON
-			    WHERE l.status = com.example.app.share.Status.PUBLISHED
+			    WHERE l.status = :status
 			        AND l.hide = false
 			    ORDER BY l.createdAt DESC
 			""")
-	List<LessonFavoriteResponse> findAllWithFavoriteStatus(@Param("currentUserId") Long currentUserId);
+	List<LessonResponse> getAllWhenLogin(@Param("currentUserId") Long currentUserId,
+			@Param("status") ContentStatus status);
 
 	@Query("""
-			    SELECT new com.example.app.dto.response.lesson.LessonFavoriteResponse(
+			    SELECT new com.example.app.dto.response.lesson.LessonResponse(
 			        l.id,
 			        l.title,
 			        l.description,
@@ -286,12 +281,12 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 			        false
 			    )
 			    FROM Lesson l
-			    WHERE l.status = com.example.app.share.Status.PUBLISHED
+			    WHERE l.status = :status
 			        AND l.hide = false
 			    ORDER BY l.createdAt DESC
 			""")
-	List<LessonFavoriteResponse> findAllWithoutFavorite();
+	List<LessonResponse> getAllWithoutLogin(@Param("status") ContentStatus status);
 
-	List<Lesson> findByCategoryAndStatusAndHideFalse(Category category, Status status);
+	List<Lesson> findByCategoryAndStatusAndHideFalse(Category category, ContentStatus status);
 
 }

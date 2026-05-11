@@ -11,13 +11,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.app.dto.request.DocumentRequest;
-import com.example.app.dto.request.HideRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.document.DocumentAdminResponse;
 import com.example.app.dto.response.document.DocumentDetailResponse;
 import com.example.app.service.DocumentService;
 
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
@@ -37,7 +35,7 @@ public class AdminDocumentController {
 
 	@GetMapping
 	public APIResponse<DocumentAdminResponse> getAll() {
-		List<DocumentAdminResponse> response = documentService.getAllDocuments();
+		List<DocumentAdminResponse> response = documentService.findAll();
 		APIResponse<DocumentAdminResponse> apiResponse = new APIResponse<DocumentAdminResponse>();
 		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
@@ -49,15 +47,6 @@ public class AdminDocumentController {
 		documentService.delete(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
 		apiResponse.setMessage("delete success");
-		return apiResponse;
-	}
-
-	@PutMapping("/hide/{id}")
-	public APIResponse<DocumentDetailResponse> hide(@PathVariable Long id, @RequestBody @Valid HideRequest dto) {
-		DocumentDetailResponse response = documentService.hide(id, dto);
-		APIResponse<DocumentDetailResponse> apiResponse = new APIResponse<DocumentDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
 		return apiResponse;
 	}
 
