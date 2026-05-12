@@ -1,9 +1,14 @@
 package com.example.app.model;
 
+import java.time.LocalDateTime;
+
+import com.example.app.constant.ChatRole;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -39,4 +44,11 @@ public class ParticipantInfo {
 	@JoinColumn(name = "conversation_id", nullable = false)
 	@JsonBackReference
 	private Conversation conversation;
+
+	@Column(name = "last_seen")
+	private LocalDateTime lastSeen;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "chat_role")
+	private ChatRole chatRole;
 }

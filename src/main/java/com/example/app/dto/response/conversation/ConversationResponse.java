@@ -1,6 +1,5 @@
 package com.example.app.dto.response.conversation;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import com.example.app.constant.ConversationType;
@@ -19,6 +18,4 @@ public class ConversationResponse {
 	private String conversationAvatar;// avatar của người mình đang nhắn tin
 	private String conversationName;// tên của người mình đang nhắn tin
 	private List<ParticipantInfoResponse> participantInfos;
-	private LocalDateTime createdAt;
-	private LocalDateTime updatedAt;
 }

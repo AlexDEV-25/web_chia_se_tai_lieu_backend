@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.ChatRole;
 import com.example.app.constant.ConversationType;
 import com.example.app.dto.request.ConversationGroupRequest;
 import com.example.app.dto.request.ConversationRequest;
@@ -27,6 +28,7 @@ import com.example.app.model.Conversation;
 import com.example.app.model.ParticipantInfo;
 import com.example.app.model.User;
 import com.example.app.repository.ConversationRepository;
+import com.example.app.repository.ParticipantInfoRepository;
 import com.example.app.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
@@ -37,6 +39,7 @@ import lombok.AllArgsConstructor;
 public class ConversationService {
 	private final ConversationRepository conversationRepository;
 	private final UserRepository userRepository;
+	private final ParticipantInfoRepository participantInfoRepository;
 	private final ConversationMapper conversationMapper;
 	private final ParticipantInfoMapper participantInfoMapper;
 	private final FileManager fileStorage;
@@ -117,6 +120,7 @@ public class ConversationService {
 		// thêm mình
 		ParticipantInfo meParticipant = new ParticipantInfo();
 		meParticipant.setUser(me);
+		meParticipant.setChatRole(ChatRole.MANAGER);
 		meParticipant.setConversation(conversation);
 		participants.add(meParticipant);
 
@@ -124,6 +128,7 @@ public class ConversationService {
 		for (User user : users) {
 			ParticipantInfo p = new ParticipantInfo();
 			p.setUser(user);
+			meParticipant.setChatRole(ChatRole.MEMBER);
 			p.setConversation(conversation);
 			participants.add(p);
 		}
@@ -133,9 +138,28 @@ public class ConversationService {
 		// 4. save (cascade ALL → save luôn participant)
 		conversationRepository.save(conversation);
 
-		return
+		return toConversationResponse(conversation, me);
+	}
 
-		toConversationResponse(conversation, me);
+	@PreAuthorize("hasAuthority('SEARCH_CONVERSATION')")
+	public List<ConversationResponse> search(String keyword) {
+		User me = getUserByToken.get();
+		List<Conversation> conversations = conversationRepository.search(me.getId(), keyword);
+		return conversations.stream().map(conversation -> toConversationResponse(conversation, me)).toList();
+	}
+
+	@PreAuthorize("hasAuthority('GET_DETAIL_CONVERSATION')")
+	public ConversationResponse getDetailConversation(Long id) {
+		User me = getUserByToken.get();
+
+		Conversation conversation = conversationRepository.findById(id)
+				.orElseThrow(() -> new AppException("conversation không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+
+		if (!participantInfoRepository.existsByConversation_IdAndUser_Id(id, me.getId())) {
+			throw new AppException("không đủ quyền hạn", 1001, HttpStatus.BAD_REQUEST);
+		}
+
+		return toConversationResponse(conversation, me);
 	}
 
 	private String saveGroupAvt(MultipartFile avt) {
@@ -182,13 +206,6 @@ public class ConversationService {
 				.map(participantInfoMapper::entityToResponse).toList();
 		conversationResponse.setParticipantInfos(participantInfoResponse);
 		return conversationResponse;
-	}
-
-	@PreAuthorize("hasAuthority('SEARCH_CONVERSATION')")
-	public List<ConversationResponse> search(String keyword) {
-		User me = getUserByToken.get();
-		List<Conversation> conversations = conversationRepository.search(me.getId(), keyword);
-		return conversations.stream().map(conversation -> toConversationResponse(conversation, me)).toList();
 	}
 
 }

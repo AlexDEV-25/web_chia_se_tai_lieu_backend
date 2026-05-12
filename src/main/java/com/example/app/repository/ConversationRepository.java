@@ -43,4 +43,6 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 			    	)
 			""")
 	List<Conversation> search(Long myId, String keyword);
+
+	Optional<Conversation> findById(Long id);
 }

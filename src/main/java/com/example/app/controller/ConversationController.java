@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -69,6 +70,15 @@ public class ConversationController {
 		List<ConversationResponse> response = conversationService.search(keyword);
 		APIResponse<ConversationResponse> apiResponse = new APIResponse<ConversationResponse>();
 		apiResponse.setResultList(response);
+		apiResponse.setMessage("get all success");
+		return apiResponse;
+	}
+
+	@GetMapping("/detail/{id}")
+	public APIResponse<ConversationResponse> getDetailConversation(@PathVariable Long id) {
+		ConversationResponse response = conversationService.getDetailConversation(id);
+		APIResponse<ConversationResponse> apiResponse = new APIResponse<ConversationResponse>();
+		apiResponse.setResult(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}
