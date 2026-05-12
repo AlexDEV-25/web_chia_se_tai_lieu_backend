@@ -29,4 +29,18 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 			       END) = :size
 			""")
 	Optional<Conversation> findExactConversation(List<Long> userIds, long size);
+
+	@Query("""
+			  SELECT DISTINCT c
+			  FROM Conversation c
+			  JOIN c.participantInfos myP
+			  LEFT JOIN c.participantInfos otherP
+			  WHERE myP.user.id = :myId
+			    AND (
+			          c.groupName LIKE CONCAT('%', :keyword, '%')
+			          OR
+			          otherP.user.username LIKE CONCAT('%', :keyword, '%')
+			    	)
+			""")
+	List<Conversation> search(Long myId, String keyword);
 }

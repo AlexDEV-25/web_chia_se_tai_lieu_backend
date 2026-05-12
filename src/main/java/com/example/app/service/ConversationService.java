@@ -4,18 +4,22 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.app.constant.ConversationType;
+import com.example.app.dto.request.ConversationGroupRequest;
 import com.example.app.dto.request.ConversationRequest;
 import com.example.app.dto.response.conversation.ConversationResponse;
 import com.example.app.dto.response.participantinfo.ParticipantInfoResponse;
 import com.example.app.exception.AppException;
+import com.example.app.helper.FileManager;
 import com.example.app.helper.GetUserByToken;
 import com.example.app.mapper.ConversationMapper;
 import com.example.app.mapper.ParticipantInfoMapper;
@@ -35,6 +39,7 @@ public class ConversationService {
 	private final UserRepository userRepository;
 	private final ConversationMapper conversationMapper;
 	private final ParticipantInfoMapper participantInfoMapper;
+	private final FileManager fileStorage;
 	private final GetUserByToken getUserByToken;
 
 	@PreAuthorize("hasAuthority('GET_MY_CONVERSATION')")
@@ -76,7 +81,7 @@ public class ConversationService {
 
 	@Transactional
 	@PreAuthorize("hasAuthority('CREATE_GROUP_CONVERSATION')")
-	public ConversationResponse createGroupConversation(ConversationRequest request) {
+	public ConversationResponse createGroupConversation(MultipartFile avt, ConversationGroupRequest request) {
 
 		User me = getUserByToken.get();
 
@@ -99,19 +104,19 @@ public class ConversationService {
 			throw new AppException("Có user không tồn tại", 1003, HttpStatus.BAD_REQUEST);
 		}
 
-		// 3. tạo conversation
-		Conversation conversation = Conversation.builder().type(request.getType()).createdAt(LocalDateTime.now())
-				.build();
+		String groupAvt = avt != null ? saveGroupAvt(avt) : null;
+		String groupName = request.getGroupName() != null ? request.getGroupName()
+				: "Nhóm " + (request.getParticipantIds().size() + 1) + " người";
 
-		StringBuilder tenNhom = new StringBuilder();
+		// 3. tạo conversation
+		Conversation conversation = Conversation.builder().type(request.getType()).groupAvatarUrl(groupAvt)
+				.groupName(groupName).createdAt(LocalDateTime.now()).build();
 
 		List<ParticipantInfo> participants = new ArrayList<>();
 
 		// thêm mình
 		ParticipantInfo meParticipant = new ParticipantInfo();
 		meParticipant.setUser(me);
-		tenNhom.append(me.getUsername() + ", ");
-
 		meParticipant.setConversation(conversation);
 		participants.add(meParticipant);
 
@@ -120,17 +125,27 @@ public class ConversationService {
 			ParticipantInfo p = new ParticipantInfo();
 			p.setUser(user);
 			p.setConversation(conversation);
-			tenNhom.append(user.getUsername() + ", ");
 			participants.add(p);
 		}
 
-		conversation.setGroupName("Nhóm " + tenNhom);
 		conversation.setParticipantInfos(participants);
 
 		// 4. save (cascade ALL → save luôn participant)
 		conversationRepository.save(conversation);
 
-		return toConversationResponse(conversation, me);
+		return
+
+		toConversationResponse(conversation, me);
+	}
+
+	private String saveGroupAvt(MultipartFile avt) {
+		try {
+			Map<?, ?> handleAvt = fileStorage.uploadImage(avt);
+			String avatarUrl = (String) handleAvt.get("secure_url");
+			return avatarUrl;
+		} catch (Exception e) {
+			throw new AppException("lưu ảnh đại diện nhóm thất bại", 1001, HttpStatus.BAD_REQUEST);
+		}
 	}
 
 	private List<ParticipantInfo> buildListParticipantInfo(User me, User partner, Conversation conversation) {
@@ -167,6 +182,13 @@ public class ConversationService {
 				.map(participantInfoMapper::entityToResponse).toList();
 		conversationResponse.setParticipantInfos(participantInfoResponse);
 		return conversationResponse;
+	}
+
+	@PreAuthorize("hasAuthority('SEARCH_CONVERSATION')")
+	public List<ConversationResponse> search(String keyword) {
+		User me = getUserByToken.get();
+		List<Conversation> conversations = conversationRepository.search(me.getId(), keyword);
+		return conversations.stream().map(conversation -> toConversationResponse(conversation, me)).toList();
 	}
 
 }
