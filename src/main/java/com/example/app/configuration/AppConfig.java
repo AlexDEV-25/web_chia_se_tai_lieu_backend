@@ -9,6 +9,8 @@ public class AppConfig {
 
 	@Bean
 	RestTemplate restTemplate() {
+		// dùng để gọi api từ spring
+		// đang dùng trong fileManager
 		return new RestTemplate();
 	}
 }

@@ -20,10 +20,10 @@ public class ChatMessageController {
 	private final ChatMessageService chatMessageService;
 
 	@GetMapping("/my-conversation-messages/{conversationId}")
-	public APIResponse<List<ChatMessageResponse>> getMyMessages(@PathVariable Long conversationId) {
+	public APIResponse<ChatMessageResponse> getMyMessages(@PathVariable Long conversationId) {
 		List<ChatMessageResponse> response = chatMessageService.getMessages(conversationId);
-		APIResponse<List<ChatMessageResponse>> apiResponse = new APIResponse<List<ChatMessageResponse>>();
-		apiResponse.setResult(response);
+		APIResponse<ChatMessageResponse> apiResponse = new APIResponse<ChatMessageResponse>();
+		apiResponse.setResultList(response);
 		apiResponse.setMessage("get all success");
 		return apiResponse;
 	}

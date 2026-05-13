@@ -37,13 +37,22 @@ public class ChatMessageService {
 	@PreAuthorize("hasAuthority('GET_MESSAGE')")
 	public List<ChatMessageResponse> getMessages(Long conversationId) {
 		User me = getUserByToken.get();
-		List<ChatMessage> messages = chatMessageRepository.findAllByConversation_IdOrderByCreatedAtDesc(conversationId);
+
+		if (me == null) {
+			throw new AppException("Người dùng không được xác thực", 1001, HttpStatus.UNAUTHORIZED);
+		}
+
+		List<ChatMessage> messages = chatMessageRepository.findAllByConversation_IdOrderByCreatedAtAsc(conversationId);
 		return messages.stream().map((message) -> toChatMessageResponse(message, me)).toList();
 	}
 
 	@PreAuthorize("hasAuthority('CREATE_MESSAGE')")
 	public ChatMessageResponse createMessage(ChatMessageRequest request) {
 		User me = getUserByToken.get();
+
+		if (me == null) {
+			throw new AppException("Người dùng không được xác thực", 1001, HttpStatus.UNAUTHORIZED);
+		}
 
 		Conversation conversation = conversationRepository.findById(request.getConversationId())
 				.orElseThrow(() -> new AppException("Không tìm thấy cuộc hội thoại", 1001, HttpStatus.BAD_REQUEST));
@@ -59,9 +68,11 @@ public class ChatMessageService {
 
 		ChatMessage saved = chatMessageRepository.save(message);
 
-		publisher.publishEvent(new MessageCreatedEvent(saved));
+		ChatMessageResponse response = toChatMessageResponse(saved, me);
 
-		return toChatMessageResponse(saved, me);
+		publisher.publishEvent(new MessageCreatedEvent(response));
+
+		return response;
 
 	}
 

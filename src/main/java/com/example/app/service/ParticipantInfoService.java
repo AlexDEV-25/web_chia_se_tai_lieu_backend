@@ -30,7 +30,7 @@ public class ParticipantInfoService {
 	private final ParticipantInfoMapper participantInfoMapper;
 	private final GetUserByToken getUserByToken;
 
-	@PreAuthorize("hasRole('UPDATE_LAST_SEEN')")
+	@PreAuthorize("hasAuthority('UPDATE_LAST_SEEN')")
 	public ParticipantInfoResponse updateLastSeen(Long id) {
 		User user = getUserByToken.get();
 		ParticipantInfo participantInfo = participantInfoRepository.findByIdAndUser_Id(id, user.getId())
@@ -40,7 +40,7 @@ public class ParticipantInfoService {
 		return participantInfoMapper.entityToResponse(saved);
 	}
 
-	@PreAuthorize("hasRole('ADD_MEMBER')")
+	@PreAuthorize("hasAuthority('ADD_MEMBER')")
 	public ParticipantInfoResponse addMember(ParticipantInfoRequest request) {
 		User user = getUserByToken.get();
 
@@ -64,7 +64,7 @@ public class ParticipantInfoService {
 		return participantInfoMapper.entityToResponse(saved);
 	}
 
-	@PreAuthorize("hasRole('DELETE_MEMBER')")
+	@PreAuthorize("hasAuthority('DELETE_MEMBER')")
 	public void deleteMember(Long userId, Long conversationId) {
 		User user = getUserByToken.get();
 
@@ -88,7 +88,7 @@ public class ParticipantInfoService {
 		participantInfoRepository.delete(userParticipantInfo);
 	}
 
-	@PreAuthorize("hasRole('CHANGE_ROLE')")
+	@PreAuthorize("hasAuthority('CHANGE_ROLE')")
 	public ParticipantInfoResponse changeRole(@Valid ParticipantInfoRequest dto) {
 
 		User user = getUserByToken.get();

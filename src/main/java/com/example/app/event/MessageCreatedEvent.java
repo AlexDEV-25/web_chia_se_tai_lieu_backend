@@ -1,6 +1,6 @@
 package com.example.app.event;
 
-import com.example.app.model.ChatMessage;
+import com.example.app.dto.response.chatmessage.ChatMessageResponse;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,5 +8,5 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class MessageCreatedEvent {
-	private final ChatMessage message;
+	private final ChatMessageResponse message;
 }

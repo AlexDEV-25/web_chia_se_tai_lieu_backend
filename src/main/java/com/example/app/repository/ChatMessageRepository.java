@@ -10,5 +10,5 @@ import com.example.app.model.ChatMessage;
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-	List<ChatMessage> findAllByConversation_IdOrderByCreatedAtDesc(Long conversationId);
+	List<ChatMessage> findAllByConversation_IdOrderByCreatedAtAsc(Long conversationId);
 }

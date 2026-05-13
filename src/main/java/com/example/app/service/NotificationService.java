@@ -17,7 +17,7 @@ public class NotificationService {
 	private final NotificationRepository notificationRepository;
 	private final NotificationMapper notificationMapper;
 
-	@PreAuthorize("hasAuthority('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	public NotificationResponse save(NotificationRequest request) {
 		Notification notification = notificationMapper.requestToNotification(request);
 		Notification saved = notificationRepository.save(notification);

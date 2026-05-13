@@ -16,7 +16,7 @@ public class MessageCreatedListener {
 	@EventListener
 	public void handleMessageCreated(MessageCreatedEvent event) {
 
-		messagingTemplate.convertAndSend("/topic/conversation/" + event.getMessage().getConversation().getId(),
+		messagingTemplate.convertAndSend("/topic/conversation/" + event.getMessage().getConversationId(),
 				event.getMessage());
 	}
 }

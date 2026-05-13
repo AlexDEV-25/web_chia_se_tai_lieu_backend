@@ -17,6 +17,11 @@ public class SendMessageController {
 
 	@MessageMapping("/chat")
 	public void sendMessage(@Payload @Valid ChatMessageRequest request) {
-		chatMessageService.createMessage(request);
+		try {
+			chatMessageService.createMessage(request);
+
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to send message: " + e.getMessage(), e);
+		}
 	}
 }

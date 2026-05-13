@@ -71,7 +71,7 @@ public class SecurityConfig {
 		httpSecurity.authorizeHttpRequests(request -> //
 		request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS_POST).permitAll()//
 				.requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS_GET).permitAll()//
-				.requestMatchers("/ws/**").permitAll().anyRequest()//
+				.requestMatchers("/ws/**", "/ws").permitAll().anyRequest()//
 				.authenticated());
 
 		httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
@@ -103,6 +103,9 @@ public class SecurityConfig {
 		corsConfiguration.addAllowedMethod("*");
 		corsConfiguration.addAllowedHeader("*");
 		corsConfiguration.setMaxAge(3600L);
+
+		corsConfiguration.setAllowCredentials(true);
+
 		UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
 		urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
 
