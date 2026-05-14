@@ -8,5 +8,5 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class DocumentDeleteEvent {
-	Document document;
+	private Document document;
 }

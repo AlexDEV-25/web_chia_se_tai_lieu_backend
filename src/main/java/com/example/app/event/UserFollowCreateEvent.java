@@ -8,6 +8,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class UserFollowCreateEvent {
-	private final User follower;
-	private final User following;
+	private User follower;
+	private User following;
 }

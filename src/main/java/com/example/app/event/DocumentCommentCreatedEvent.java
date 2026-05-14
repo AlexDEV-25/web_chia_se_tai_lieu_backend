@@ -8,6 +8,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class DocumentCommentCreatedEvent {
-	private final DocumentComment comment;
-	private final DocumentComment parentComment;
+	private DocumentComment comment;
+	private DocumentComment parentComment;
 }

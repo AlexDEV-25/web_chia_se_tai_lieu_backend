@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class LessonStatusEvent {
-	private final LessonDTO lesson;
-	private final User sender;
-	private final NotificationAction action;
+	private LessonDTO lesson;
+	private User sender;
+	private NotificationAction action;
 }

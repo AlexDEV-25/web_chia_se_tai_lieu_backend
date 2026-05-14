@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class LessonCommentCreatedEvent {
-	private final LessonComment comment;
-	private final LessonComment parentComment;
+	private LessonComment comment;
+	private LessonComment parentComment;
 
 }

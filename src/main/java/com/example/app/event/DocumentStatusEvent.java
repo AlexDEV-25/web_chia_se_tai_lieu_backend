@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class DocumentStatusEvent {
-	private final DocumentEventDTO document;
-	private final User sender;
-	private final NotificationAction action;
+	private DocumentEventDTO document;
+	private User sender;
+	private NotificationAction action;
 }

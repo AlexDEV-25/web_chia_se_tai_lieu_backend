@@ -1,13 +1,9 @@
 package com.example.app.service;
 
 import java.text.ParseException;
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -26,9 +22,9 @@ import com.example.app.dto.response.authentication.IntrospectResponse;
 import com.example.app.dto.response.authentication.OutboudUserResponse;
 import com.example.app.dto.response.user.UserResponse;
 import com.example.app.exception.AppException;
+import com.example.app.helper.JwtHelper;
 import com.example.app.helper.SendMail;
 import com.example.app.mapper.UserMapper;
-import com.example.app.model.Permission;
 import com.example.app.model.Role;
 import com.example.app.model.User;
 import com.example.app.repository.RoleRepository;
@@ -36,19 +32,9 @@ import com.example.app.repository.UserRepository;
 import com.example.app.repository.httpclient.OutboundIdentityClient;
 import com.example.app.repository.httpclient.OutboundUserClient;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSObject;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.KeyLengthException;
-import com.nimbusds.jose.Payload;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.NonFinal;
 
 @Service
 @RequiredArgsConstructor
@@ -60,13 +46,7 @@ public class AuthenticationService {
 	private final UserMapper userMapper;
 	private final PasswordEncoder passwordEncoder;
 	private final SendMail sendMail;
-
-	@NonFinal
-	@Value("${jwt.secretKey}")
-	protected String SIGNER_KEY;
-
-	@Value("${jwt.expirationTime}")
-	protected long EXPIRATION_TIME;
+	private final JwtHelper jwtHelper;
 
 	@Value("${outbound.identity.client-id}")
 	protected String CLIENT_ID;
@@ -92,20 +72,20 @@ public class AuthenticationService {
 		boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
 		response.setAuthenticated(authenticated);
 		if (authenticated) {
-			String token = generateToken(user);
+			String token = jwtHelper.generateToken(user);
 			response.setToken(token);
 		}
 		return response;
 	}
 
 	public AuthenticationResponse refreshToken(String oldToken) throws JOSEException, ParseException, AppException {
-		SignedJWT signToken = verifyToken(oldToken);
+		SignedJWT signToken = jwtHelper.verifyToken(oldToken);
 
 		String username = signToken.getJWTClaimsSet().getSubject();
 		User user = userRepository.findByUsername(username);
 
 		AuthenticationResponse response = new AuthenticationResponse();
-		String token = generateToken(user);
+		String token = jwtHelper.generateToken(user);
 		response.setAuthenticated(true);
 		response.setToken(token);
 
@@ -113,15 +93,7 @@ public class AuthenticationService {
 	}
 
 	public IntrospectResponse introspect(String token) throws JOSEException, ParseException {
-		boolean isValid = true;
-		try {
-			verifyToken(token);
-		} catch (AppException e) {
-			isValid = false;
-		}
-		IntrospectResponse response = new IntrospectResponse();
-		response.setValid(isValid);
-		return response;
+		return jwtHelper.introspect(token);
 	}
 
 	public UserResponse register(UserRequest request) {
@@ -214,17 +186,13 @@ public class AuthenticationService {
 				Stringroles.add("USER");
 				List<Role> roles = roleRepository.findAllById(Stringroles);
 
-				User newUser = new User();
-				newUser.setUsername(userInfo.getEmail());
-				newUser.setEmail(userInfo.getEmail());
-				newUser.setVerified(true);
-				newUser.setHide(false);
-				newUser.setRoles(roles);
+				User newUser = User.builder().username(userInfo.getEmail()).email(userInfo.getEmail()).verified(true)
+						.hide(false).roles(roles).build();
 				User save = userRepository.save(newUser);
-				token = generateToken(save);
+				token = jwtHelper.generateToken(save);
 			} else {
 				User user = userRepository.findByEmail(userInfo.getEmail());
-				token = generateToken(user);
+				token = jwtHelper.generateToken(user);
 			}
 
 			response.setToken(token);
@@ -233,61 +201,6 @@ public class AuthenticationService {
 			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
 		}
 		return response;
-	}
-
-	private SignedJWT verifyToken(String token) throws JOSEException, ParseException, AppException {
-		JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-		SignedJWT signedJWT = SignedJWT.parse(token);
-
-		Date epx = signedJWT.getJWTClaimsSet().getExpirationTime();
-
-		boolean verified = signedJWT.verify(verifier);
-
-		if (!epx.after(new Date())) {
-			throw new AppException("token đã hết hạn", 1001, HttpStatus.BAD_REQUEST);
-		}
-		if (!verified) {
-			throw new AppException("token không đúng", 1001, HttpStatus.BAD_REQUEST);
-		}
-
-		return signedJWT;
-	}
-
-	private String generateToken(User user) {
-		JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
-		JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()//
-				.subject(user.getUsername())//
-				.issuer("moimoi.com")//
-				.claim("scope", buildScope(user))//
-				.jwtID(UUID.randomUUID().toString())//
-				.issueTime(new Date())//
-				.expirationTime(Date.from(Instant.now().plus(EXPIRATION_TIME, ChronoUnit.SECONDS))).build();
-
-		Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-		JWSObject jwsObject = new JWSObject(header, payload);
-
-		try {
-			jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
-			String token = jwsObject.serialize();
-			return token;
-		} catch (KeyLengthException e) {
-			throw new AppException("secretKey phải >= 32B", 1001, HttpStatus.BAD_REQUEST);
-		} catch (JOSEException e) {
-			throw new AppException("JOSEException", 1001, HttpStatus.BAD_REQUEST);
-		}
-	}
-
-	private String buildScope(User user) {
-		StringJoiner stringJoiner = new StringJoiner(" ");
-		List<Role> roles = user.getRoles();
-		for (Role role : roles) {
-			stringJoiner.add("ROLE_" + role.getName());
-			List<Permission> permissions = role.getPermissions();
-			for (Permission permission : permissions) {
-				stringJoiner.add(permission.getName());
-			}
-		}
-		return stringJoiner.toString();
 	}
 
 	private String generateActivationCode() {

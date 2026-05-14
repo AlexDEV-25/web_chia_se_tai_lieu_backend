@@ -8,5 +8,5 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class LessonDeleteEvent {
-	Lesson lesson;
+	private Lesson lesson;
 }

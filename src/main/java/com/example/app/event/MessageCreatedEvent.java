@@ -8,5 +8,5 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class MessageCreatedEvent {
-	private final ChatMessageResponse message;
+	private ChatMessageResponse message;
 }
