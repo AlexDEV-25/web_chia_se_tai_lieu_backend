@@ -18,10 +18,13 @@ public class SendMail {
 	@Value("${spring.mail.username}")
 	private String FROM;
 
+	@Value("${app.domain.frontend}")
+	private String frontendDomain;
+
 	public void sendEmailActivateAccount(String email, String activationCode) {
 		String subject = "Kích hoạt tài khoản của bạn";
 
-		String url = "http://localhost:5173/activate/" + email + "/" + activationCode;
+		String url = frontendDomain + "/activate/" + email + "/" + activationCode;
 
 		// HTML content
 		String html = "<html><body>" + "<h2 style='color:#4A90E2'>Kích hoạt tài khoản</h2>"
@@ -35,7 +38,7 @@ public class SendMail {
 	public void sendEmailChangePassword(String email, String forgotPassWordCode) {
 		String subject = "Đặt lại mật khẩu tài khoản của bạn";
 
-		String url = "http://localhost:5173/change-password/" + email + "/" + forgotPassWordCode;
+		String url = frontendDomain + "/change-password/" + email + "/" + forgotPassWordCode;
 
 		// HTML content
 		String html = "<html><body>" + "<h2 style='color:#4A90E2'>Đặt lại mật khẩu</h2>"
