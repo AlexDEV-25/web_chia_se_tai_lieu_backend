@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.request.CommentRequest;
 import com.example.app.dto.request.DisplayRequest;
 import com.example.app.dto.response.comment.CommentResponse;
@@ -55,14 +55,14 @@ public class CommentService {
 		return switch (req.getType()) {
 		case DOCUMENT -> saveDocument(req, user);
 		case LESSON -> saveLesson(req, user);
-		default -> throw new AppException("Sai type", 1001, HttpStatus.BAD_REQUEST);
+		default -> throw AppException.builder().appError(AppError.TYPE_NOT_FOUND).build();
 		};
 	}
 
 	private CommentResponse saveDocument(CommentRequest req, User user) {
 
 		Document doc = documentRepository.findById(req.getContentId())
-				.orElseThrow(() -> new AppException("Document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 
 		DocumentComment parent = getParentDocument(req.getParentId());
 
@@ -79,7 +79,7 @@ public class CommentService {
 	private CommentResponse saveLesson(CommentRequest req, User user) {
 
 		Lesson lesson = lessonRepository.findById(req.getContentId())
-				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 
 		LessonComment parent = getParentLesson(req.getParentId());
 
@@ -101,7 +101,7 @@ public class CommentService {
 		return switch (req.getType()) {
 		case DOCUMENT -> updateDocument(id, req, user);
 		case LESSON -> updateLesson(id, req, user);
-		default -> throw new AppException("Sai type", 1001, HttpStatus.BAD_REQUEST);
+		default -> throw AppException.builder().appError(AppError.TYPE_NOT_FOUND).build();
 		};
 	}
 
@@ -144,7 +144,7 @@ public class CommentService {
 			c.setUpdatedAt(LocalDateTime.now());
 			yield mapper.lessonCommentToCommentResponse(lessonRepo.save(c));
 		}
-		default -> throw new AppException("Sai type", 1001, HttpStatus.BAD_REQUEST);
+		default -> throw AppException.builder().appError(AppError.TYPE_NOT_FOUND).build();
 		};
 	}
 

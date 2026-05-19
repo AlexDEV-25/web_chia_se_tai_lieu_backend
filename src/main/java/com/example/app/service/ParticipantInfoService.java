@@ -2,10 +2,10 @@ package com.example.app.service;
 
 import java.time.LocalDateTime;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.ChatRole;
 import com.example.app.constant.ConversationType;
 import com.example.app.dto.request.ParticipantInfoRequest;
@@ -34,7 +34,7 @@ public class ParticipantInfoService {
 	public ParticipantInfoResponse updateLastSeen(Long id) {
 		User user = getUserByToken.get();
 		ParticipantInfo participantInfo = participantInfoRepository.findByIdAndUser_Id(id, user.getId())
-				.orElseThrow(() -> new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.PARTICIPANT_INFO_NOT_FOUND).build());
 		participantInfo.setLastSeen(LocalDateTime.now());
 		ParticipantInfo saved = participantInfoRepository.save(participantInfo);
 		return participantInfoMapper.entityToResponse(saved);
@@ -46,16 +46,16 @@ public class ParticipantInfoService {
 
 		ParticipantInfo participantInfo = findByUserIdAndConversationId(user.getId(), request.getConversationId());
 		if (participantInfo.getChatRole() == ChatRole.MEMBER) {
-			throw new AppException("Không đủ quyền hạn", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ACCESS_DENIED).build();
 		}
 		Conversation conversation = participantInfo.getConversation();
 
 		if (conversation.getType() == ConversationType.DIRECT) {
-			throw new AppException("không thể thêm thành viên", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.CANNOT_ADD_MEMBER).build();
 		}
 
 		User newMember = userRepository.findById(request.getUserId())
-				.orElseThrow(() -> new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.USER_NOT_FOUND).build());
 
 		ParticipantInfo newParticipantInfo = ParticipantInfo.builder().user(newMember).conversation(conversation)
 				.chatRole(ChatRole.MEMBER).build();
@@ -73,17 +73,17 @@ public class ParticipantInfoService {
 		ParticipantInfo userParticipantInfo = findByUserIdAndConversationId(userId, conversationId);
 
 		if (myParticipantInfo.getConversation().getId() != userParticipantInfo.getConversation().getId()) {
-			throw new AppException("không cùng nhóm chat", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.NOT_CONVERSATION_MEMBER).build();
 		}
 
 		if (myParticipantInfo.getConversation().getType() == ConversationType.DIRECT) {
-			throw new AppException("không thể xóa thành viên", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.CANNOT_REMOVE_MEMBER).build();
 		}
 
 		if (myParticipantInfo.getChatRole() == ChatRole.MEMBER
 				|| (userParticipantInfo.getChatRole() == myParticipantInfo.getChatRole())
 				|| (userParticipantInfo.getChatRole() == ChatRole.MANAGER)) {
-			throw new AppException("Không đủ quyền hạn", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ACCESS_DENIED).build();
 		}
 		participantInfoRepository.delete(userParticipantInfo);
 	}
@@ -98,15 +98,15 @@ public class ParticipantInfoService {
 		ParticipantInfo userParticipantInfo = findByUserIdAndConversationId(dto.getUserId(), dto.getConversationId());
 
 		if (myParticipantInfo.getChatRole() != ChatRole.MANAGER) {
-			throw new AppException("không đủ quyền hạn", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ACCESS_DENIED).build();
 		}
 
 		if (myParticipantInfo.getConversation().getId() != userParticipantInfo.getConversation().getId()) {
-			throw new AppException("không cùng nhóm chat", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.NOT_CONVERSATION_MEMBER).build();
 		}
 
 		if (myParticipantInfo.getConversation().getType() == ConversationType.DIRECT) {
-			throw new AppException("không thể đổi vai trò", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.CANNOT_CHANGE_ROLE).build();
 		}
 
 		userParticipantInfo.setChatRole(dto.getChatRole());
@@ -118,7 +118,7 @@ public class ParticipantInfoService {
 	private ParticipantInfo findByUserIdAndConversationId(Long userId, Long conversationId) {
 		ParticipantInfo participantInfo = participantInfoRepository
 				.findByUser_IdAndConversation_Id(userId, conversationId)
-				.orElseThrow(() -> new AppException("không tìm thấy thông tin", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.PARTICIPANT_INFO_NOT_FOUND).build());
 		return participantInfo;
 	}
 

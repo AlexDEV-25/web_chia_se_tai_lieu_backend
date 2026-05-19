@@ -24,19 +24,15 @@ public class ParticipantInfoController {
 
 	@PutMapping("/update-last-seen/{id}")
 	public APIResponse<ParticipantInfoResponse> updateLastSeen(@PathVariable Long id) {
-		ParticipantInfoResponse response = participantInfoService.updateLastSeen(id);
 		APIResponse<ParticipantInfoResponse> apiResponse = new APIResponse<ParticipantInfoResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(participantInfoService.updateLastSeen(id));
 		return apiResponse;
 	}
 
 	@PostMapping("/add-member")
 	public APIResponse<ParticipantInfoResponse> addMember(@RequestBody @Valid ParticipantInfoRequest dto) {
-		ParticipantInfoResponse response = participantInfoService.addMember(dto);
 		APIResponse<ParticipantInfoResponse> apiResponse = new APIResponse<ParticipantInfoResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(participantInfoService.addMember(dto));
 		return apiResponse;
 	}
 
@@ -44,16 +40,13 @@ public class ParticipantInfoController {
 	public APIResponse<Void> deleteMember(@PathVariable Long userId, @PathVariable Long conversationId) {
 		participantInfoService.deleteMember(userId, conversationId);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("save success");
 		return apiResponse;
 	}
 
 	@PutMapping("/change-role")
 	public APIResponse<ParticipantInfoResponse> changeRole(@RequestBody @Valid ParticipantInfoRequest dto) {
-		ParticipantInfoResponse response = participantInfoService.changeRole(dto);
 		APIResponse<ParticipantInfoResponse> apiResponse = new APIResponse<ParticipantInfoResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(participantInfoService.changeRole(dto));
 		return apiResponse;
 	}
 }

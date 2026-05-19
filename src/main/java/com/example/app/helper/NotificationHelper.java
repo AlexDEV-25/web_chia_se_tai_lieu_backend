@@ -1,7 +1,6 @@
 package com.example.app.helper;
 
-import org.springframework.http.HttpStatus;
-
+import com.example.app.constant.AppError;
 import com.example.app.constant.NotificationType;
 import com.example.app.dto.request.NotificationRequest;
 import com.example.app.dto.request.UserNotificationRequest;
@@ -30,7 +29,7 @@ public interface NotificationHelper {
 		UserNotificationRequest req = new UserNotificationRequest(admin, receiver, notification, false);
 
 		if (!userNotificationService().saveUserNotification(req)) {
-			throw new AppException("Tạo thông báo thất bại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.CREATE_NOTIFICATION_FAILED).build();
 		}
 	}
 

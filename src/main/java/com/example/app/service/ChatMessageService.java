@@ -4,10 +4,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.request.ChatMessageRequest;
 import com.example.app.dto.response.chatmessage.ChatMessageResponse;
 import com.example.app.event.MessageCreatedEvent;
@@ -39,7 +39,7 @@ public class ChatMessageService {
 		User me = getUserByToken.get();
 
 		if (me == null) {
-			throw new AppException("Người dùng không được xác thực", 1001, HttpStatus.UNAUTHORIZED);
+			throw AppException.builder().appError(AppError.USER_NOT_FOUND).build();
 		}
 
 		List<ChatMessage> messages = chatMessageRepository.findAllByConversation_IdOrderByCreatedAtAsc(conversationId);
@@ -51,17 +51,17 @@ public class ChatMessageService {
 		User me = getUserByToken.get();
 
 		if (me == null) {
-			throw new AppException("Người dùng không được xác thực", 1001, HttpStatus.UNAUTHORIZED);
+			throw AppException.builder().appError(AppError.USER_NOT_FOUND).build();
 		}
 
 		Conversation conversation = conversationRepository.findById(request.getConversationId())
-				.orElseThrow(() -> new AppException("Không tìm thấy cuộc hội thoại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.CONVERSATION_NOT_FOUND).build());
 
 		boolean isParticipant = participantInfoRepository.existsByConversation_IdAndUser_Id(conversation.getId(),
 				me.getId());
 
 		if (!isParticipant) {
-			throw new AppException("Bạn không thuộc conversation", 1001, HttpStatus.FORBIDDEN);
+			throw AppException.builder().appError(AppError.NOT_CONVERSATION_MEMBER).build();
 		}
 		ChatMessage message = ChatMessage.builder().message(request.getMessage()).conversation(conversation).sender(me)
 				.createdAt(LocalDateTime.now()).build();

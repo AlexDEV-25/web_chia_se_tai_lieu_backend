@@ -1,7 +1,5 @@
 package com.example.app.controller.admin;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,46 +26,36 @@ public class AdminCategoryController {
 
 	@GetMapping("/{id}")
 	public APIResponse<CategoryResponse> getById(@PathVariable Long id) {
-		CategoryResponse response = categoryService.findById(id);
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get by id success");
+		apiResponse.setResult(categoryService.findById(id));
 		return apiResponse;
 	}
 
 	@GetMapping
 	public APIResponse<CategoryResponse> getAllCategory() {
-		List<CategoryResponse> response = categoryService.getAllCategories();
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(categoryService.getAllCategories());
 		return apiResponse;
 	}
 
 	@PostMapping
 	public APIResponse<CategoryResponse> create(@RequestBody @Valid CategoryRequest dto) {
-		CategoryResponse response = categoryService.save(dto);
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(categoryService.save(dto));
 		return apiResponse;
 	}
 
 	@PutMapping("/{id}")
 	public APIResponse<CategoryResponse> update(@PathVariable Long id, @RequestBody @Valid CategoryRequest dto) {
-		CategoryResponse response = categoryService.update(id, dto);
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
+		apiResponse.setResult(categoryService.update(id, dto));
 		return apiResponse;
 	}
 
 	@PutMapping("/hide/{id}")
 	public APIResponse<CategoryResponse> hide(@PathVariable Long id, @RequestBody @Valid DisplayRequest dto) {
-		CategoryResponse response = categoryService.display(id, dto);
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
+		apiResponse.setResult(categoryService.display(id, dto));
 		return apiResponse;
 	}
 
@@ -75,7 +63,6 @@ public class AdminCategoryController {
 	public APIResponse<Void> delete(@PathVariable Long id) {
 		categoryService.delete(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 }

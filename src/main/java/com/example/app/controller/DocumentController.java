@@ -1,10 +1,7 @@
 package com.example.app.controller;
 
-import java.util.List;
-
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.request.DocumentRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.FileResponse;
@@ -41,74 +39,58 @@ public class DocumentController {
 
 	@GetMapping("/stats")
 	public APIResponse<DocumentStatsResponse> getStats() {
-		DocumentStatsResponse response = documentService.getStats();
 		APIResponse<DocumentStatsResponse> apiResponse = new APIResponse<DocumentStatsResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("success");
+		apiResponse.setResult(documentService.getStats());
 		return apiResponse;
 	}
 
 	@GetMapping("/search")
 	public APIResponse<DocumentResponse> search(@RequestParam(required = false) String keyword,
 			@RequestParam(required = false) Long categoryId) {
-		List<DocumentResponse> response = documentService.search(keyword, categoryId);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(documentService.search(keyword, categoryId));
 		return apiResponse;
 	}
 
 	@GetMapping("/{id}")
 	public APIResponse<DocumentDetailResponse> getByIdPublicDocument(@PathVariable Long id) {
-		DocumentDetailResponse response = documentService.findByIdPublicDocument(id);
 		APIResponse<DocumentDetailResponse> apiResponse = new APIResponse<DocumentDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get by id success");
+		apiResponse.setResult(documentService.findByIdPublicDocument(id));
 		return apiResponse;
 	}
 
 	@GetMapping
 	public APIResponse<DocumentResponse> getAllPublicDocuments() {
-		List<DocumentResponse> response = documentService.getAllPublicDocuments();
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(documentService.getAllPublicDocuments());
 		return apiResponse;
 	}
 
 	@GetMapping("/user")
 	public APIResponse<DocumentResponse> getByUser(@RequestParam Long documentId, @RequestParam Long userId) {
-		List<DocumentResponse> response = documentService.getDocumentsByUser(userId, documentId);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(documentService.getDocumentsByUser(userId, documentId));
 		return apiResponse;
 	}
 
 	@GetMapping("/category")
 	public APIResponse<DocumentResponse> getByCategory(@RequestParam Long categoryId, @RequestParam Long documentId) {
-		List<DocumentResponse> response = documentService.getDocumentsByCategory(categoryId, documentId);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(documentService.getDocumentsByCategory(categoryId, documentId));
 		return apiResponse;
 	}
 
 	@GetMapping("/user/{userId}")
 	public APIResponse<DocumentResponse> getAllDocumentsByUser(@PathVariable Long userId) {
-		List<DocumentResponse> response = documentService.getAllDocumentsByUser(userId);
 		APIResponse<DocumentResponse> apiResponse = new APIResponse<DocumentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(documentService.getAllDocumentsByUser(userId));
 		return apiResponse;
 	}
 
 	@GetMapping("/count/{userId}")
 	public APIResponse<Long> countDocumentOfUser(@PathVariable Long userId) {
-		Long num = documentService.countDocumentOfUser(userId);
 		APIResponse<Long> apiResponse = new APIResponse<Long>();
-		apiResponse.setResult(num);
-		apiResponse.setMessage("success");
+		apiResponse.setResult(documentService.countDocumentOfUser(userId));
 		return apiResponse;
 	}
 
@@ -116,7 +98,6 @@ public class DocumentController {
 	public APIResponse<Void> increaseView(@PathVariable Long id) {
 		documentService.increaseView(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("increase success");
 		return apiResponse;
 	}
 
@@ -124,7 +105,6 @@ public class DocumentController {
 	public APIResponse<Void> increaseDownload(@PathVariable Long id) {
 		documentService.increaseDownload(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("increase success");
 		return apiResponse;
 	}
 
@@ -135,15 +115,12 @@ public class DocumentController {
 			ObjectMapper mapper = new ObjectMapper();
 			DocumentRequest dto = mapper.readValue(dataJson, DocumentRequest.class);
 
-			DocumentDetailResponse response = documentService.uploadFile(file, dto);
-			APIResponse<DocumentDetailResponse> apiResponse = new APIResponse<>();
-			apiResponse.setMessage("Upload thành công");
-			apiResponse.setResult(response);
-
+			APIResponse<DocumentDetailResponse> apiResponse = new APIResponse<DocumentDetailResponse>();
+			apiResponse.setResult(documentService.uploadFile(file, dto));
 			return apiResponse;
 
 		} catch (Exception e) {
-			throw new AppException("Upload Thất bại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_JSON_FORMAT).build();
 		}
 	}
 
@@ -159,29 +136,23 @@ public class DocumentController {
 
 	@GetMapping("/my-document")
 	public APIResponse<DocumentUserResponse> getMyDocument() {
-		List<DocumentUserResponse> response = documentService.getMyDocument();
 		APIResponse<DocumentUserResponse> apiResponse = new APIResponse<DocumentUserResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(documentService.getMyDocument());
 		return apiResponse;
 	}
 
 	@GetMapping("/my-document/{id}")
 	public APIResponse<DocumentDetailResponse> getMyDocumentDetail(@PathVariable Long id) {
-		DocumentDetailResponse response = documentService.getMyDocumentDetail(id);
 		APIResponse<DocumentDetailResponse> apiResponse = new APIResponse<DocumentDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(documentService.getMyDocumentDetail(id));
 		return apiResponse;
 	}
 
 	@PutMapping("/my-document/{id}")
 	public APIResponse<DocumentUserResponse> updateMyDocument(@PathVariable Long id,
 			@RequestBody @Valid DocumentRequest dto) {
-		DocumentUserResponse response = documentService.updateMyDocument(id, dto);
 		APIResponse<DocumentUserResponse> apiResponse = new APIResponse<DocumentUserResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
+		apiResponse.setResult(documentService.updateMyDocument(id, dto));
 		return apiResponse;
 	}
 
@@ -189,16 +160,13 @@ public class DocumentController {
 	public APIResponse<Void> deleteMyDocument(@PathVariable Long id) {
 		documentService.deleteMyDocument(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
 	@GetMapping("/my-document/count")
 	public APIResponse<Long> countMyDocument() {
-		Long response = documentService.countMyDocument();
 		APIResponse<Long> apiResponse = new APIResponse<Long>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(documentService.countMyDocument());
 		return apiResponse;
 	}
 

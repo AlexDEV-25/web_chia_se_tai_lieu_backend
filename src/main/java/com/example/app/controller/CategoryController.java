@@ -1,7 +1,5 @@
 package com.example.app.controller;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,10 +18,8 @@ public class CategoryController {
 
 	@GetMapping
 	public APIResponse<CategoryResponse> getAllPublicCategories() {
-		List<CategoryResponse> response = categoryService.getAllPublicCategories();
 		APIResponse<CategoryResponse> apiResponse = new APIResponse<CategoryResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(categoryService.getAllPublicCategories());
 		return apiResponse;
 	}
 

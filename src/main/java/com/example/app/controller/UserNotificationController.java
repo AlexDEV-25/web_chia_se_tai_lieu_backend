@@ -1,7 +1,5 @@
 package com.example.app.controller;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,28 +20,22 @@ public class UserNotificationController {
 
 	@GetMapping("/receiver")
 	public APIResponse<UserNotificationResponse> getByReceiver() {
-		List<UserNotificationResponse> response = userNotificationService.getByReceiver();
 		APIResponse<UserNotificationResponse> apiResponse = new APIResponse<UserNotificationResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(userNotificationService.getByReceiver());
 		return apiResponse;
 	}
 
 	@GetMapping("/receiver/unread")
 	public APIResponse<UserNotificationResponse> getByReceiverIdAndReadFalse() {
-		List<UserNotificationResponse> response = userNotificationService.getByReceiverIdAndReadFalse();
 		APIResponse<UserNotificationResponse> apiResponse = new APIResponse<UserNotificationResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(userNotificationService.getByReceiverIdAndReadFalse());
 		return apiResponse;
 	}
 
 	@PutMapping("read/{id}")
 	public APIResponse<UserNotificationResponse> read(@PathVariable Long id) {
-		UserNotificationResponse response = userNotificationService.read(id);
 		APIResponse<UserNotificationResponse> apiResponse = new APIResponse<UserNotificationResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("change success");
+		apiResponse.setResult(userNotificationService.read(id));
 		return apiResponse;
 	}
 
@@ -51,7 +43,6 @@ public class UserNotificationController {
 	public APIResponse<Void> readAll(@PathVariable Long id) {
 		userNotificationService.readAll(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("read all success");
 		return apiResponse;
 	}
 }

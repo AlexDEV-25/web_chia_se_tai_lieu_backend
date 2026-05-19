@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class APIResponse<T> {
 	private int code = 1000;
-	private String message;
+	private String message = "success";
 	private T result;
 	private List<T> resultList;
 }

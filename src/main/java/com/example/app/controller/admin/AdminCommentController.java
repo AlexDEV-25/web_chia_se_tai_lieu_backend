@@ -1,7 +1,5 @@
 package com.example.app.controller.admin;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,37 +26,29 @@ public class AdminCommentController {
 
 	@GetMapping("/filter-comment")
 	APIResponse<CommentResponse> filterCommnent(@RequestParam String type) {
-		List<CommentResponse> response = chatService.filterCommnent(type);
 		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("chat success");
+		apiResponse.setResultList(chatService.filterCommnent(type));
 		return apiResponse;
 	}
 
 	@GetMapping("/document")
 	public APIResponse<CommentResponse> getAllDocumentComments() {
-		List<CommentResponse> response = commentService.getAllDocumentComments();
 		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(commentService.getAllDocumentComments());
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson")
 	public APIResponse<CommentResponse> getAllLessonComments() {
-		List<CommentResponse> response = commentService.getAllLessonComments();
 		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(commentService.getAllLessonComments());
 		return apiResponse;
 	}
 
 	@PutMapping("/hide/{id}")
 	public APIResponse<CommentResponse> hide(@PathVariable Long id, @RequestBody @Valid DisplayRequest dto) {
-		CommentResponse response = commentService.hide(id, dto);
 		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
+		apiResponse.setResult(commentService.hide(id, dto));
 		return apiResponse;
 	}
 }

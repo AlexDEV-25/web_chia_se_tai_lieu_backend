@@ -1,10 +1,7 @@
 package com.example.app.controller;
 
-import java.util.List;
-
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.request.LessonRequest;
 import com.example.app.dto.response.APIResponse;
 import com.example.app.dto.response.FileResponse;
@@ -41,65 +39,51 @@ public class LessonController {
 
 	@GetMapping("/stats")
 	public APIResponse<LessonStatsResponse> getStats() {
-		LessonStatsResponse response = lessonService.getStats();
 		APIResponse<LessonStatsResponse> apiResponse = new APIResponse<LessonStatsResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get by id success");
+		apiResponse.setResult(lessonService.getStats());
 		return apiResponse;
 	}
 
 	@GetMapping("/search")
 	public APIResponse<LessonResponse> search(@RequestParam(required = false) String keyword,
 			@RequestParam(required = false) Long categoryId) {
-		List<LessonResponse> response = lessonService.search(keyword, categoryId);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(lessonService.search(keyword, categoryId));
 		return apiResponse;
 	}
 
 	@GetMapping("/{id}")
 	public APIResponse<LessonDetailResponse> getByIdPublicLesson(@PathVariable Long id) {
-		LessonDetailResponse response = lessonService.findByIdPublicLesson(id);
 		APIResponse<LessonDetailResponse> apiResponse = new APIResponse<LessonDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get by id success");
+		apiResponse.setResult(lessonService.findByIdPublicLesson(id));
 		return apiResponse;
 	}
 
 	@GetMapping
 	public APIResponse<LessonResponse> getAllPublicLesson() {
-		List<LessonResponse> response = lessonService.getAllPublicLessonsCheckFavorite();
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(lessonService.getAllPublicLessonsCheckFavorite());
 		return apiResponse;
 	}
 
 	@GetMapping("/user")
 	public APIResponse<LessonResponse> getByUser(@RequestParam Long lessonId, @RequestParam Long userId) {
-		List<LessonResponse> response = lessonService.getLessonsByUserCheckFavorite(lessonId, userId);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(lessonService.getLessonsByUserCheckFavorite(lessonId, userId));
 		return apiResponse;
 	}
 
 	@GetMapping("/user/{userId}")
 	public APIResponse<LessonResponse> getAllLessonsByUser(@PathVariable Long userId) {
-		List<LessonResponse> response = lessonService.getAllLessonsByUserCheckFavorite(userId);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(lessonService.getAllLessonsByUserCheckFavorite(userId));
 		return apiResponse;
 	}
 
 	@GetMapping("/category")
 	public APIResponse<LessonResponse> getByCategory(@RequestParam Long categoryId, @RequestParam Long lessonId) {
-		List<LessonResponse> response = lessonService.getLessonsByCategoryCheckFavorite(categoryId, lessonId);
 		APIResponse<LessonResponse> apiResponse = new APIResponse<LessonResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(lessonService.getLessonsByCategoryCheckFavorite(categoryId, lessonId));
 		return apiResponse;
 	}
 
@@ -107,16 +91,13 @@ public class LessonController {
 	public APIResponse<Void> increaseView(@PathVariable Long id) {
 		lessonService.increaseView(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("increase success");
 		return apiResponse;
 	}
 
 	@GetMapping("/count/{userId}")
 	public APIResponse<Long> countDocumentOfUser(@PathVariable Long userId) {
-		Long num = lessonService.countLessonOfUser(userId);
 		APIResponse<Long> apiResponse = new APIResponse<Long>();
-		apiResponse.setResult(num);
-		apiResponse.setMessage("increase success");
+		apiResponse.setResult(lessonService.countLessonOfUser(userId));
 		return apiResponse;
 	}
 
@@ -128,14 +109,13 @@ public class LessonController {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			LessonRequest dto = mapper.readValue(dataJson, LessonRequest.class);
-			LessonDetailResponse response = lessonService.uploadLesson(video, document, subfile, dto);
-			APIResponse<LessonDetailResponse> apiResponse = new APIResponse<>();
-			apiResponse.setMessage("Upload thành công");
-			apiResponse.setResult(response);
+
+			APIResponse<LessonDetailResponse> apiResponse = new APIResponse<LessonDetailResponse>();
+			apiResponse.setResult(lessonService.uploadLesson(video, document, subfile, dto));
 			return apiResponse;
 
 		} catch (Exception e) {
-			throw new AppException("Upload Thất bại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_JSON_FORMAT).build();
 		}
 	}
 
@@ -161,29 +141,23 @@ public class LessonController {
 
 	@GetMapping("/my-lesson")
 	public APIResponse<LessonUserResponse> getMylesson() {
-		List<LessonUserResponse> response = lessonService.getMyLesson();
 		APIResponse<LessonUserResponse> apiResponse = new APIResponse<LessonUserResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(lessonService.getMyLesson());
 		return apiResponse;
 	}
 
 	@GetMapping("/my-lesson/{id}")
 	public APIResponse<LessonDetailResponse> getMyLessonDetail(@PathVariable Long id) {
-		LessonDetailResponse response = lessonService.getMyLessonDetail(id);
 		APIResponse<LessonDetailResponse> apiResponse = new APIResponse<LessonDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(lessonService.getMyLessonDetail(id));
 		return apiResponse;
 	}
 
 	@PutMapping("my-lesson/{id}")
 	public APIResponse<LessonUserResponse> updateMyLesson(@PathVariable Long id,
 			@RequestBody @Valid LessonRequest dto) {
-		LessonUserResponse response = lessonService.updateMyDocument(id, dto);
 		APIResponse<LessonUserResponse> apiResponse = new APIResponse<LessonUserResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
+		apiResponse.setResult(lessonService.updateMyDocument(id, dto));
 		return apiResponse;
 	}
 
@@ -191,16 +165,13 @@ public class LessonController {
 	public APIResponse<Void> deleteMyLesson(@PathVariable Long id) {
 		lessonService.deleteMyLesson(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
 	@GetMapping("/my-lesson/count")
 	public APIResponse<Long> CountMyLesson() {
-		Long response = lessonService.countMyLesson();
 		APIResponse<Long> apiResponse = new APIResponse<Long>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(lessonService.countMyLesson());
 		return apiResponse;
 	}
 

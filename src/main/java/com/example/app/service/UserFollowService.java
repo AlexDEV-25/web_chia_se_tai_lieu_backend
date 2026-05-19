@@ -4,11 +4,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.response.userfollow.FollowCountResponse;
 import com.example.app.dto.response.userfollow.UserFollowResponse;
 import com.example.app.event.UserFollowCreateEvent;
@@ -38,12 +37,12 @@ public class UserFollowService {
 
 		User follower = getUserByToken.get();
 		User following = userRepository.findById(request)
-				.orElseThrow(() -> new AppException("người nhận không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.USER_NOT_FOUND).build());
 		if (userFollowRepository.existsByFollowerAndFollowing(follower, following)) {
-			throw new AppException("đã kết bạn rồi", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ALREADY_FRIEND).build();
 		}
 		if (follower.getId().equals(following.getId())) {
-			throw new AppException("không thể follow chính mình", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.CANNOT_FOLLOW_YOURSELF).build();
 		}
 		UserFollow userFollow = UserFollow.builder().follower(follower).following(following)
 				.createdAt(LocalDateTime.now()).build();
@@ -58,15 +57,12 @@ public class UserFollowService {
 	@PreAuthorize("hasAuthority('UNFOLLOW')")
 	@Transactional
 	public void delete(Long followingId) {
-		try {
-			User follower = getUserByToken.get();
-			User following = userRepository.findByIdAndHideFalse(followingId)
-					.orElseThrow(() -> new AppException("người nhận không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+		User follower = getUserByToken.get();
+		User following = userRepository.findByIdAndHideFalse(followingId)
+				.orElseThrow(() -> AppException.builder().appError(AppError.USER_NOT_FOUND).build());
 
-			userFollowRepository.deleteByFollowerAndFollowing(follower, following);
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("follow không tồn tại", 1001, HttpStatus.BAD_REQUEST);
-		}
+		userFollowRepository.deleteByFollowerAndFollowing(follower, following);
+
 	}
 
 	@PreAuthorize("hasAuthority('GET_LIST_FOLLOWING')")
@@ -98,7 +94,7 @@ public class UserFollowService {
 	public boolean checkFollowed(Long userId) {
 		User follower = getUserByToken.get();
 		User following = userRepository.findByIdAndHideFalse(userId)
-				.orElseThrow(() -> new AppException("người nhận không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.USER_NOT_FOUND).build());
 
 		return userFollowRepository.existsByFollowerAndFollowing(follower, following);
 	}

@@ -1,7 +1,5 @@
 package com.example.app.controller;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,38 +24,30 @@ public class CommentController {
 	private final CommentService commentService;
 
 	@GetMapping("/document/{docId}")
-	public APIResponse<List<CommentTreeResponse>> getDocumentCommentTree(@PathVariable Long docId) {
-		List<CommentTreeResponse> response = commentService.getDocumentTree(docId);
-		APIResponse<List<CommentTreeResponse>> apiResponse = new APIResponse<List<CommentTreeResponse>>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+	public APIResponse<CommentTreeResponse> getDocumentCommentTree(@PathVariable Long docId) {
+		APIResponse<CommentTreeResponse> apiResponse = new APIResponse<CommentTreeResponse>();
+		apiResponse.setResultList(commentService.getDocumentTree(docId));
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson/{lessonId}")
-	public APIResponse<List<CommentTreeResponse>> getLessonCommentTree(@PathVariable Long lessonId) {
-		List<CommentTreeResponse> response = commentService.getLessonTree(lessonId);
-		APIResponse<List<CommentTreeResponse>> apiResponse = new APIResponse<List<CommentTreeResponse>>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+	public APIResponse<CommentTreeResponse> getLessonCommentTree(@PathVariable Long lessonId) {
+		APIResponse<CommentTreeResponse> apiResponse = new APIResponse<CommentTreeResponse>();
+		apiResponse.setResultList(commentService.getLessonTree(lessonId));
 		return apiResponse;
 	}
 
 	@PostMapping
 	public APIResponse<CommentResponse> createMyComment(@RequestBody @Valid CommentRequest dto) {
-		CommentResponse response = commentService.saveMyComment(dto);
 		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(commentService.saveMyComment(dto));
 		return apiResponse;
 	}
 
 	@PutMapping("/{id}")
 	public APIResponse<CommentResponse> updateMyComment(@PathVariable Long id, @RequestBody @Valid CommentRequest dto) {
-		CommentResponse response = commentService.updateMyComment(id, dto);
 		APIResponse<CommentResponse> apiResponse = new APIResponse<CommentResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
+		apiResponse.setResult(commentService.updateMyComment(id, dto));
 		return apiResponse;
 	}
 

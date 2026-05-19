@@ -14,14 +14,14 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.content.Media;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.app.constant.InteractionType;
+import com.example.app.constant.AppError;
 import com.example.app.constant.ContentStatus;
+import com.example.app.constant.InteractionType;
 import com.example.app.dto.response.ai.ChatHistoryResponse;
 import com.example.app.dto.response.ai.LectureResponse;
 import com.example.app.dto.response.comment.CommentResponse;
@@ -30,17 +30,17 @@ import com.example.app.exception.AppException;
 import com.example.app.helper.GetUserByToken;
 import com.example.app.mapper.CommentMapper;
 import com.example.app.model.Category;
-import com.example.app.model.DocumentComment;
-import com.example.app.model.LessonComment;
 import com.example.app.model.Document;
+import com.example.app.model.DocumentComment;
 import com.example.app.model.Lesson;
+import com.example.app.model.LessonComment;
 import com.example.app.repository.CategoryRepository;
 import com.example.app.repository.DocumentCommentRepository;
-import com.example.app.repository.LessonCommentRepository;
-import com.example.app.repository.DocumentRepository;
-import com.example.app.repository.LessonRepository;
 import com.example.app.repository.DocumentRatingRepository;
+import com.example.app.repository.DocumentRepository;
+import com.example.app.repository.LessonCommentRepository;
 import com.example.app.repository.LessonRatingRepository;
+import com.example.app.repository.LessonRepository;
 
 @Service
 public class ChatService {
@@ -367,7 +367,7 @@ public class ChatService {
 		List<String> categories = getAvailableCategories();
 
 		if (categories == null || categories.isEmpty()) {
-			throw new AppException("Không có danh mục nào trong hệ thống", 5002, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.CATEGORY_NOT_FOUND).build();
 		}
 
 		String categoriesList = String.join(", ", categories);
@@ -422,7 +422,7 @@ public class ChatService {
 		List<LectureResponse> lectures = getAvailableLecture();
 
 		if (lectures == null || lectures.isEmpty()) {
-			throw new AppException("Không có bài giảng nào trong hệ thống", 5001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build();
 		}
 
 		StringBuilder lessonsBuilder = new StringBuilder();

@@ -8,11 +8,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.ChatRole;
 import com.example.app.constant.ConversationType;
 import com.example.app.dto.request.ConversationGroupRequest;
@@ -60,12 +60,12 @@ public class ConversationService {
 		User me = getUserByToken.get();
 
 		if (request.getParticipantIds().size() != 1) {
-			throw new AppException("Chat 1-1 chỉ được có 1 người", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.MEMBER_LIMIT_EXCEEDED).build();
 		}
 
 		Long partnerId = request.getParticipantIds().getFirst();
 		User partner = userRepository.findByIdAndHideFalse(partnerId)
-				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.USER_NOT_FOUND).build());
 
 		List<Long> participantIds = new ArrayList<>(request.getParticipantIds());
 		participantIds.add(me.getId());
@@ -90,21 +90,17 @@ public class ConversationService {
 
 		// 1. validate
 		if (request.getParticipantIds() == null || request.getParticipantIds().size() < 2) {
-			throw new AppException("Group phải có ít nhất 2 người khác", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.MEMBER_COUNT_TOO_SMALL).build();
 		}
 
 		// tránh trùng + tránh thêm chính mình nhiều lần
 		Set<Long> uniqueIds = new HashSet<>(request.getParticipantIds());
 
-		if (uniqueIds.contains(me.getId())) {
-			throw new AppException("Không cần truyền chính bạn vào group", 1002, HttpStatus.BAD_REQUEST);
-		}
-
 		// 2. lấy user
 		List<User> users = userRepository.findAllById(uniqueIds);
 
 		if (users.size() != uniqueIds.size()) {
-			throw new AppException("Có user không tồn tại", 1003, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_MEMBER_COUNT).build();
 		}
 
 		String groupAvt = avt != null ? saveGroupAvt(avt) : null;
@@ -153,10 +149,10 @@ public class ConversationService {
 		User me = getUserByToken.get();
 
 		Conversation conversation = conversationRepository.findById(id)
-				.orElseThrow(() -> new AppException("conversation không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.CONVERSATION_NOT_FOUND).build());
 
 		if (!participantInfoRepository.existsByConversation_IdAndUser_Id(id, me.getId())) {
-			throw new AppException("không đủ quyền hạn", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.NOT_CONVERSATION_MEMBER).build();
 		}
 
 		return toConversationResponse(conversation, me);
@@ -168,7 +164,7 @@ public class ConversationService {
 			String avatarUrl = (String) handleAvt.get("secure_url");
 			return avatarUrl;
 		} catch (Exception e) {
-			throw new AppException("lưu ảnh đại diện nhóm thất bại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.UPDATE_AVATAR_FAILED).build();
 		}
 	}
 

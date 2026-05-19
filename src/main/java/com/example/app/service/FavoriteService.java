@@ -3,10 +3,10 @@ package com.example.app.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.ContentStatus;
 import com.example.app.constant.InteractionType;
 import com.example.app.dto.request.FavoriteRequest;
@@ -46,7 +46,7 @@ public class FavoriteService {
 		} else if (request.getType() == InteractionType.LESSON) {
 			return saveLessonFavorite(user, request.getContentId());
 		} else {
-			throw new AppException("Favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ADD_TO_FAVORITE_FAILED).build();
 		}
 	}
 
@@ -72,7 +72,7 @@ public class FavoriteService {
 	public void removeDocumentFavorite(Long documentId) {
 		User user = getUserByToken.get();
 		DocumentFavorite favorite = favoriteDocumentRepository.findByUser_IdAndDocument_Id(user.getId(), documentId)
-				.orElseThrow(() -> new AppException("favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.REMOVE_FROM_FAVORITE_FAILED).build());
 		favoriteDocumentRepository.deleteById(favorite.getId());
 
 	}
@@ -81,7 +81,7 @@ public class FavoriteService {
 	public void removeLessonFavorite(Long LessonId) {
 		User user = getUserByToken.get();
 		LessonFavorite favorite = favoriteLessonRepository.findByUser_IdAndLesson_Id(user.getId(), LessonId)
-				.orElseThrow(() -> new AppException("favorite không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.REMOVE_FROM_FAVORITE_FAILED).build());
 		favoriteLessonRepository.deleteById(favorite.getId());
 
 	}
@@ -101,7 +101,7 @@ public class FavoriteService {
 	private FavoriteResponse saveDocumentFavorite(User user, Long contentId) {
 		DocumentFavorite favorite = DocumentFavorite.builder().createdAt(LocalDateTime.now()).user(user).build();
 		Document doc = documentRepository.findById(contentId)
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 		favorite.setDocument(doc);
 		DocumentFavorite saved = favoriteDocumentRepository.save(favorite);
 		return favoriteMapper.documentFavoriteToResponse(saved);
@@ -110,7 +110,7 @@ public class FavoriteService {
 	private FavoriteResponse saveLessonFavorite(User user, Long contentId) {
 		LessonFavorite favorite = LessonFavorite.builder().createdAt(LocalDateTime.now()).user(user).build();
 		Lesson lesson = lessonRepository.findById(contentId)
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 		favorite.setLesson(lesson);
 		LessonFavorite saved = favoriteLessonRepository.save(favorite);
 		return favoriteMapper.lessonFavoriteToResponse(saved);

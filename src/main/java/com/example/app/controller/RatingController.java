@@ -24,46 +24,36 @@ public class RatingController {
 
 	@GetMapping("/document-summary/{documentId}")
 	public APIResponse<RatingSummaryResponse> getRatingSummaryDocument(@PathVariable Long documentId) {
-		RatingSummaryResponse response = ratingService.getRatingSummaryDocument(documentId);
 		APIResponse<RatingSummaryResponse> apiResponse = new APIResponse<RatingSummaryResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(ratingService.getRatingSummaryDocument(documentId));
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson-summary/{lessonId}")
 	public APIResponse<RatingSummaryResponse> getRatingSummaryLesson(@PathVariable Long lessonId) {
-		RatingSummaryResponse response = ratingService.getRatingSummaryLesson(lessonId);
 		APIResponse<RatingSummaryResponse> apiResponse = new APIResponse<RatingSummaryResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(ratingService.getRatingSummaryLesson(lessonId));
 		return apiResponse;
 	}
 
 	@GetMapping("/document/my-rating/{documentId}")
 	public APIResponse<Integer> getMyRatingDocument(@PathVariable Long documentId) {
-		Integer response = ratingService.getMyRatingDocument(documentId);
 		APIResponse<Integer> apiResponse = new APIResponse<Integer>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get success");
+		apiResponse.setResult(ratingService.getMyRatingDocument(documentId));
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson/my-rating/{lessonId}")
 	public APIResponse<Integer> getMyRatingLesson(@PathVariable Long lessonId) {
-		Integer response = ratingService.getMyRatingLesson(lessonId);
 		APIResponse<Integer> apiResponse = new APIResponse<Integer>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get success");
+		apiResponse.setResult(ratingService.getMyRatingLesson(lessonId));
 		return apiResponse;
 	}
 
 	@PostMapping
 	public APIResponse<RatingUserResponse> createRating(@RequestBody @Valid RatingRequest dto) {
-		RatingUserResponse response = ratingService.saveRating(dto);
 		APIResponse<RatingUserResponse> apiResponse = new APIResponse<RatingUserResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(ratingService.saveRating(dto));
 		return apiResponse;
 	}
 

@@ -1,7 +1,5 @@
 package com.example.app.controller.admin;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,28 +25,22 @@ public class AdminUserController {
 
 	@PutMapping("hide/{id}")
 	public APIResponse<UserResponse> hide(@PathVariable Long id, @RequestBody @Valid DisplayRequest dto) {
-		UserResponse response = userService.hide(id, dto);
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("hide success");
+		apiResponse.setResult(userService.hide(id, dto));
 		return apiResponse;
 	}
 
 	@GetMapping
 	public APIResponse<UserResponse> getAll() {
-		List<UserResponse> response = userService.getAllUsers();
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(userService.getAllUsers());
 		return apiResponse;
 	}
 
 	@PostMapping
 	public APIResponse<UserResponse> create(@RequestBody @Valid UserRequest dto) {
 		APIResponse<UserResponse> apiResponse = new APIResponse<UserResponse>();
-		UserResponse response = userService.save(dto);
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(userService.save(dto));
 		return apiResponse;
 	}
 

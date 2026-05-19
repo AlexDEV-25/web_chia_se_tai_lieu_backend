@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.ContentStatus;
 import com.example.app.constant.NotificationAction;
 import com.example.app.dto.request.DocumentRequest;
@@ -56,7 +56,7 @@ public class DocumentService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public DocumentDetailResponse findById(Long id) {
 		Document find = documentRepository.findById(id)
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 		return documentMapper.documentToDocumentDetailResponse(find);
 	}
 
@@ -72,7 +72,7 @@ public class DocumentService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
 		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 
 		eventPublisher.publishEvent(new DocumentDeleteEvent(entity));
 
@@ -87,7 +87,7 @@ public class DocumentService {
 	@Transactional
 	public DocumentDetailResponse update(Long id, DocumentRequest request) {
 		Document entity = documentRepository.findById(id)
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 
 		ContentStatus initialStatus = entity.getStatus();
 
@@ -120,7 +120,7 @@ public class DocumentService {
 	public DocumentDetailResponse getMyDocumentDetail(Long id) {
 		User user = getUserByToken.get();
 		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 		return documentMapper.documentToDocumentDetailResponse(entity);
 	}
 
@@ -128,7 +128,7 @@ public class DocumentService {
 	public DocumentUserResponse updateMyDocument(Long id, DocumentRequest request) {
 		User user = getUserByToken.get();
 		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 		boolean initialState = entity.isHide();
 		documentMapper.updateDocument(entity, request);
 		entity.setUpdatedAt(LocalDateTime.now());
@@ -145,7 +145,7 @@ public class DocumentService {
 	public void deleteMyDocument(Long id) {
 		User user = getUserByToken.get();
 		Document entity = documentRepository.findByIdAndUser_Id(id, user.getId())
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 
 		eventPublisher.publishEvent(new DocumentDeleteEvent(entity));
 
@@ -178,11 +178,11 @@ public class DocumentService {
 			String thumbnailUrl = fileStorage.getThumbnail(publicId, "pdf");
 			document.setThumbnailUrl(thumbnailUrl);
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw AppException.builder().appError(AppError.UPLOAD_DOCUMENT_FAILED).build();
 		}
 
 		Category category = dto.getCategoryId() != null ? categoryRepository.findById(dto.getCategoryId())
-				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST)) : null;
+				.orElseThrow(() -> AppException.builder().appError(AppError.CATEGORY_NOT_FOUND).build()) : null;
 		document.setCategory(category);
 
 		User user = getUserByToken.get();
@@ -197,7 +197,7 @@ public class DocumentService {
 	public FileResponse downloadById(Long id) throws Exception {
 
 		Document doc = documentRepository.findByIdAndStatusAndHideFalse(id, ContentStatus.PUBLISHED)
-				.orElseThrow(() -> new AppException("Document không tồn tại", 1001, HttpStatus.NOT_FOUND));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 
 		FileResponse file = fileStorage.downloadFile(doc.getFileUrl());
 		return file;
@@ -259,7 +259,7 @@ public class DocumentService {
 
 	public DocumentDetailResponse findByIdPublicDocument(Long id) {
 		Document find = documentRepository.findByIdAndStatusAndHideFalse(id, ContentStatus.PUBLISHED)
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 		return documentMapper.documentToDocumentDetailResponse(find);
 	}
 

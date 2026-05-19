@@ -4,10 +4,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.request.UserNotificationRequest;
 import com.example.app.dto.response.usernotificaion.UserNotificationResponse;
 import com.example.app.exception.AppException;
@@ -86,7 +86,7 @@ public class UserNotificationService {
 			UserNotificationRequest userNotificationRequestToAudiences = new UserNotificationRequest(admin,
 					uf.getFollower(), notificationToAudiences, false);
 			if (!saveUserNotification(userNotificationRequestToAudiences)) {
-				throw new AppException("Gửi thông báo không thành công", 1001, HttpStatus.BAD_REQUEST);
+				throw AppException.builder().appError(AppError.CREATE_NOTIFICATION_FAILED).build();
 			}
 		}
 	}

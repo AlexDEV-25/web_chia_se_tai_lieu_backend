@@ -1,7 +1,5 @@
 package com.example.app.controller.admin;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,37 +20,29 @@ public class AdminRatingController {
 
 	@GetMapping("/document/{docId}")
 	public APIResponse<RatingDetailAdminResponse> getByDocument(@PathVariable Long docId) {
-		RatingDetailAdminResponse response = ratingService.getByDocument(docId);
 		APIResponse<RatingDetailAdminResponse> apiResponse = new APIResponse<RatingDetailAdminResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(ratingService.getByDocument(docId));
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson/{lessonId}")
 	public APIResponse<RatingDetailAdminResponse> getByLesson(@PathVariable Long lessonId) {
-		RatingDetailAdminResponse response = ratingService.getByLesson(lessonId);
 		APIResponse<RatingDetailAdminResponse> apiResponse = new APIResponse<RatingDetailAdminResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(ratingService.getByLesson(lessonId));
 		return apiResponse;
 	}
 
 	@GetMapping("/document")
 	public APIResponse<RatingAdminResponse> getAllDocumentRatingSummary() {
-		List<RatingAdminResponse> response = ratingService.getAllDocumentRatingSummary();
 		APIResponse<RatingAdminResponse> apiResponse = new APIResponse<RatingAdminResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(ratingService.getAllDocumentRatingSummary());
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson")
 	public APIResponse<RatingAdminResponse> getAllLessonRatingSummary() {
-		List<RatingAdminResponse> response = ratingService.getAllLessonRatingSummary();
 		APIResponse<RatingAdminResponse> apiResponse = new APIResponse<RatingAdminResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(ratingService.getAllLessonRatingSummary());
 		return apiResponse;
 	}
 

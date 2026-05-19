@@ -1,7 +1,5 @@
 package com.example.app.controller.admin;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,19 +25,15 @@ public class AdminLessonController {
 
 	@GetMapping("/{id}")
 	public APIResponse<LessonDetailResponse> getById(@PathVariable Long id) {
-		LessonDetailResponse response = lessonService.findById(id);
 		APIResponse<LessonDetailResponse> apiResponse = new APIResponse<LessonDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get by id success");
+		apiResponse.setResult(lessonService.findById(id));
 		return apiResponse;
 	}
 
 	@GetMapping
 	public APIResponse<LessonAdminResponse> getAll() {
-		List<LessonAdminResponse> response = lessonService.getAllLessons();
 		APIResponse<LessonAdminResponse> apiResponse = new APIResponse<LessonAdminResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(lessonService.getAllLessons());
 		return apiResponse;
 	}
 
@@ -47,16 +41,13 @@ public class AdminLessonController {
 	public APIResponse<Void> delete(@PathVariable Long id) {
 		lessonService.delete(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
 	@PutMapping("/{id}")
 	public APIResponse<LessonDetailResponse> update(@PathVariable Long id, @RequestBody LessonRequest dto) {
-		LessonDetailResponse response = lessonService.update(id, dto);
 		APIResponse<LessonDetailResponse> apiResponse = new APIResponse<LessonDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
+		apiResponse.setResult(lessonService.update(id, dto));
 		return apiResponse;
 	}
 

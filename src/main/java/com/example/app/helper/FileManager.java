@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -15,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.example.app.constant.AppError;
 import com.example.app.dto.response.FileResponse;
 import com.example.app.exception.AppException;
 
@@ -93,7 +93,7 @@ public class FileManager {
 
 			return uploadToCloudinary(file, "image", publicId);
 		} else {
-			throw new AppException("ảnh  không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_IMAGE_FORMAT).build();
 		}
 
 	}
@@ -106,7 +106,7 @@ public class FileManager {
 
 			return uploadToCloudinary(file, "video", publicId);
 		} else {
-			throw new AppException("video không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_VIDEO_FORMAT).build();
 		}
 
 	}
@@ -119,7 +119,7 @@ public class FileManager {
 
 			return uploadToCloudinary(file, "raw", publicId);
 		} else {
-			throw new AppException("sub file không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_SUBFILE_FORMAT).build();
 		}
 	}
 
@@ -130,7 +130,7 @@ public class FileManager {
 			String publicId = folder + "/" + UUID.randomUUID();
 			return uploadToCloudinary(file, "image", publicId);
 		} else {
-			throw new AppException("document không đúng định dạng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_DOCUMENT_FORMAT).build();
 		}
 	}
 

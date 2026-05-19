@@ -1,8 +1,5 @@
 package com.example.app.controller;
 
-import java.util.List;
-
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.request.ConversationGroupRequest;
 import com.example.app.dto.request.ConversationRequest;
 import com.example.app.dto.response.APIResponse;
@@ -33,10 +31,8 @@ public class ConversationController {
 
 	@PostMapping("/direct")
 	public APIResponse<ConversationResponse> createDirectConversation(@RequestBody @Valid ConversationRequest dto) {
-		ConversationResponse response = conversationService.createDirectConversation(dto);
 		APIResponse<ConversationResponse> apiResponse = new APIResponse<ConversationResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(conversationService.createDirectConversation(dto));
 		return apiResponse;
 	}
 
@@ -46,40 +42,34 @@ public class ConversationController {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			ConversationGroupRequest dto = mapper.readValue(dataJson, ConversationGroupRequest.class);
-			ConversationResponse response = conversationService.createGroupConversation(avt, dto);
+
 			APIResponse<ConversationResponse> apiResponse = new APIResponse<ConversationResponse>();
-			apiResponse.setResult(response);
-			apiResponse.setMessage("save success");
+			apiResponse.setResult(conversationService.createGroupConversation(avt, dto));
 			return apiResponse;
+
 		} catch (Exception e) {
-			throw new AppException("Cập nhật thất bại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_JSON_FORMAT).build();
 		}
 	}
 
 	@GetMapping("/my-conversations")
 	public APIResponse<ConversationResponse> getMyConversation() {
-		List<ConversationResponse> response = conversationService.getMyConversations();
 		APIResponse<ConversationResponse> apiResponse = new APIResponse<ConversationResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(conversationService.getMyConversations());
 		return apiResponse;
 	}
 
 	@GetMapping("/search")
 	public APIResponse<ConversationResponse> search(@RequestParam String keyword) {
-		List<ConversationResponse> response = conversationService.search(keyword);
 		APIResponse<ConversationResponse> apiResponse = new APIResponse<ConversationResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(conversationService.search(keyword));
 		return apiResponse;
 	}
 
 	@GetMapping("/detail/{id}")
 	public APIResponse<ConversationResponse> getDetailConversation(@PathVariable Long id) {
-		ConversationResponse response = conversationService.getDetailConversation(id);
 		APIResponse<ConversationResponse> apiResponse = new APIResponse<ConversationResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(conversationService.getDetailConversation(id));
 		return apiResponse;
 	}
 }

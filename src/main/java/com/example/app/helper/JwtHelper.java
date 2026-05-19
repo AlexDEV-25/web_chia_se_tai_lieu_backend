@@ -9,9 +9,9 @@ import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.response.authentication.IntrospectResponse;
 import com.example.app.exception.AppException;
 import com.example.app.model.Permission;
@@ -59,10 +59,10 @@ public class JwtHelper {
 		boolean verified = signedJWT.verify(verifier);
 
 		if (!epx.after(new Date())) {
-			throw new AppException("token đã hết hạn", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.TOKEN_EXPIRED).build();
 		}
 		if (!verified) {
-			throw new AppException("token không đúng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_TOKEN).build();
 		}
 
 		return signedJWT;
@@ -86,9 +86,9 @@ public class JwtHelper {
 			String token = jwsObject.serialize();
 			return token;
 		} catch (KeyLengthException e) {
-			throw new AppException("secretKey phải >= 32B", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_SECRET_KEY_LENGTH).build();
 		} catch (JOSEException e) {
-			throw new AppException("JOSEException", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.JOSE_PROCESSING_ERROR).build();
 		}
 	}
 

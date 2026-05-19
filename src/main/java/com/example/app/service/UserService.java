@@ -4,12 +4,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.ConnectionStatus;
 import com.example.app.constant.HideType;
 import com.example.app.dto.request.ChangePasswordRequest;
@@ -53,11 +53,11 @@ public class UserService {
 		List<Role> roles = roleRepository.findAllById(dto.getRoles());
 		user.setRoles(roles);
 		user.setCreatedAt(LocalDateTime.now());
-		if (this.checkEmailExists(dto.getEmail())) {
-			throw new AppException("email đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		if (userRepository.existsByEmail(dto.getEmail())) {
+			throw AppException.builder().appError(AppError.EMAIL_ALREADY_EXISTS).build();
 		}
-		if (this.checkUsernameExists(dto.getEmail())) {
-			throw new AppException("username đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		if (userRepository.existsByUsername(dto.getEmail())) {
+			throw AppException.builder().appError(AppError.USERNAME_ALREADY_EXISTS).build();
 		}
 
 		user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -71,13 +71,13 @@ public class UserService {
 	public UserResponse hide(Long id, DisplayRequest request) {
 		if (request.getType() == HideType.USER) {
 			User entity = userRepository.findById(id)
-					.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+					.orElseThrow(() -> AppException.builder().appError(AppError.USER_NOT_FOUND).build());
 			entity.setHide(request.isHide());
 			entity.setUpdatedAt(LocalDateTime.now());
 			User saved = userRepository.save(entity);
 			return userMapper.userToResponse(saved);
 		} else {
-			throw new AppException("không đúng type", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.TYPE_NOT_FOUND).build();
 		}
 	}
 
@@ -98,7 +98,7 @@ public class UserService {
 
 				entity.setAvatarUrl(avatarUrl);
 			} catch (Exception e) {
-				e.printStackTrace();
+				throw AppException.builder().appError(AppError.UPDATE_PROFILE_FAILED).build();
 			}
 
 		}
@@ -130,7 +130,7 @@ public class UserService {
 
 	public UserBioResponse getUserInfo(Long id) {
 		User find = userRepository.findByIdAndHideFalse(id)
-				.orElseThrow(() -> new AppException("user không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.USER_NOT_FOUND).build());
 		return userMapper.userToUserBioResponse(find);
 	}
 

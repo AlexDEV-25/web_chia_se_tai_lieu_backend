@@ -2,10 +2,10 @@ package com.example.app.service;
 
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.HideType;
 import com.example.app.dto.request.CategoryRequest;
 import com.example.app.dto.request.DisplayRequest;
@@ -33,7 +33,7 @@ public class CategoryService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public CategoryResponse findById(Long id) {
 		Category find = categoryRepository.findById(id)
-				.orElseThrow(() -> new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.CATEGORY_NOT_FOUND).build());
 		return categoryMapper.entityToResponse(find);
 	}
 
@@ -48,7 +48,7 @@ public class CategoryService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public CategoryResponse update(Long id, CategoryRequest request) {
 		Category category = categoryRepository.findById(id)
-				.orElseThrow(() -> new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.CATEGORY_NOT_FOUND).build());
 		categoryMapper.updateCategory(category, request);
 		Category saved = categoryRepository.save(category);
 		return categoryMapper.entityToResponse(saved);
@@ -58,23 +58,19 @@ public class CategoryService {
 	public CategoryResponse display(Long id, DisplayRequest request) {
 		if (request.getType() == HideType.CATEGORY) {
 			Category category = categoryRepository.findById(id)
-					.orElseThrow(() -> new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST));
+					.orElseThrow(() -> AppException.builder().appError(AppError.CATEGORY_NOT_FOUND).build());
 			category.setHide(request.isHide());
 			Category saved = categoryRepository.save(category);
 			return categoryMapper.entityToResponse(saved);
 		} else {
-			throw new AppException("không đúng type", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.TYPE_NOT_FOUND).build();
 		}
 
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	public void delete(Long id) {
-		try {
-			categoryRepository.deleteById(id);
-		} catch (AppException e) {
-			throw new AppException("không tìm thấy danh mục", 1001, HttpStatus.BAD_REQUEST);
-		}
+		categoryRepository.deleteById(id);
 	}
 
 	public List<CategoryResponse> getAllPublicCategories() {

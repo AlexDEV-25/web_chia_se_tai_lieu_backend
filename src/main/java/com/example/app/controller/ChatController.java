@@ -1,7 +1,5 @@
 package com.example.app.controller;
 
-import java.util.List;
-
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,19 +23,15 @@ public class ChatController {
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	APIResponse<String> chat(@RequestParam(value = "image", required = false) MultipartFile file,
 			@RequestParam("message") String request) {
-		String response = chatService.chat(file, request);
 		APIResponse<String> apiResponse = new APIResponse<String>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("chat success");
+		apiResponse.setResult(chatService.chat(file, request));
 		return apiResponse;
 	}
 
 	@GetMapping()
 	public APIResponse<ChatHistoryResponse> getChatHistory() {
-		List<ChatHistoryResponse> response = chatService.getChatHistory();
 		APIResponse<ChatHistoryResponse> apiResponse = new APIResponse<ChatHistoryResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(chatService.getChatHistory());
 		return apiResponse;
 	}
 }

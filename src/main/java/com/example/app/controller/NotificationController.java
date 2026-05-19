@@ -21,10 +21,8 @@ public class NotificationController {
 
 	@PostMapping
 	public APIResponse<NotificationResponse> create(@RequestBody @Valid NotificationRequest dto) {
-		NotificationResponse response = notificationService.save(dto);
 		APIResponse<NotificationResponse> apiResponse = new APIResponse<NotificationResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(notificationService.save(dto));
 		return apiResponse;
 	}
 

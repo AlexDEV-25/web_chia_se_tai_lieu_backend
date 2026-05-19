@@ -3,10 +3,10 @@ package com.example.app.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.ContentStatus;
 import com.example.app.constant.InteractionType;
 import com.example.app.dto.request.ReportRequest;
@@ -72,7 +72,7 @@ public class ReportService {
 		} else if (request.getType() == InteractionType.LESSON) {
 			return saveLessonReport(user, request);
 		} else {
-			throw new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.TYPE_NOT_FOUND).build();
 		}
 	}
 
@@ -80,9 +80,9 @@ public class ReportService {
 		DocumentReport report = DocumentReport.builder().reason(request.getReason()).user(user)
 				.createdAt(LocalDateTime.now()).build();
 		Document doc = documentRepository.findById(request.getContentId())
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 		if (documentReportRepository.existsByUserAndDocument(user, doc)) {
-			throw new AppException("Bạn đã report rồi", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ALREADY_REPORTED).build();
 		}
 		report.setDocument(doc);
 
@@ -94,9 +94,9 @@ public class ReportService {
 		LessonReport report = LessonReport.builder().reason(request.getReason()).user(user)
 				.createdAt(LocalDateTime.now()).build();
 		Lesson lesson = lessonRepository.findById(request.getContentId())
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 		if (lessonReportRepository.existsByUserAndLesson(user, lesson)) {
-			throw new AppException("Bạn đã report rồi", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ALREADY_REPORTED).build();
 		}
 		report.setLesson(lesson);
 

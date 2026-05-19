@@ -1,7 +1,5 @@
 package com.example.app.controller.admin;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,19 +24,15 @@ public class AdminDocumentController {
 
 	@GetMapping("/{id}")
 	public APIResponse<DocumentDetailResponse> getById(@PathVariable Long id) {
-		DocumentDetailResponse response = documentService.findById(id);
 		APIResponse<DocumentDetailResponse> apiResponse = new APIResponse<DocumentDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get by id success");
+		apiResponse.setResult(documentService.findById(id));
 		return apiResponse;
 	}
 
 	@GetMapping
 	public APIResponse<DocumentAdminResponse> getAll() {
-		List<DocumentAdminResponse> response = documentService.findAll();
 		APIResponse<DocumentAdminResponse> apiResponse = new APIResponse<DocumentAdminResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(documentService.findAll());
 		return apiResponse;
 	}
 
@@ -46,16 +40,13 @@ public class AdminDocumentController {
 	public APIResponse<Void> delete(@PathVariable Long id) {
 		documentService.delete(id);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
 	@PutMapping("/{id}")
 	public APIResponse<DocumentDetailResponse> update(@PathVariable Long id, @RequestBody DocumentRequest dto) {
-		DocumentDetailResponse response = documentService.update(id, dto);
 		APIResponse<DocumentDetailResponse> apiResponse = new APIResponse<DocumentDetailResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("update success");
+		apiResponse.setResult(documentService.update(id, dto));
 		return apiResponse;
 	}
 

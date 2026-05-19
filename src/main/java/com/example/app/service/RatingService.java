@@ -3,10 +3,10 @@ package com.example.app.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.ContentStatus;
 import com.example.app.constant.InteractionType;
 import com.example.app.dto.request.RatingRequest;
@@ -79,7 +79,7 @@ public class RatingService {
 		} else if (request.getType() == InteractionType.LESSON) {
 			return saveLessonRating(user, request);
 		} else {
-			throw new AppException("type không đúng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.TYPE_NOT_FOUND).build();
 		}
 	}
 
@@ -95,9 +95,9 @@ public class RatingService {
 		DocumentRating rating = DocumentRating.builder().rating(request.getRating()).user(user)
 				.createdAt(LocalDateTime.now()).build();
 		Document doc = documentRepository.findById(request.getContentId())
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build());
 		if (documentRatingRepository.existsByUserAndDocument(user, doc)) {
-			throw new AppException("Bạn đã rating rồi", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ALREADY_RATED).build();
 		}
 		rating.setDocument(doc);
 		DocumentRating saved = documentRatingRepository.save(rating);
@@ -108,9 +108,9 @@ public class RatingService {
 		LessonRating rating = LessonRating.builder().rating(request.getRating()).user(user)
 				.createdAt(LocalDateTime.now()).build();
 		Lesson lesson = lessonRepository.findById(request.getContentId())
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 		if (lessonRatingRepository.existsByUserAndLesson(user, lesson)) {
-			throw new AppException("Bạn đã rating rồi", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ALREADY_RATED).build();
 		}
 		rating.setLesson(lesson);
 		LessonRating saved = lessonRatingRepository.save(rating);

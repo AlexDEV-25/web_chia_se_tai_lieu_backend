@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.app.constant.AppError;
 import com.example.app.dto.request.ActiveAccountRequest;
 import com.example.app.dto.request.AuthenticationRequest;
 import com.example.app.dto.request.ExchangeTokenRequest;
@@ -63,37 +63,56 @@ public class AuthenticationService {
 	public AuthenticationResponse login(AuthenticationRequest request) {
 		User user = userRepository.findByEmail(request.getEmail());
 		if (user == null) {
-			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.USER_NOT_FOUND).build();
 		}
 		if (user.isVerified() == false) {
-			throw new AppException("tài khoản chưa kích hoạt", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ACCOUNT_NOT_ACTIVATED).build();
 		}
-		AuthenticationResponse response = new AuthenticationResponse();
+
 		boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
-		response.setAuthenticated(authenticated);
-		if (authenticated) {
-			String token = jwtHelper.generateToken(user);
-			response.setToken(token);
+
+		if (!authenticated) {
+			throw AppException.builder().appError(AppError.LOGIN_FAILED).build();
 		}
-		return response;
-	}
-
-	public AuthenticationResponse refreshToken(String oldToken) throws JOSEException, ParseException, AppException {
-		SignedJWT signToken = jwtHelper.verifyToken(oldToken);
-
-		String username = signToken.getJWTClaimsSet().getSubject();
-		User user = userRepository.findByUsername(username);
 
 		AuthenticationResponse response = new AuthenticationResponse();
+		response.setAuthenticated(authenticated);
 		String token = jwtHelper.generateToken(user);
-		response.setAuthenticated(true);
 		response.setToken(token);
 
 		return response;
 	}
 
-	public IntrospectResponse introspect(String token) throws JOSEException, ParseException {
-		return jwtHelper.introspect(token);
+	public AuthenticationResponse refreshToken(String oldToken) {
+		try {
+			SignedJWT signToken = jwtHelper.verifyToken(oldToken);
+
+			String username = signToken.getJWTClaimsSet().getSubject();
+			User user = userRepository.findByUsername(username);
+
+			AuthenticationResponse response = new AuthenticationResponse();
+			String token = jwtHelper.generateToken(user);
+			response.setAuthenticated(true);
+			response.setToken(token);
+
+			return response;
+		} catch (ParseException e) {
+			throw AppException.builder().appError(AppError.FAILED_TO_PARSE_DATA).build();
+		} catch (JOSEException e) {
+			throw AppException.builder().appError(AppError.JOSE_PROCESSING_ERROR).build();
+		}
+
+	}
+
+	public IntrospectResponse introspect(String token) {
+		try {
+			return jwtHelper.introspect(token);
+		} catch (ParseException e) {
+			throw AppException.builder().appError(AppError.FAILED_TO_PARSE_DATA).build();
+		} catch (JOSEException e) {
+			throw AppException.builder().appError(AppError.JOSE_PROCESSING_ERROR).build();
+		}
+
 	}
 
 	public UserResponse register(UserRequest request) {
@@ -105,10 +124,10 @@ public class AuthenticationService {
 		user.setRoles(roles);
 		user.setCreatedAt(LocalDateTime.now());
 		if (userRepository.existsByEmail(request.getEmail())) {
-			throw new AppException("email đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.EMAIL_ALREADY_EXISTS).build();
 		}
 		if (userRepository.existsByUsername(request.getEmail())) {
-			throw new AppException("username đã tồn tại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.USERNAME_ALREADY_EXISTS).build();
 		}
 
 		user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -124,17 +143,17 @@ public class AuthenticationService {
 	public void activateAccount(ActiveAccountRequest request) {
 		User user = userRepository.findByEmail(request.getEmail());
 		if (user == null) {
-			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.USER_NOT_FOUND).build();
 		}
 		if (user.isVerified()) {
-			throw new AppException("tài khoản đã kích hoạt rồi", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.ACCOUNT_ALREADY_ACTIVATED).build();
 		}
 		if (user.getActivationCode().equals(request.getActivationCode())) {
 			user.setVerified(true);
 			user.setActivationCode(null);
 			userRepository.save(user);
 		} else {
-			throw new AppException("mã kích hoạt không đúng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_VERIFICATION_CODE).build();
 		}
 	}
 
@@ -146,14 +165,14 @@ public class AuthenticationService {
 			userRepository.save(user);
 			sendMail.sendEmailChangePassword(email, forgotPassWordCode);
 		} else {
-			throw new AppException("email không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.EMAIL_NOT_FOUND).build();
 		}
 	}
 
 	public UserResponse changePassword(ForgotPasswordRequest request) {
 		User user = userRepository.findByEmail(request.getEmail());
 		if (user == null) {
-			throw new AppException("không tìm thấy người dùng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.USER_NOT_FOUND).build();
 		}
 
 		if (user.getForgotPasswordCode().equals(request.getForgotPasswordCode())) {
@@ -164,7 +183,7 @@ public class AuthenticationService {
 			UserResponse response = userMapper.userToResponse(saved);
 			return response;
 		} else {
-			throw new AppException("mã không đúng", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.INVALID_VERIFICATION_CODE).build();
 		}
 	}
 
@@ -198,7 +217,7 @@ public class AuthenticationService {
 			response.setToken(token);
 			response.setAuthenticated(true);
 		} catch (Exception e) {
-			throw new AppException(e.getMessage(), 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.GOOGLE_LOGIN_FAILED).build();
 		}
 		return response;
 	}

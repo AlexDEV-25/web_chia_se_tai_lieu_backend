@@ -1,7 +1,5 @@
 package com.example.app.controller;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,10 +22,8 @@ public class UserFollowController {
 
 	@PostMapping("/{followingId}")
 	public APIResponse<UserFollowResponse> save(@PathVariable Long followingId) {
-		UserFollowResponse response = userFollowService.save(followingId);
 		APIResponse<UserFollowResponse> apiResponse = new APIResponse<UserFollowResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(userFollowService.save(followingId));
 		return apiResponse;
 	}
 
@@ -35,50 +31,40 @@ public class UserFollowController {
 	public APIResponse<Void> delete(@PathVariable Long followingId) {
 		userFollowService.delete(followingId);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("unfollow success");
 		return apiResponse;
 	}
 
 	@GetMapping("/following")
 	public APIResponse<UserFollowResponse> getFollowing() {
-		List<UserFollowResponse> response = userFollowService.getFollowingByFollower();
 		APIResponse<UserFollowResponse> apiResponse = new APIResponse<UserFollowResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(userFollowService.getFollowingByFollower());
 		return apiResponse;
 	}
 
 	@GetMapping("/follower")
 	public APIResponse<UserFollowResponse> getFollower() {
-		List<UserFollowResponse> response = userFollowService.getFollowerByFollowing();
 		APIResponse<UserFollowResponse> apiResponse = new APIResponse<UserFollowResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(userFollowService.getFollowerByFollowing());
 		return apiResponse;
 	}
 
 	@GetMapping("/my-follow-count")
 	public APIResponse<FollowCountResponse> getMyFollowCount() {
-		FollowCountResponse response = userFollowService.getMyFollowCount();
 		APIResponse<FollowCountResponse> apiResponse = new APIResponse<FollowCountResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(userFollowService.getMyFollowCount());
 		return apiResponse;
 	}
 
 	@GetMapping("/follow-count/{userId}")
 	public APIResponse<FollowCountResponse> getFollowCount(@PathVariable Long userId) {
-		FollowCountResponse response = userFollowService.getFollowCount(userId);
 		APIResponse<FollowCountResponse> apiResponse = new APIResponse<FollowCountResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResult(userFollowService.getFollowCount(userId));
 		return apiResponse;
 	}
 
 	@GetMapping("/check/{userId}")
 	public APIResponse<Boolean> checkFollowed(@PathVariable Long userId) {
 		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
-		apiResponse.setMessage("check success");
 		apiResponse.setResult(userFollowService.checkFollowed(userId));
 		return apiResponse;
 	}
@@ -86,7 +72,6 @@ public class UserFollowController {
 	@GetMapping("/check-is-me/{userId}")
 	public APIResponse<Boolean> checkIsMe(@PathVariable Long userId) {
 		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
-		apiResponse.setMessage("check success");
 		apiResponse.setResult(userFollowService.checkIsMe(userId));
 		return apiResponse;
 	}

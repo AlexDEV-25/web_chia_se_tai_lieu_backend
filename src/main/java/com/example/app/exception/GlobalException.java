@@ -5,14 +5,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.app.dto.response.APIResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalException {
 
 	@ExceptionHandler(RuntimeException.class)
@@ -45,9 +45,9 @@ public class GlobalException {
 	@ExceptionHandler(AppException.class)
 	ResponseEntity<APIResponse<AppException>> handlingAppException(AppException e) {
 		APIResponse<AppException> error = new APIResponse<>();
-		error.setCode(e.getCode());
-		error.setMessage(e.getMessage());
-		return ResponseEntity.status(e.getStatusCode()).body(error);
+		error.setCode(e.getAppError().getCode());
+		error.setMessage(e.getAppError().getMessage());
+		return ResponseEntity.status(e.getAppError().getStatusCode()).body(error);
 	}
 
 	@ExceptionHandler(TransientAiException.class)

@@ -1,7 +1,5 @@
 package com.example.app.controller;
 
-import java.util.List;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,10 +27,8 @@ public class FavoriteController {
 
 	@PostMapping
 	public APIResponse<FavoriteResponse> addFavorite(@RequestBody @Valid FavoriteRequest dto) {
-		FavoriteResponse response = favoriteService.addFavorite(dto);
 		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("save success");
+		apiResponse.setResult(favoriteService.addFavorite(dto));
 		return apiResponse;
 	}
 
@@ -40,7 +36,6 @@ public class FavoriteController {
 	public APIResponse<Void> removeDocumentFavorite(@PathVariable Long documentId) {
 		favoriteService.removeDocumentFavorite(documentId);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
@@ -48,43 +43,34 @@ public class FavoriteController {
 	public APIResponse<Void> removeLessonFavorite(@PathVariable Long lessonId) {
 		favoriteService.removeLessonFavorite(lessonId);
 		APIResponse<Void> apiResponse = new APIResponse<Void>();
-		apiResponse.setMessage("delete success");
 		return apiResponse;
 	}
 
 	@GetMapping("/document/user")
 	public APIResponse<FavoriteResponse> getDocumentFavoritesByUser() {
-		List<FavoriteResponse> response = favoriteService.getDocumentFavoritesByUser();
 		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(favoriteService.getDocumentFavoritesByUser());
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson/user")
 	public APIResponse<FavoriteResponse> getLessonFavoritesByUser() {
-		List<FavoriteResponse> response = favoriteService.getLessonFavoritesByUser();
 		APIResponse<FavoriteResponse> apiResponse = new APIResponse<FavoriteResponse>();
-		apiResponse.setResultList(response);
-		apiResponse.setMessage("get all success");
+		apiResponse.setResultList(favoriteService.getLessonFavoritesByUser());
 		return apiResponse;
 	}
 
 	@GetMapping("/document/user/check/{documentId}")
 	public APIResponse<Boolean> checkDocumentFavorite(@PathVariable Long documentId) {
-		Boolean response = favoriteService.checkDocumentFavorite(documentId);
 		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("check all success");
+		apiResponse.setResult(favoriteService.checkDocumentFavorite(documentId));
 		return apiResponse;
 	}
 
 	@GetMapping("/lesson/user/check/{lessonId}")
 	public APIResponse<Boolean> checkLessonFavorite(@PathVariable Long lessonId) {
-		Boolean response = favoriteService.checkLessonFavorite(lessonId);
 		APIResponse<Boolean> apiResponse = new APIResponse<Boolean>();
-		apiResponse.setResult(response);
-		apiResponse.setMessage("check all success");
+		apiResponse.setResult(favoriteService.checkLessonFavorite(lessonId));
 		return apiResponse;
 	}
 

@@ -5,12 +5,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.app.constant.AppError;
 import com.example.app.constant.ContentStatus;
 import com.example.app.constant.NotificationAction;
 import com.example.app.dto.request.LessonRequest;
@@ -57,7 +56,7 @@ public class LessonService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public LessonDetailResponse findById(Long id) {
 		Lesson find = lessonRepository.findById(id)
-				.orElseThrow(() -> new AppException("document không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 		return lessonMapper.lessonToLessonDetailResponse(find);
 	}
 
@@ -85,7 +84,7 @@ public class LessonService {
 	@PreAuthorize("hasRole('ADMIN')")
 	public LessonDetailResponse update(Long id, LessonRequest request) {
 		Lesson entity = lessonRepository.findById(id)
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 
 		ContentStatus initialStatus = entity.getStatus();
 
@@ -117,7 +116,7 @@ public class LessonService {
 	public LessonDetailResponse getMyLessonDetail(Long id) {
 		User user = getUserByToken.get();
 		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 		return lessonMapper.lessonToLessonDetailResponse(entity);
 	}
 
@@ -125,7 +124,7 @@ public class LessonService {
 	public LessonUserResponse updateMyDocument(Long id, LessonRequest request) {
 		User user = getUserByToken.get();
 		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 		boolean initialState = entity.isHide();
 		lessonMapper.updateLesson(entity, request);
 		entity.setUpdatedAt(LocalDateTime.now());
@@ -140,21 +139,17 @@ public class LessonService {
 
 	@PreAuthorize("hasAuthority('DELETE_MY_LESSON')")
 	public void deleteMyLesson(Long id) {
-		try {
-			User user = getUserByToken.get();
-			Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
-					.orElseThrow(() -> new RuntimeException("Không tìm thấy document"));
+		User user = getUserByToken.get();
+		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 
-			eventPublisher.publishEvent(new LessonDeleteEvent(entity));
+		eventPublisher.publishEvent(new LessonDeleteEvent(entity));
 
-			LessonDTO dto = lessonMapper.lessonToLessonDTO(entity);
-			deleteByKey(id);
+		LessonDTO dto = lessonMapper.lessonToLessonDTO(entity);
+		deleteByKey(id);
 
-			if (dto.getStatus() == ContentStatus.PUBLISHED) {
-				eventPublisher.publishEvent(new LessonStatusEvent(dto, user, NotificationAction.AUTHOR_DELETE));
-			}
-		} catch (EmptyResultDataAccessException e) {
-			throw new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST);
+		if (dto.getStatus() == ContentStatus.PUBLISHED) {
+			eventPublisher.publishEvent(new LessonStatusEvent(dto, user, NotificationAction.AUTHOR_DELETE));
 		}
 	}
 
@@ -197,11 +192,11 @@ public class LessonService {
 				lesson.setSubFileUrl(subFileUrl);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw AppException.builder().appError(AppError.UPLOAD_LECTURE_FAILED).build();
 		}
 
 		Category category = dto.getCategoryId() != null ? categoryRepository.findById(dto.getCategoryId())
-				.orElseThrow(() -> new AppException("category không tồn tại", 1001, HttpStatus.BAD_REQUEST)) : null;
+				.orElseThrow(() -> AppException.builder().appError(AppError.CATEGORY_NOT_FOUND).build()) : null;
 		lesson.setCategory(category);
 
 		User user = getUserByToken.get();
@@ -216,10 +211,10 @@ public class LessonService {
 	public FileResponse downloadDocumentByLessonId(Long lessonId) throws Exception {
 
 		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, ContentStatus.PUBLISHED)
-				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 
 		if (lesson.getDocumentUrl() == null) {
-			throw new AppException("Lesson không có tài liệu", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.DOCUMENT_NOT_FOUND).build();
 		}
 
 		FileResponse file = fileStorage.downloadFile(lesson.getDocumentUrl());
@@ -230,10 +225,10 @@ public class LessonService {
 	public FileResponse downloadSubFileByLessonId(Long lessonId) throws Exception {
 
 		Lesson lesson = lessonRepository.findByIdAndStatusAndHideFalse(lessonId, ContentStatus.PUBLISHED)
-				.orElseThrow(() -> new AppException("Lesson không tồn tại", 1001, HttpStatus.NOT_FOUND));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 
 		if (lesson.getSubFileUrl() == null) {
-			throw new AppException("Lesson không có file đính kèm", 1001, HttpStatus.BAD_REQUEST);
+			throw AppException.builder().appError(AppError.SUBFILE_NOT_FOUND).build();
 		}
 
 		FileResponse file = fileStorage.downloadFile(lesson.getSubFileUrl());
@@ -291,7 +286,7 @@ public class LessonService {
 
 	public LessonDetailResponse findByIdPublicLesson(Long id) {
 		Lesson find = lessonRepository.findByIdAndStatusAndHideFalse(id, ContentStatus.PUBLISHED)
-				.orElseThrow(() -> new AppException("lesson không tồn tại", 1001, HttpStatus.BAD_REQUEST));
+				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());
 		return lessonMapper.lessonToLessonDetailResponse(find);
 	}
 
