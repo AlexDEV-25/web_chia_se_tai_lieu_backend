@@ -23,7 +23,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @RestController
-@RequestMapping("api/auth")
+@RequestMapping("/api/auth")
 @AllArgsConstructor
 public class AuthenticationController {
 	private final AuthenticationService authenticationService;
@@ -93,6 +93,6 @@ public class AuthenticationController {
 			throw AppException.builder().appError(AppError.MISSING_TOKEN).build();
 		}
 
-		return authHeader.substring(7);
+		return authHeader.substring(7).trim();
 	}
 }

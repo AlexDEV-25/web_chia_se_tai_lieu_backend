@@ -5,12 +5,14 @@ import java.time.LocalDateTime;
 import com.example.app.constant.ContentStatus;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class LessonDetailResponse {
 	private Long id;
 	private String title;

@@ -121,7 +121,7 @@ public class LessonService {
 	}
 
 	@PreAuthorize("hasAuthority('UPDATE_MY_LESSON')")
-	public LessonUserResponse updateMyDocument(Long id, LessonRequest request) {
+	public LessonUserResponse updateMyLesson(Long id, LessonRequest request) {
 		User user = getUserByToken.get();
 		Lesson entity = lessonRepository.findByIdAndUser_Id(id, user.getId())
 				.orElseThrow(() -> AppException.builder().appError(AppError.LECTURE_NOT_FOUND).build());

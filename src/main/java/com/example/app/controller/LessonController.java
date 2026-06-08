@@ -157,7 +157,7 @@ public class LessonController {
 	public APIResponse<LessonUserResponse> updateMyLesson(@PathVariable Long id,
 			@RequestBody @Valid LessonRequest dto) {
 		APIResponse<LessonUserResponse> apiResponse = new APIResponse<LessonUserResponse>();
-		apiResponse.setResult(lessonService.updateMyDocument(id, dto));
+		apiResponse.setResult(lessonService.updateMyLesson(id, dto));
 		return apiResponse;
 	}
 

@@ -60,7 +60,7 @@ public class SecurityConfig {
 //			"/api/follows"
 			"/api/follows/follow-count/{userId}", };
 
-	private CustomJwtDecoder customJwtDecoder;
+	private final CustomJwtDecoder customJwtDecoder;
 
 	@Value("${app.domain.frontend}")
 	private String frontendDomain;

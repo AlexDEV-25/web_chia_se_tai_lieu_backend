@@ -1,12 +1,14 @@
 package com.example.app.dto.response.ai;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class LectureResponse {
 	private String title;
 	private String category;

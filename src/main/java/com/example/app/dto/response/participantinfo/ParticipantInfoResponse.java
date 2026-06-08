@@ -6,12 +6,14 @@ import com.example.app.constant.ChatRole;
 import com.example.app.constant.ConnectionStatus;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ParticipantInfoResponse {
 	private Long id;
 	private Long userId;
