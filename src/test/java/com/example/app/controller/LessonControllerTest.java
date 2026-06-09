@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -31,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.app.constant.ContentStatus;
 import com.example.app.dto.request.LessonRequest;
+import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.lesson.LessonDetailResponse;
 import com.example.app.dto.response.lesson.LessonResponse;
 import com.example.app.dto.response.lesson.LessonStatsResponse;
@@ -169,6 +172,36 @@ class LessonControllerTest {
 
 		mockMvc.perform(get("/api/lessons/count/1")).andExpect(status().isOk())
 				.andExpect(jsonPath("$.result").value(3L));
+	}
+
+	@Test
+	@DisplayName("GET /api/lessons/{id}/download-document - Should download document")
+	@WithMockUser(authorities = "DOWNLOAD_LESSON_DOCUMENT")
+	void testDownload_Document_Success() throws Exception {
+		byte[] data = "test".getBytes();
+		InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(data));
+
+		FileResponse file = FileResponse.builder().fileName("abc.pdf").length(data.length)
+				.mediaType(MediaType.APPLICATION_PDF).resource(resource).build();
+
+		when(lessonService.downloadDocumentByLessonId(anyLong())).thenReturn(file);
+
+		mockMvc.perform(get("/api/lessons/1/download-document")).andExpect(status().isOk());
+	}
+
+	@Test
+	@DisplayName("GET /api/lessons/{id}/download-subfile - Should download subfile")
+	@WithMockUser(authorities = "DOWNLOAD_LESSON_SUBFILE")
+	void testDownload_SubFile_Success() throws Exception {
+		byte[] data = "test".getBytes();
+		InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(data));
+
+		FileResponse file = FileResponse.builder().fileName("abc.zip").length(data.length)
+				.mediaType(MediaType.parseMediaType("application/zip")).resource(resource).build();
+
+		when(lessonService.downloadSubFileByLessonId(anyLong())).thenReturn(file);
+
+		mockMvc.perform(get("/api/lessons/1/download-subfile")).andExpect(status().isOk());
 	}
 
 	@Test

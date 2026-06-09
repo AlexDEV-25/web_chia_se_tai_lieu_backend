@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -31,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.app.constant.ContentStatus;
 import com.example.app.dto.request.DocumentRequest;
+import com.example.app.dto.response.FileResponse;
 import com.example.app.dto.response.document.DocumentDetailResponse;
 import com.example.app.dto.response.document.DocumentResponse;
 import com.example.app.dto.response.document.DocumentStatsResponse;
@@ -180,6 +183,21 @@ class DocumentControllerTest {
 		doNothing().when(documentService).increaseDownload(anyLong());
 
 		mockMvc.perform(post("/api/documents/download/1")).andExpect(status().isOk());
+	}
+
+	@Test
+	@DisplayName("GET /api/documents/{id}/download - Should download document")
+	@WithMockUser(authorities = "DOWNLOAD_FILE")
+	void testDownload_Success() throws Exception {
+		byte[] data = "test".getBytes();
+		InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(data));
+
+		FileResponse file = FileResponse.builder().fileName("abc.pdf").length(data.length)
+				.mediaType(MediaType.APPLICATION_PDF).resource(resource).build();
+
+		when(documentService.downloadById(anyLong())).thenReturn(file);
+
+		mockMvc.perform(get("/api/documents/1/download")).andExpect(status().isOk());
 	}
 
 	@Test
