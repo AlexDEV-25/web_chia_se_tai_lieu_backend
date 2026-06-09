@@ -270,6 +270,7 @@ public class DocumentService {
 		});
 	}
 
+	@PreAuthorize("hasAuthority('INCREASE_DOWNLOAD')")
 	public void increaseDownload(Long id) {
 		documentRepository.findById(id).ifPresent(entity -> {
 			entity.setDownloadsCount(entity.getDownloadsCount() + 1);

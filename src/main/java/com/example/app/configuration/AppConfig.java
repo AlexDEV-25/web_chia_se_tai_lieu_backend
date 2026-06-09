@@ -50,6 +50,7 @@ public class AppConfig {
 		checkPermissionAndSave(permissionRepository, "COUNT_MY_DOCUMENT", "đếm số tài liệu của mình");
 		checkPermissionAndSave(permissionRepository, "UPLOAD_FILE", "đăng tài liệu");
 		checkPermissionAndSave(permissionRepository, "DOWNLOAD_FILE", "tải tài liệu");
+		checkPermissionAndSave(permissionRepository, "INCREASE_DOWNLOAD", "tăng lượt tải tài liệu");
 		checkPermissionAndSave(permissionRepository, "ADD_FAVORITE", "thêm vào kho yêu thích");
 		checkPermissionAndSave(permissionRepository, "GET_DOCUMENT_FAVORITE", "lấy danh sách nhưng tài liệu trong kho");
 		checkPermissionAndSave(permissionRepository, "GET_LESSON_FAVORITE", "lấy danh sách nhưng bài giảng trong kho");
