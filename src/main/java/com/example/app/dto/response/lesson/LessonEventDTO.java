@@ -12,9 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LessonDTO {
-	private Long id;
-	private String title;
-	private User user;
-	private ContentStatus status;
+public class LessonEventDTO {
+    private Long id;
+    private String title;
+    private User user;
+    private ContentStatus status;
 }
